@@ -107,6 +107,14 @@ pub(crate) fn open(state: &Rc<RefCell<AppState>>, request: Request) {
         log::warn!("could not show the Settings window: {err}");
         return;
     }
+    // `show` on an already visible window does not always raise it; a bar or tray click means
+    // "come forward", so ask the OS for the focus too (WR-06 AC1).
+    {
+        use slint::winit_030::WinitWindowAccessor;
+        window
+            .window()
+            .with_winit_window(slint::winit_030::winit::window::Window::focus_window);
+    }
     if created {
         watch_focus(&window, state);
     }
