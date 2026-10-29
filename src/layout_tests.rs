@@ -1,4 +1,4 @@
-//! Layout tests for the popup (W8-4a): the month grid's day cells and the icon-and-text controls.
+//! Layout tests for the popup: the month grid's day cells and the icon-and-text controls.
 //! They read the boxes the layout gives the numeral, the AD day, the event dot and the tithi, so a
 //! change that makes two numbers touch, moves the dot, clips a tithi name or leaves a band under
 //! the grid fails here; and the boxes of icons and captions, so an icon that drifts off the middle
@@ -144,7 +144,7 @@ fn every_day_of_2083(lang: &str) -> Vec<(Month, Day)> {
 // WR-03 AC2: the BS day and the AD day.
 
 #[test]
-fn w8_4a_the_bs_day_and_the_ad_day_keep_a_clear_gap() {
+fn the_bs_day_and_the_ad_day_keep_a_clear_gap() {
     for lang in ["en", "ne"] {
         for (month, day) in every_day_of_2083(lang) {
             let gap = day.ad.x - day.numeral.right();
@@ -161,7 +161,7 @@ fn w8_4a_the_bs_day_and_the_ad_day_keep_a_clear_gap() {
 }
 
 #[test]
-fn w8_4a_the_numeral_is_centred_and_the_ad_day_ends_at_the_same_inset_in_every_cell() {
+fn the_numeral_is_centred_and_the_ad_day_ends_at_the_same_inset_in_every_cell() {
     for (month, day) in every_day_of_2083("en") {
         let centre = day.numeral.x + day.numeral.w / 2.0 - day.cell.x;
         assert!(
@@ -174,7 +174,7 @@ fn w8_4a_the_numeral_is_centred_and_the_ad_day_ends_at_the_same_inset_in_every_c
 }
 
 #[test]
-fn w8_4a_todays_cell_keeps_the_ad_day_where_the_month_would_overlap_the_disc() {
+fn todays_cell_keeps_the_ad_day_where_the_month_would_overlap_the_disc() {
     // Kartik 15, 2083 is Nov 1, 2026: an AD 1st, so a cell shows "Nov" for the day, but not today's.
     let (popup, state, _) = app(date(2083, 7, 15));
     let first = |popup: &PopupWindow| {
@@ -204,7 +204,7 @@ fn w8_4a_todays_cell_keeps_the_ad_day_where_the_month_would_overlap_the_disc() {
 // WR-03 AC4: the event dot.
 
 #[test]
-fn w8_4a_the_event_dot_is_the_same_distance_from_one_and_two_digit_days() {
+fn the_event_dot_is_the_same_distance_from_one_and_two_digit_days() {
     let mut one_digit = 0;
     let mut two_digits = 0;
     for (month, day) in every_day_of_2083("en") {
@@ -234,7 +234,7 @@ fn w8_4a_the_event_dot_is_the_same_distance_from_one_and_two_digit_days() {
 }
 
 #[test]
-fn w8_4a_todays_dot_clears_the_disc() {
+fn todays_dot_clears_the_disc() {
     let (popup, _state, _) = app(date(2083, 7, 5));
     let today = days(&popup)
         .into_iter()
@@ -295,19 +295,19 @@ fn assert_every_tithi_fits(lang: &str) {
 }
 
 #[test]
-fn w8_4a_every_latin_tithi_fits_its_cell_whole() {
+fn every_latin_tithi_fits_its_cell_whole() {
     assert_every_tithi_fits("en");
 }
 
 #[test]
-fn w8_4a_every_devanagari_tithi_fits_its_cell_whole() {
+fn every_devanagari_tithi_fits_its_cell_whole() {
     assert_every_tithi_fits("ne");
 }
 
 // WR-02 AC1: the grid fills its area.
 
 #[test]
-fn w8_4a_a_five_row_and_a_six_row_month_both_end_at_the_holiday_line() {
+fn a_five_row_and_a_six_row_month_both_end_at_the_holiday_line() {
     let (popup, state, _) = app(date(2083, 7, 5));
     let holiday = ElementHandle::find_by_accessible_label(&popup, "Upcoming holidays")
         .next()
@@ -360,7 +360,7 @@ fn pill(popup: &PopupWindow, label: &str) -> Rect {
 }
 
 #[test]
-fn w8_4a_the_icon_of_an_icon_only_pill_is_in_the_middle() {
+fn the_icon_of_an_icon_only_pill_is_in_the_middle() {
     let (popup, _state, _) = app(date(2083, 7, 5));
     for label in [
         "Settings",
@@ -382,7 +382,7 @@ fn w8_4a_the_icon_of_an_icon_only_pill_is_in_the_middle() {
 }
 
 #[test]
-fn w8_4a_a_pill_with_an_icon_and_text_has_the_same_air_on_both_sides_of_the_ink() {
+fn a_pill_with_an_icon_and_text_has_the_same_air_on_both_sides_of_the_ink() {
     let (popup, _state, _) = app(date(2083, 7, 5));
     let pill = pill(&popup, "Convert");
     let (icons, texts) = parts_in(&popup, pill);
@@ -402,7 +402,7 @@ fn w8_4a_a_pill_with_an_icon_and_text_has_the_same_air_on_both_sides_of_the_ink(
 }
 
 #[test]
-fn w8_4a_the_holiday_line_chevron_is_level_with_its_text() {
+fn the_holiday_line_chevron_is_level_with_its_text() {
     let (popup, _state, _) = app(date(2083, 7, 5));
     let line = pill(&popup, "Upcoming holidays");
     let (icons, texts) = parts_in(&popup, line);

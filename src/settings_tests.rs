@@ -1747,7 +1747,7 @@ fn wr15_ac1_the_window_shows_no_third_party_logo_or_badge() {
     }
 }
 
-// WR-10 AC2, W7 and W8-3 AC5: the Tab order, asserted at every stop.
+// WR-10 AC2: the Tab order, asserted at every stop.
 
 /// The Tab order of the whole window, top to bottom.
 fn full_order() -> Vec<&'static str> {
@@ -1937,7 +1937,7 @@ fn wr10_ac2_a_focused_control_scrolls_into_view() {
     assert!(exists(&window, "Language"));
 }
 
-// The month title (W8-2 review).
+// The month title.
 
 #[test]
 fn the_month_titles_accessible_name_carries_the_visible_title() {
@@ -1967,7 +1967,7 @@ fn the_month_titles_accessible_name_carries_the_visible_title() {
     );
 }
 
-// Every UI string is `@tr(...)` with a Nepali `msgstr` (the W8 ground rules).
+// Every UI string is `@tr(...)` with a Nepali `msgstr` (the UI ground rules).
 
 /// The text of every `@tr("...")` in `markup`, as written (so `\"` stays `\"`).
 fn tr_strings(markup: &str) -> Vec<String> {
@@ -2046,7 +2046,7 @@ fn the_settings_window_speaks_nepali_when_the_language_is_nepali() {
     assert!(exists(&window, "बार हटाउनुहोस्"));
 }
 
-// W8-4a: icons and captions sit in the middle of what holds them.
+// Icons and captions sit in the middle of what holds them.
 
 fn centre_x(element: &ElementHandle) -> f32 {
     element.absolute_position().x + element.size().width / 2.0
@@ -2097,7 +2097,7 @@ fn caption_in(window: &SettingsWindow, holder: &ElementHandle) -> ElementHandle 
 }
 
 #[test]
-fn w8_4a_the_saved_note_icon_is_level_with_its_text() {
+fn the_saved_note_icon_is_level_with_its_text() {
     let (_f, window) = opened();
     window.set_save_status(1);
     walk(&window);
@@ -2114,7 +2114,7 @@ fn w8_4a_the_saved_note_icon_is_level_with_its_text() {
 }
 
 #[test]
-fn w8_4a_the_add_field_pill_has_the_same_air_on_both_sides_of_the_ink() {
+fn the_add_field_pill_has_the_same_air_on_both_sides_of_the_ink() {
     let (_f, window) = opened();
     scroll_to_end(&window);
     let pill = element(&window, "Add field to the top line");
@@ -2132,7 +2132,7 @@ fn w8_4a_the_add_field_pill_has_the_same_air_on_both_sides_of_the_ink() {
 }
 
 #[test]
-fn w8_4a_a_chip_centres_its_name_and_its_remove_button() {
+fn a_chip_centres_its_name_and_its_remove_button() {
     let (_f, window) = opened();
     scroll_to_end(&window);
     let chip = element(&window, "Weekday");
@@ -2157,7 +2157,7 @@ fn w8_4a_a_chip_centres_its_name_and_its_remove_button() {
 }
 
 #[test]
-fn w8_4a_a_segment_centres_its_text() {
+fn a_segment_centres_its_text() {
     let (_f, window) = opened();
     for label in ["English", "System", "Dark"] {
         let segment = element(&window, label);
@@ -2174,7 +2174,7 @@ fn w8_4a_a_segment_centres_its_text() {
 }
 
 #[test]
-fn w8_4a_a_row_centres_its_label_and_its_control() {
+fn a_row_centres_its_label_and_its_control() {
     let (_f, window) = opened();
     for (label, control) in [
         ("Language", "English"),
@@ -2203,7 +2203,7 @@ fn w8_4a_a_row_centres_its_label_and_its_control() {
     }
 }
 
-// W8-4a: the chip lines scroll with the mouse wheel.
+// The chip lines scroll with the mouse wheel.
 
 /// The Settings window with eight fields on the top line, which is wider than the window.
 fn opened_with_a_long_top_line() -> (Fixture, SettingsWindow) {
@@ -2237,7 +2237,7 @@ fn wheel_over(window: &SettingsWindow, element: &ElementHandle, delta_y: f32) {
 }
 
 #[test]
-fn w8_4a_the_wheel_scrolls_a_chip_line_wider_than_the_window_sideways() {
+fn the_wheel_scrolls_a_chip_line_wider_than_the_window_sideways() {
     let (_f, window) = opened_with_a_long_top_line();
     scroll_to_end(&window);
     // The window's fixed width, in logical px.
@@ -2292,7 +2292,7 @@ fn w8_4a_the_wheel_scrolls_a_chip_line_wider_than_the_window_sideways() {
 }
 
 #[test]
-fn w8_4a_the_wheel_over_a_chip_line_that_fits_scrolls_the_page() {
+fn the_wheel_over_a_chip_line_that_fits_scrolls_the_page() {
     let (_f, window) = opened();
     scroll_to_end(&window);
     window.set_scroll_y(window.get_scroll_y() + 40.0);

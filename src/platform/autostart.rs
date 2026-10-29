@@ -307,8 +307,8 @@ mod tests {
         }
     }
 
-    const INSTALLED: &str = r"C:\Users\example\AppData\Local\Programs\MitiBar\MitiBar.exe";
-    const PORTABLE: &str = r"C:\Users\example\Downloads\MitiBar\MitiBar.exe";
+    const INSTALLED: &str = r"C:\example\Programs\MitiBar\MitiBar.exe";
+    const PORTABLE: &str = r"C:\example\Downloads\MitiBar\MitiBar.exe";
 
     fn path(text: &str) -> Target {
         Target::Path(PathBuf::from(text))
@@ -417,25 +417,25 @@ mod tests {
 
     #[test]
     fn wr09_ac2_run_value_quotes_a_path_with_spaces() {
-        let exe = Path::new(r"C:\Program Files\MitiBar\mitibar.exe");
+        let exe = Path::new(r"C:\example\Programs\MitiBar\mitibar.exe");
         assert_eq!(
             run_command(exe),
-            r#""C:\Program Files\MitiBar\mitibar.exe""#
+            r#""C:\example\Programs\MitiBar\mitibar.exe""#
         );
     }
 
     #[test]
     fn wr09_ac2_the_run_value_is_read_back_as_a_path() {
-        let exe = Path::new(r"C:\Program Files\MitiBar\mitibar.exe");
+        let exe = Path::new(r"C:\example\Programs\MitiBar\mitibar.exe");
         assert_eq!(command_path(&run_command(exe)), exe);
         // An unquoted value, such as one written by an older build or by hand.
         assert_eq!(
-            command_path(r"C:\MitiBar\mitibar.exe"),
-            Path::new(r"C:\MitiBar\mitibar.exe")
+            command_path(r"C:\example\MitiBar\mitibar.exe"),
+            Path::new(r"C:\example\MitiBar\mitibar.exe")
         );
         assert_eq!(
-            command_path(r#"  "C:\MitiBar\mitibar.exe" --flag"#),
-            Path::new(r"C:\MitiBar\mitibar.exe")
+            command_path(r#"  "C:\example\MitiBar\mitibar.exe" --flag"#),
+            Path::new(r"C:\example\MitiBar\mitibar.exe")
         );
     }
 }

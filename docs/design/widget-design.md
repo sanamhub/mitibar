@@ -97,9 +97,9 @@ One radius per role, so hierarchy shows in the shape:
 Hover is a `surface-raised` fill. Focus is the 2 px `ink` ring from W7, drawn outside the
 shape with the same radius.
 
-### Day cells (W8-4a)
+### Day cells after the first beta
 
-Decided after the owner's first run of the W8-3 build, with the numbers each choice came from.
+Decided after the owner's first run of the beta build, with the numbers each choice came from.
 
 - **Size.** Seven columns with no gap between them, so a cell is 48 px wide instead of 46.3 px.
   The rows share the height the grid is given, 64 px in a five-row month and 53 px in a six-row
