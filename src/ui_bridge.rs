@@ -456,6 +456,10 @@ pub fn set_settings(
         launch_at_login: settings.launch_at_login,
         bar: settings.bar,
         bar_locked: settings.bar_locked,
+        bar_top_bold: settings.bar_top_bold,
+        bar_bottom_bold: settings.bar_bottom_bold,
+        bar_hide_fullscreen: settings.bar_hide_fullscreen,
+        bar_zone_long: settings.bar_zone_long,
         bar_available,
         top,
         bottom,
@@ -891,9 +895,9 @@ mod tests {
         assert!(data.bar_locked);
         assert!(data.bar_available);
         assert_eq!(data.zone.as_str(), "Asia/Kathmandu");
-        assert_eq!(data.top.row_count(), 3);
-        assert_eq!(data.bottom.row_count(), 2);
-        assert_eq!(data.unused.row_count(), 5);
+        assert_eq!(data.top.row_count(), 2);
+        assert_eq!(data.bottom.row_count(), 1);
+        assert_eq!(data.unused.row_count(), 11);
         assert!(!data.only_one_field);
         assert_eq!(data.shortcut.as_str(), "Ctrl+Shift+K");
         assert!(data.shortcut_available);

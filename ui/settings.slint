@@ -19,6 +19,10 @@ export struct SettingsData {
     launch-at-login: bool,
     bar: bool,
     bar-locked: bool,
+    bar-top-bold: bool,
+    bar-bottom-bold: bool,
+    bar-hide-fullscreen: bool,
+    bar-zone-long: bool,
     /// Whether this platform has the bar at all; the Bar section is left out elsewhere.
     bar-available: bool,
     /// The two lines of the bar as field ids, and the ids "Add field" offers.
@@ -39,6 +43,10 @@ export global FieldNames {
     public pure function name(id: string) -> string {
         return id == "weekday" ? @tr("Weekday")
             : id == "weekday_long" ? @tr("Weekday, long")
+            : id == "day" ? @tr("Day")
+            : id == "month" ? @tr("Month")
+            : id == "month_short" ? @tr("Month, short")
+            : id == "year" ? @tr("Year")
             : id == "time" ? @tr("Time")
             : id == "zone_time" ? @tr("Extra clock time")
             : id == "bs_date" ? @tr("BS date")
@@ -294,11 +302,11 @@ export component SettingsWindow inherits Window {
     title: @tr("{0} Settings", AppInfo.app-name);
     // A fixed size: the content scrolls when it needs more room (widget-design §8).
     preferred-width: 420px;
-    preferred-height: 560px;
+    preferred-height: 680px;
     min-width: 420px;
     max-width: 420px;
-    min-height: 560px;
-    max-height: 560px;
+    min-height: 680px;
+    max-height: 680px;
     background: Theme.surface;
     default-font-family: "Noto Sans";
 
@@ -341,6 +349,10 @@ export component SettingsWindow inherits Window {
     callback zone-picked(string);
     callback bar-changed(bool);
     callback lock-changed(bool);
+    callback bar-top-bold-changed(bool);
+    callback bar-bottom-bold-changed(bool);
+    callback bar-fullscreen-changed(bool);
+    callback bar-zone-long-changed(bool);
     callback chip-removed(int, int);
     callback chip-moved(int, int, int);
     callback chip-moved-line(int, int, bool);
@@ -599,6 +611,42 @@ export component SettingsWindow inherits Window {
                                 checked: root.data.bar-locked;
                                 toggled => { root.lock-changed(!root.data.bar-locked); }
                                 focused => { root.focus-on("lock", self.absolute-position.y, self.height); }
+                            }
+                        }
+                        Row {
+                            text: @tr("Bold top line");
+                            top-bold-control := Toggle {
+                                label: @tr("Bold top line");
+                                checked: root.data.bar-top-bold;
+                                toggled => { root.bar-top-bold-changed(!root.data.bar-top-bold); }
+                                focused => { root.focus-on("bar top bold", self.absolute-position.y, self.height); }
+                            }
+                        }
+                        Row {
+                            text: @tr("Bold bottom line");
+                            bottom-bold-control := Toggle {
+                                label: @tr("Bold bottom line");
+                                checked: root.data.bar-bottom-bold;
+                                toggled => { root.bar-bottom-bold-changed(!root.data.bar-bottom-bold); }
+                                focused => { root.focus-on("bar bottom bold", self.absolute-position.y, self.height); }
+                            }
+                        }
+                        Row {
+                            text: @tr("Hide over full-screen apps");
+                            fullscreen-control := Toggle {
+                                label: @tr("Hide over full-screen apps");
+                                checked: root.data.bar-hide-fullscreen;
+                                toggled => { root.bar-fullscreen-changed(!root.data.bar-hide-fullscreen); }
+                                focused => { root.focus-on("bar fullscreen", self.absolute-position.y, self.height); }
+                            }
+                        }
+                        Row {
+                            text: @tr("Long time zone name");
+                            zone-long-control := Toggle {
+                                label: @tr("Long time zone name");
+                                checked: root.data.bar-zone-long;
+                                toggled => { root.bar-zone-long-changed(!root.data.bar-zone-long); }
+                                focused => { root.focus-on("bar zone long", self.absolute-position.y, self.height); }
                             }
                         }
 
@@ -893,3 +941,4 @@ export component SettingsWindow inherits Window {
         }
     }
 }
+

@@ -323,3 +323,27 @@ msgstr "तेस्रो-पक्षका सूचनाहरू: Slint, N
 
 msgid "{0}, change view"
 msgstr "{0}, दृश्य बदल्नुहोस्"
+
+msgid "Day"
+msgstr "दिन"
+
+msgid "Month"
+msgstr "महिना"
+
+msgid "Month, short"
+msgstr "महिना, छोटो"
+
+msgid "Year"
+msgstr "वर्ष"
+
+msgid "Bold top line"
+msgstr "माथिल्लो लाइन बोल्ड"
+
+msgid "Bold bottom line"
+msgstr "तल्लो लाइन बोल्ड"
+
+msgid "Hide over full-screen apps"
+msgstr "फुलस्क्रिन एपमा लुकाउनुहोस्"
+
+msgid "Long time zone name"
+msgstr "समय क्षेत्रको लामो नाम"

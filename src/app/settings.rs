@@ -4,12 +4,12 @@
 use nepdate::Lang;
 use serde::{Deserialize, Serialize};
 
-use crate::app::bar::{BarField, DEFAULT_BOTTOM, DEFAULT_TOP, ids};
+use crate::app::bar::{BarField, DEFAULT_BOTTOM, DEFAULT_TOP, LEGACY_BOTTOM, LEGACY_TOP, ids};
 use crate::app::bar_place::Saved;
 use crate::app::shortcut::Combo;
 
 /// The schema this build reads and writes (WR-06).
-const SCHEMA: u32 = 2;
+const SCHEMA: u32 = 3;
 
 /// Per-user settings (WR-06). The `language` and `theme` values stay strings so the TOML file
 /// reads and writes them as written. The five bools are the bool keys of WR-06, so the lint
@@ -28,6 +28,13 @@ pub struct Settings {
     /// Whether the floating bar is shown (WR-08, Windows only; ignored elsewhere).
     pub bar: bool,
     pub bar_locked: bool,
+    /// Each line's weight; the bottom line is bold by default.
+    pub bar_top_bold: bool,
+    pub bar_bottom_bold: bool,
+    /// Whether the bar hides while a full-screen app is in front (WR-08 AC1).
+    pub bar_hide_fullscreen: bool,
+    /// Long time-zone names (`Singapore 10:11 AM`) instead of abbreviations (`SGT 10:11 AM`).
+    pub bar_zone_long: bool,
     /// Field ids of the bar's two lines (WR-08 AC2).
     pub bar_top: Vec<String>,
     pub bar_bottom: Vec<String>,
@@ -58,7 +65,8 @@ struct SchemaOne {
 
 impl Settings {
     /// Parses a settings file. A schema 1 file is migrated: `taskbar_text = false` becomes
-    /// `bar = false`, the new keys take their defaults, and `migrated` is set (WR-06).
+    /// `bar = false`, its two lines become the old fixed layout, and `migrated` is set. A schema 2
+    /// file keeps the lines the owner chose. Both get the schema 3 keys.
     ///
     /// # Errors
     ///
@@ -66,8 +74,9 @@ impl Settings {
     pub fn from_toml(text: &str) -> Result<Loaded, toml::de::Error> {
         let mut settings: Settings = toml::from_str(text)?;
         let mut warnings = Vec::new();
-        let migrated = settings.schema == 1;
-        if migrated {
+        let from = settings.schema;
+        let migrated = from < SCHEMA && from > 0;
+        if from == 1 {
             let legacy: SchemaOne = toml::from_str(text)?;
             match legacy.taskbar_text {
                 Some(toml::Value::Boolean(on)) => settings.bar = on,
@@ -76,6 +85,10 @@ impl Settings {
                 )),
                 None => {}
             }
+            settings.bar_top = ids(LEGACY_TOP);
+            settings.bar_bottom = ids(LEGACY_BOTTOM);
+        }
+        if migrated {
             settings.schema = SCHEMA;
         }
         warnings.extend(settings.validate());
@@ -212,6 +225,10 @@ impl Default for Settings {
             launch_at_login: true,
             bar: true,
             bar_locked: false,
+            bar_top_bold: false,
+            bar_bottom_bold: true,
+            bar_hide_fullscreen: true,
+            bar_zone_long: false,
             bar_top: ids(DEFAULT_TOP),
             bar_bottom: ids(DEFAULT_BOTTOM),
             bar_monitor: String::new(),
@@ -233,7 +250,7 @@ mod tests {
     #[test]
     fn defaults_match_wr06() {
         let s = Settings::default();
-        assert_eq!(s.schema, 2);
+        assert_eq!(s.schema, 3);
         assert_eq!(s.language, "en");
         assert_eq!(s.theme, "system");
         assert!(!s.clock_24h);
@@ -242,8 +259,12 @@ mod tests {
         assert!(s.launch_at_login);
         assert!(s.bar);
         assert!(!s.bar_locked);
-        assert_eq!(s.bar_top, strings(&["weekday", "time", "zone_time"]));
-        assert_eq!(s.bar_bottom, strings(&["bs_date", "ad_short"]));
+        assert!(!s.bar_top_bold);
+        assert!(s.bar_bottom_bold);
+        assert!(s.bar_hide_fullscreen);
+        assert!(!s.bar_zone_long);
+        assert_eq!(s.bar_top, strings(&["weekday", "bs_date"]));
+        assert_eq!(s.bar_bottom, strings(&["ad_date"]));
         assert_eq!(s.bar_monitor, "");
         assert_eq!((s.bar_x, s.bar_y), (0, 0));
         assert_eq!(
@@ -346,7 +367,7 @@ mod tests {
     #[test]
     fn wr06_ac2_validate_keeps_valid_values_and_an_empty_zone() {
         let mut s = Settings {
-            schema: 2,
+            schema: 3,
             language: "ne".to_owned(),
             theme: "dark".to_owned(),
             extra_time_zone: String::new(),
@@ -367,8 +388,8 @@ mod tests {
         let warnings = s.validate();
         assert_eq!(warnings.len(), 1, "{warnings:?}");
         assert!(warnings[0].contains("bar_bottom"), "{warnings:?}");
-        assert_eq!(s.bar_bottom, strings(&["bs_date", "ad_short"]));
-        assert_eq!(s.bar_top, strings(&["weekday", "time", "zone_time"]));
+        assert_eq!(s.bar_bottom, strings(&["ad_date"]));
+        assert_eq!(s.bar_top, strings(&["weekday", "bs_date"]));
     }
 
     #[test]
@@ -407,7 +428,7 @@ mod tests {
         let parsed = loaded.settings;
         assert_eq!(parsed.language, "ne");
         assert_eq!(parsed.theme, "system");
-        assert_eq!(parsed.schema, 2);
+        assert_eq!(parsed.schema, 3);
         assert!(parsed.launch_at_login);
         assert!(parsed.bar);
         assert!(!loaded.migrated);
@@ -418,7 +439,7 @@ mod tests {
     fn wr06_schema_1_with_the_taskbar_text_off_turns_the_bar_off() {
         let loaded = Settings::from_toml("schema = 1\ntaskbar_text = false\n").expect("toml");
         assert!(loaded.migrated);
-        assert_eq!(loaded.settings.schema, 2);
+        assert_eq!(loaded.settings.schema, 3);
         assert!(!loaded.settings.bar);
         assert!(loaded.warnings.is_empty(), "{:?}", loaded.warnings);
     }
@@ -434,7 +455,8 @@ mod tests {
         assert!(s.bar);
         assert_eq!(s.language, "ne");
         assert!(s.clock_24h);
-        assert_eq!(s.bar_top, Settings::default().bar_top);
+        assert_eq!(s.bar_top, strings(&["weekday", "time", "zone_time"]));
+        assert_eq!(s.bar_bottom, strings(&["bs_date", "ad_short"]));
         assert_eq!(s.bar_monitor, "");
     }
 
@@ -448,17 +470,35 @@ mod tests {
     }
 
     #[test]
+    fn wr06_schema_2_keeps_the_owners_lines_and_only_migrates_the_schema() {
+        let loaded = Settings::from_toml(
+            "schema = 2\nbar_top = [\"weekday_long\", \"time\"]\nbar_bottom = [\"bs_date\"]\n",
+        )
+        .expect("toml");
+        assert!(loaded.migrated);
+        assert_eq!(loaded.settings.schema, 3);
+        assert_eq!(loaded.settings.bar_top, strings(&["weekday_long", "time"]));
+        assert_eq!(loaded.settings.bar_bottom, strings(&["bs_date"]));
+        assert!(loaded.settings.bar_bottom_bold);
+        assert!(loaded.settings.bar_hide_fullscreen);
+        assert!(!loaded.settings.bar_zone_long);
+    }
+
+    #[test]
     fn wr06_schema_2_ignores_a_leftover_taskbar_text() {
         let loaded = Settings::from_toml("schema = 2\ntaskbar_text = false\n").expect("toml");
-        assert!(!loaded.migrated);
-        assert!(loaded.settings.bar, "only a schema 1 file is migrated");
+        assert!(loaded.migrated, "a schema 2 file moves to schema 3");
+        assert!(
+            loaded.settings.bar,
+            "only a schema 1 file reads taskbar_text"
+        );
     }
 
     #[test]
     fn wr06_a_schema_from_the_future_warns_and_is_read_as_the_current_one() {
         let loaded = Settings::from_toml("schema = 9\n").expect("toml");
         assert!(!loaded.migrated);
-        assert_eq!(loaded.settings.schema, 2);
+        assert_eq!(loaded.settings.schema, 3);
         assert_eq!(loaded.warnings.len(), 1, "{:?}", loaded.warnings);
     }
 

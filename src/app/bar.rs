@@ -15,6 +15,10 @@ pub const SEPARATOR: &str = " · ";
 pub enum BarField {
     Weekday,
     WeekdayLong,
+    Day,
+    MonthLong,
+    MonthShort,
+    Year,
     Time,
     ZoneTime,
     BsDate,
@@ -27,9 +31,13 @@ pub enum BarField {
 
 impl BarField {
     /// Every field, in the order of the WR-08 AC2 table.
-    pub const ALL: [BarField; 10] = [
+    pub const ALL: [BarField; 14] = [
         BarField::Weekday,
         BarField::WeekdayLong,
+        BarField::Day,
+        BarField::MonthLong,
+        BarField::MonthShort,
+        BarField::Year,
         BarField::Time,
         BarField::ZoneTime,
         BarField::BsDate,
@@ -45,6 +53,10 @@ impl BarField {
         match self {
             BarField::Weekday => "weekday",
             BarField::WeekdayLong => "weekday_long",
+            BarField::Day => "day",
+            BarField::MonthLong => "month",
+            BarField::MonthShort => "month_short",
+            BarField::Year => "year",
             BarField::Time => "time",
             BarField::ZoneTime => "zone_time",
             BarField::BsDate => "bs_date",
@@ -62,10 +74,13 @@ impl BarField {
     }
 }
 
-/// The top line of a fresh install (WR-08 AC2).
-pub const DEFAULT_TOP: &[BarField] = &[BarField::Weekday, BarField::Time, BarField::ZoneTime];
-/// The bottom line of a fresh install (WR-08 AC2).
-pub const DEFAULT_BOTTOM: &[BarField] = &[BarField::BsDate, BarField::AdShort];
+/// The top line of a fresh install: the weekday in full and the BS date.
+pub const DEFAULT_TOP: &[BarField] = &[BarField::Weekday, BarField::BsDate];
+/// The bottom line of a fresh install: the AD date, in the bold weight.
+pub const DEFAULT_BOTTOM: &[BarField] = &[BarField::AdDate];
+/// The fixed layout a schema 1 file had: weekday and time on top, BS and AD dates below.
+pub const LEGACY_TOP: &[BarField] = &[BarField::Weekday, BarField::Time, BarField::ZoneTime];
+pub const LEGACY_BOTTOM: &[BarField] = &[BarField::BsDate, BarField::AdShort];
 
 /// The settings-file ids of `fields`.
 pub fn ids(fields: &[BarField]) -> Vec<String> {
@@ -73,10 +88,25 @@ pub fn ids(fields: &[BarField]) -> Vec<String> {
 }
 
 /// The two lines the bar draws. A line with nothing to show is an empty string.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BarLines {
     pub top: String,
     pub bottom: String,
+    /// Whether the top line is drawn semibold.
+    pub top_bold: bool,
+    /// Whether the bottom line is drawn semibold.
+    pub bottom_bold: bool,
+}
+
+impl Default for BarLines {
+    fn default() -> Self {
+        Self {
+            top: String::new(),
+            bottom: String::new(),
+            top_bold: false,
+            bottom_bold: true,
+        }
+    }
 }
 
 impl BarLines {
@@ -119,6 +149,8 @@ pub fn bar_lines(now: &jiff::Zoned, s: &Settings) -> BarLines {
     BarLines {
         top: line(&s.bar_top, &day),
         bottom: line(&s.bar_bottom, &day),
+        top_bold: s.bar_top_bold,
+        bottom_bold: s.bar_bottom_bold,
     }
 }
 
@@ -137,10 +169,7 @@ fn field_text(field: BarField, day: &Day<'_>) -> String {
     let lang = day.lang;
     match field {
         BarField::Time => clock::local_time(day.now, day.settings),
-        BarField::ZoneTime => clock::clock_lines(day.now, day.settings)
-            .into_iter()
-            .find_map(|line| line.zone_city.map(|city| format!("{city} {}", line.time)))
-            .unwrap_or_default(),
+        BarField::ZoneTime => clock::zone_time(day.now, day.settings),
         _ => day
             .bs
             .map_or_else(String::new, |bs| date_text(field, bs, lang)),
@@ -152,6 +181,10 @@ fn date_text(field: BarField, bs: NepaliDate, lang: Lang) -> String {
     match field {
         BarField::Weekday => bs.weekday().short_name(lang).to_owned(),
         BarField::WeekdayLong => bs.weekday().name(lang).to_owned(),
+        BarField::Day => lang.digits(u32::from(bs.day()), 1).to_string(),
+        BarField::MonthLong => bs.month().name(lang).to_owned(),
+        BarField::MonthShort => bs.month().short_name(lang).to_owned(),
+        BarField::Year => lang.digits(u32::from(bs.year()), 1).to_string(),
         BarField::BsDate => bs_long(bs, true, lang),
         BarField::BsShort => bs_long(bs, false, lang),
         BarField::AdDate => format::ad_day_month_year(bs.to_gregorian(), lang),
@@ -206,8 +239,12 @@ mod tests {
         let cases = [
             (BarField::Weekday, "Thu", "बिहि"),
             (BarField::WeekdayLong, "Thursday", "बिहिवार"),
+            (BarField::Day, "5", "५"),
+            (BarField::MonthLong, "Kartik", "कार्तिक"),
+            (BarField::MonthShort, "Kar", "कार्तिक"),
+            (BarField::Year, "2083", "२०८३"),
             (BarField::Time, "6:31 PM", "६:३१ PM"),
-            (BarField::ZoneTime, "Singapore 8:46 PM", "Singapore ८:४६ PM"),
+            (BarField::ZoneTime, "+08 8:46 PM", "+08 ८:४६ PM"),
             (BarField::BsDate, "Kartik 5, 2083", "कार्तिक ५, २०८३"),
             (BarField::BsShort, "Kartik 5", "कार्तिक ५"),
             (BarField::AdDate, "Oct 22, 2026", "Oct २२, २०२६"),
@@ -247,8 +284,10 @@ mod tests {
     fn wr08_ac2_the_defaults_string() {
         let s = settings("en", DEFAULT_TOP, DEFAULT_BOTTOM);
         let lines = bar_lines(&thursday(), &s);
-        assert_eq!(lines.top, "Thu · 6:31 PM · Singapore 8:46 PM");
-        assert_eq!(lines.bottom, "Kartik 5, 2083 · Oct 22");
+        assert_eq!(lines.top, "Thu · Kartik 5, 2083");
+        assert_eq!(lines.bottom, "Oct 22, 2026");
+        assert!(!lines.top_bold);
+        assert!(lines.bottom_bold);
         assert_eq!(Settings::default().bar_top, ids(DEFAULT_TOP));
         assert_eq!(Settings::default().bar_bottom, ids(DEFAULT_BOTTOM));
     }
@@ -257,14 +296,18 @@ mod tests {
     fn wr08_ac2_the_defaults_string_in_nepali() {
         let s = settings("ne", DEFAULT_TOP, DEFAULT_BOTTOM);
         let lines = bar_lines(&thursday(), &s);
-        assert_eq!(lines.top, "बिहि · ६:३१ PM · Singapore ८:४६ PM");
-        assert_eq!(lines.bottom, "कार्तिक ५, २०८३ · Oct २२");
+        assert_eq!(lines.top, "बिहि · कार्तिक ५, २०८३");
+        assert_eq!(lines.bottom, "Oct २२, २०२६");
     }
 
     #[test]
     fn wr08_ac2_an_empty_field_is_left_out_with_its_separator() {
         // The extra zone has the local offset, so `zone_time` is empty (WR-05 AC1).
-        let mut s = settings("en", DEFAULT_TOP, DEFAULT_BOTTOM);
+        let mut s = settings(
+            "en",
+            &[BarField::Weekday, BarField::Time, BarField::ZoneTime],
+            DEFAULT_BOTTOM,
+        );
         s.extra_time_zone = "Asia/Kathmandu".to_owned();
         assert_eq!(bar_lines(&thursday(), &s).top, "Thu · 6:31 PM");
 
@@ -309,7 +352,7 @@ mod tests {
         let s = settings("en", &[], DEFAULT_BOTTOM);
         let lines = bar_lines(&thursday(), &s);
         assert_eq!(lines.top, "");
-        assert_eq!(lines.bottom, "Kartik 5, 2083 · Oct 22");
+        assert_eq!(lines.bottom, "Oct 22, 2026");
         assert!(!lines.is_empty());
     }
 
@@ -317,13 +360,13 @@ mod tests {
     fn wr08_the_menu_bar_title_is_the_top_line_or_else_the_bottom_line() {
         let now = thursday();
         let both = bar_lines(&now, &settings("en", DEFAULT_TOP, DEFAULT_BOTTOM));
-        assert_eq!(both.title(), Some("Thu · 6:31 PM · Singapore 8:46 PM"));
+        assert_eq!(both.title(), Some("Thu · Kartik 5, 2083"));
 
         let ne = bar_lines(&now, &settings("ne", &[BarField::BsShort], &[]));
         assert_eq!(ne.title(), Some("कार्तिक ५"));
 
         let bottom_only = bar_lines(&now, &settings("en", &[], DEFAULT_BOTTOM));
-        assert_eq!(bottom_only.title(), Some("Kartik 5, 2083 · Oct 22"));
+        assert_eq!(bottom_only.title(), Some("Oct 22, 2026"));
 
         assert_eq!(BarLines::default().title(), None);
     }
@@ -357,14 +400,34 @@ mod tests {
     }
 
     #[test]
+    fn wr08_ac2_the_zone_is_short_by_default_or_the_city_when_asked() {
+        let short = settings("en", &[BarField::ZoneTime], &[]);
+        assert_eq!(bar_lines(&thursday(), &short).top, "+08 8:46 PM");
+
+        let mut long = short;
+        long.bar_zone_long = true;
+        assert_eq!(bar_lines(&thursday(), &long).top, "Singapore 8:46 PM");
+    }
+
+    #[test]
+    fn wr06_each_line_takes_its_own_weight() {
+        let mut s = settings("en", DEFAULT_TOP, DEFAULT_BOTTOM);
+        assert!(!bar_lines(&thursday(), &s).top_bold);
+        assert!(bar_lines(&thursday(), &s).bottom_bold);
+
+        s.bar_top_bold = true;
+        s.bar_bottom_bold = false;
+        let lines = bar_lines(&thursday(), &s);
+        assert!(lines.top_bold);
+        assert!(!lines.bottom_bold);
+    }
+
+    #[test]
     fn wr08_ac2_the_time_follows_the_clock_settings() {
         let mut s = settings("en", &[BarField::Time, BarField::ZoneTime], &[]);
         s.clock_24h = true;
         s.show_seconds = true;
-        assert_eq!(
-            bar_lines(&thursday(), &s).top,
-            "18:31:00 · Singapore 20:46:00"
-        );
+        assert_eq!(bar_lines(&thursday(), &s).top, "18:31:00 · +08 20:46:00");
     }
 
     #[test]

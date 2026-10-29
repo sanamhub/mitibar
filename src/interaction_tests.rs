@@ -1748,6 +1748,7 @@ pub(crate) struct FakeBar {
     pub(crate) lines: RefCell<Vec<BarLines>>,
     pub(crate) shown: RefCell<Vec<bool>>,
     pub(crate) locked: RefCell<Vec<bool>>,
+    pub(crate) hide_fullscreen: RefCell<Vec<bool>>,
     pub(crate) positions: RefCell<Vec<Saved>>,
     pub(crate) labels: RefCell<Vec<MenuLabels>>,
 }
@@ -1763,6 +1764,10 @@ impl Bar for FakeBar {
 
     fn set_locked(&self, locked: bool) {
         self.locked.borrow_mut().push(locked);
+    }
+
+    fn set_hide_fullscreen(&self, hide: bool) {
+        self.hide_fullscreen.borrow_mut().push(hide);
     }
 
     fn set_position(&self, saved: &Saved) {
@@ -2061,6 +2066,7 @@ fn wr08_ac2_the_bar_follows_the_clock_settings_at_once() {
     let app = bar_app();
     settings_window::open(&app.state, settings_window::Request::default());
     let window = settings_of(&app.state);
+    window.invoke_field_added(0, "time".into());
     window.invoke_clock_changed(true);
     let last = app.bar.lines.borrow().last().cloned().expect("lines");
     assert!(

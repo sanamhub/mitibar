@@ -171,15 +171,20 @@ fn render_with(
     let fallback = &fonts.fallback;
 
     // A line with nothing to show is not drawn; the other is then the only line. Each line keeps
-    // its weight: the top is regular and the bottom semibold.
+    // its own weight (WR-06): the defaults are regular on top and semibold below.
     let mut rows: Vec<Line> = Vec::new();
-    for (text, weight) in [
-        (&lines.top, DWRITE_FONT_WEIGHT_REGULAR),
-        (&lines.bottom, DWRITE_FONT_WEIGHT_SEMI_BOLD),
+    for (text, bold) in [
+        (&lines.top, lines.top_bold),
+        (&lines.bottom, lines.bottom_bold),
     ] {
         if text.is_empty() {
             continue;
         }
+        let weight = if bold {
+            DWRITE_FONT_WEIGHT_SEMI_BOLD
+        } else {
+            DWRITE_FONT_WEIGHT_REGULAR
+        };
         let format = text_format(dw, collection, weight, scale, fallback)?;
         let layout = layout(dw, text, &format)?;
         let (width, height) = metrics(&layout)?;
@@ -562,6 +567,7 @@ mod tests {
         BarLines {
             top: "Thu · 6:31 PM · Singapore 8:46 PM".to_owned(),
             bottom: "Kartik 5, 2083 · Oct 22".to_owned(),
+            ..BarLines::default()
         }
     }
 
@@ -569,6 +575,7 @@ mod tests {
         BarLines {
             top: "बिहि · ६:३१ PM · Singapore ८:४६ PM".to_owned(),
             bottom: "कार्तिक ५, २०८३ · Oct २२".to_owned(),
+            ..BarLines::default()
         }
     }
 
@@ -621,6 +628,57 @@ mod tests {
             rendered.width > 150,
             "rendered width too small: {}",
             rendered.width
+        );
+    }
+
+    #[test]
+    fn wr08_the_width_follows_the_text_both_ways() {
+        let _guard = render_guard();
+        let short = draw(
+            &BarLines {
+                top: "Thu".to_owned(),
+                bottom: String::new(),
+                ..BarLines::default()
+            },
+            1.0,
+            false,
+        );
+        let long = draw(
+            &BarLines {
+                top: "Thursday · Kartik 5, 2083".to_owned(),
+                bottom: String::new(),
+                ..BarLines::default()
+            },
+            1.0,
+            false,
+        );
+        assert!(
+            long.width > short.width,
+            "a longer line did not widen the pill: {} vs {}",
+            long.width,
+            short.width
+        );
+
+        // Removing a line shrinks it back: the other line alone is narrower than both together.
+        let both = draw(&lines(), 1.0, false);
+        let bottom_only = draw(
+            &BarLines {
+                top: String::new(),
+                ..lines()
+            },
+            1.0,
+            false,
+        );
+        assert!(
+            bottom_only.width <= both.width,
+            "a removed line did not shrink the pill: {} vs {}",
+            bottom_only.width,
+            both.width
+        );
+        assert!(
+            short.width > 2 * (10.0 * 1.0) as u32,
+            "the padding alone is not the pill: {}",
+            short.width
         );
     }
 
@@ -730,6 +788,7 @@ mod tests {
                 &BarLines {
                     top: top.to_owned(),
                     bottom: String::new(),
+                    ..BarLines::default()
                 },
                 3.0,
                 false,

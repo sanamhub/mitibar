@@ -202,10 +202,10 @@ mod tests {
         assert!(warnings.is_empty(), "{warnings:?}");
         assert!(path.exists(), "the defaults were written");
         let text = fs::read_to_string(&path).expect("read");
-        assert!(text.contains("schema = 2"), "{text}");
+        assert!(text.contains("schema = 3"), "{text}");
         assert!(text.contains("bar = true"), "{text}");
         assert!(text.contains("bar_top"), "{text}");
-        assert!(text.contains("zone_time"), "{text}");
+        assert!(text.contains("ad_date"), "{text}");
     }
 
     #[test]
@@ -221,18 +221,21 @@ mod tests {
         .expect("write");
         let (loaded, warnings) = load(&path);
         assert!(!loaded.bar, "taskbar_text = false became bar = false");
-        assert_eq!(loaded.schema, 2);
+        assert_eq!(loaded.schema, 3);
         assert_eq!(loaded.language, "ne");
         assert_eq!(loaded.theme, "dark");
         assert!(!loaded.launch_at_login);
-        assert_eq!(loaded.bar_top, Settings::default().bar_top);
+        assert_eq!(
+            loaded.bar_top,
+            ["weekday", "time", "zone_time"].map(str::to_owned).to_vec()
+        );
         assert_eq!(warnings.len(), 1, "{warnings:?}");
-        assert!(warnings[0].contains("schema 2"), "{warnings:?}");
+        assert!(warnings[0].contains("schema 3"), "{warnings:?}");
 
         let text = fs::read_to_string(&path).expect("read");
         assert!(
-            text.contains("schema = 2"),
-            "rewritten as schema 2:\n{text}"
+            text.contains("schema = 3"),
+            "rewritten as schema 3:\n{text}"
         );
         assert!(
             !text.contains("taskbar_text"),
@@ -255,7 +258,7 @@ mod tests {
         assert!(
             fs::read_to_string(&path)
                 .expect("read")
-                .contains("schema = 2")
+                .contains("schema = 3")
         );
     }
 
@@ -268,7 +271,7 @@ mod tests {
         fs::create_dir(path.with_extension("toml.tmp")).expect("block the temp file");
         let (loaded, warnings) = load(&path);
         assert!(!loaded.bar);
-        assert_eq!(loaded.schema, 2);
+        assert_eq!(loaded.schema, 3);
         assert!(
             warnings.iter().any(|w| w.contains("could not rewrite")),
             "{warnings:?}"
@@ -293,8 +296,15 @@ mod tests {
         );
         assert!(loaded.bar_bottom.is_empty(), "one empty line is allowed");
         assert!(loaded.bar_locked, "valid keys are kept");
-        assert_eq!(warnings.len(), 1, "{warnings:?}");
-        assert!(warnings[0].contains("bar_top"), "{warnings:?}");
+        assert_eq!(warnings.len(), 2, "{warnings:?}");
+        assert!(
+            warnings.iter().any(|w| w.contains("bar_top")),
+            "{warnings:?}"
+        );
+        assert!(
+            warnings.iter().any(|w| w.contains("schema 3")),
+            "{warnings:?}"
+        );
     }
 
     #[test]
@@ -308,7 +318,8 @@ mod tests {
         .expect("write");
         let (loaded, warnings) = load(&path);
         assert!(!loaded.bar);
-        assert!(warnings.is_empty(), "{warnings:?}");
+        assert_eq!(warnings.len(), 1, "{warnings:?}");
+        assert!(warnings[0].contains("schema 3"), "{warnings:?}");
     }
 
     #[test]

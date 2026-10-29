@@ -63,6 +63,8 @@ pub trait Bar {
     fn set_shown(&self, shown: bool);
     /// The `bar_locked` setting: a locked bar does not drag.
     fn set_locked(&self, locked: bool);
+    /// The `bar_hide_fullscreen` setting: whether a full-screen app in front hides the bar.
+    fn set_hide_fullscreen(&self, hide: bool);
     /// Puts the bar at a saved position; `Saved::default()` is the default position (WR-08 AC5).
     fn set_position(&self, saved: &Saved);
     fn set_menu_labels(&self, labels: &MenuLabels);
@@ -98,6 +100,7 @@ impl Bar for Noop {
     fn set_lines(&self, _lines: &BarLines) {}
     fn set_shown(&self, _shown: bool) {}
     fn set_locked(&self, _locked: bool) {}
+    fn set_hide_fullscreen(&self, _hide: bool) {}
     fn set_position(&self, _saved: &Saved) {}
     fn set_menu_labels(&self, _labels: &MenuLabels) {}
     fn anchor(&self) -> Option<Anchor> {

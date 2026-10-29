@@ -536,6 +536,37 @@ fn wire_bar(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
         let state = state.clone();
         move |value| crate::set_bar_locked(&state, value)
     });
+    window.on_bar_top_bold_changed({
+        let state = state.clone();
+        move |value| {
+            state.borrow_mut().settings.bar_top_bold = value;
+            applied(&state);
+        }
+    });
+    window.on_bar_bottom_bold_changed({
+        let state = state.clone();
+        move |value| {
+            state.borrow_mut().settings.bar_bottom_bold = value;
+            applied(&state);
+        }
+    });
+    window.on_bar_fullscreen_changed({
+        let state = state.clone();
+        move |value| {
+            state.borrow_mut().settings.bar_hide_fullscreen = value;
+            if let Some(bar) = state.borrow().bar.clone() {
+                bar.set_hide_fullscreen(value);
+            }
+            applied(&state);
+        }
+    });
+    window.on_bar_zone_long_changed({
+        let state = state.clone();
+        move |value| {
+            state.borrow_mut().settings.bar_zone_long = value;
+            applied(&state);
+        }
+    });
     window.on_reset_position({
         let state = state.clone();
         move || crate::reset_bar_position(&state)

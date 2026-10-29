@@ -59,6 +59,37 @@ pub fn local_time(now: &jiff::Zoned, s: &Settings) -> String {
     format_time(now.time(), s.clock_24h, s.show_seconds, s.lang())
 }
 
+/// The extra-zone field of the bar (WR-08 AC2): the zone's abbreviation and time, or its city and
+/// time when `bar_zone_long` is set. Empty when the extra zone is unset or has the local offset.
+pub fn zone_time(now: &jiff::Zoned, s: &Settings) -> String {
+    if s.extra_time_zone.is_empty() {
+        return String::new();
+    }
+    let Ok(zone) = jiff::tz::TimeZone::get(&s.extra_time_zone) else {
+        return String::new();
+    };
+    let extra = now.with_time_zone(zone);
+    if extra.offset() == now.offset() {
+        return String::new();
+    }
+    let label = if s.bar_zone_long {
+        city_of(&s.extra_time_zone)
+    } else {
+        // The tz database's abbreviation, falling back to the UTC offset when it has none.
+        extra
+            .time_zone()
+            .preceding(extra.timestamp())
+            .next()
+            .map(|transition| transition.abbreviation().to_owned())
+            .filter(|abbreviation| !abbreviation.is_empty())
+            .unwrap_or_else(|| extra.offset().to_string())
+    };
+    format!(
+        "{label} {}",
+        format_time(extra.time(), s.clock_24h, s.show_seconds, s.lang())
+    )
+}
+
 /// The time until the next wake-up: the next second boundary when seconds are shown, the next
 /// minute boundary otherwise, both plus 50 ms (WR-05 AC5). The 50 ms makes the wake land just
 /// after the boundary so the clock reads the new minute or second.

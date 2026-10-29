@@ -591,6 +591,58 @@ fn wr06_ac5_the_language_applies_to_the_popup_the_bar_and_the_tray() {
 }
 
 #[test]
+fn wr06_ac5_the_bar_weights_and_full_screen_switch_apply_at_once() {
+    let (f, window) = opened();
+    window.invoke_bar_top_bold_changed(true);
+    assert!(settings(&f).bar_top_bold);
+    let lines = f.bar.lines.borrow().last().cloned().expect("lines");
+    assert!(lines.top_bold);
+
+    window.invoke_bar_bottom_bold_changed(false);
+    assert!(!settings(&f).bar_bottom_bold);
+    let lines = f.bar.lines.borrow().last().cloned().expect("lines");
+    assert!(!lines.bottom_bold);
+
+    window.invoke_bar_fullscreen_changed(false);
+    assert!(!settings(&f).bar_hide_fullscreen);
+    assert_eq!(
+        f.bar.hide_fullscreen.borrow().last().copied(),
+        Some(false),
+        "the bar is told"
+    );
+
+    window.invoke_bar_zone_long_changed(true);
+    assert!(settings(&f).bar_zone_long);
+}
+
+#[test]
+fn wr06_ac1_settings_is_modal_for_a_bar_or_tray_click() {
+    let (f, _window) = opened();
+    let visible = f.popup.window().is_visible();
+    // The Settings window is open, so a bar click brings it forward instead of toggling the
+    // popup behind it.
+    crate::handle_bar_event(BarEvent::Toggle(bar_anchor()), &f.state, &f.slot);
+    assert!(settings_window::is_open(&f.state));
+    assert_eq!(
+        f.popup.window().is_visible(),
+        visible,
+        "the bar click did not toggle the popup"
+    );
+
+    crate::handle_tray_event(TrayEvent::Open, &f.state, &f.slot);
+    assert!(settings_window::is_open(&f.state));
+    assert_eq!(
+        f.popup.window().is_visible(),
+        visible,
+        "the tray click did not toggle the popup"
+    );
+
+    // Opening Settings again brings the one window forward, it does not build a second.
+    settings_window::open(&f.state, settings_window::Request::default());
+    assert!(settings_window::is_open(&f.state));
+}
+
+#[test]
 fn wr06_ac5_the_theme_applies_to_the_popup_and_the_settings_window() {
     let (f, window) = opened();
     window.invoke_theme_picked(2);
@@ -653,6 +705,8 @@ fn wr06_ac5_the_24_hour_clock_applies_to_the_popup_and_the_bar() {
 #[test]
 fn wr06_ac5_seconds_apply_to_the_popup_and_the_bar_and_rearm_the_tick() {
     let (f, window) = opened();
+    // The new default has no time, so add it before checking the seconds.
+    window.invoke_field_added(0, "time".into());
     let generation = f.state.borrow().timer_generation;
     window.invoke_seconds_changed(true);
     let clock = f
@@ -683,6 +737,9 @@ fn wr06_ac5_seconds_apply_to_the_popup_and_the_bar_and_rearm_the_tick() {
 #[test]
 fn wr06_ac5_the_extra_zone_applies_to_the_popup_and_the_bar() {
     let (f, window) = opened();
+    window.invoke_field_added(0, "zone_time".into());
+    // The city name, not the abbreviation, so the assertion is stable across tz databases.
+    window.invoke_bar_zone_long_changed(true);
     // New York, because the extra clock is hidden when it has the offset of the local zone, and
     // no machine that runs the tests is on New York time in both seasons at once.
     window.invoke_zone_picked("America/New_York".into());
@@ -1053,14 +1110,8 @@ fn chips(f: &Fixture) -> (Vec<String>, Vec<String>) {
 #[test]
 fn wr08_ac3_each_line_shows_its_fields_as_chips() {
     let (_f, window) = opened();
-    tab_to(&window, "chip bottom 2");
-    for label in [
-        "Weekday",
-        "Time",
-        "Extra clock time",
-        "BS date",
-        "AD date, short",
-    ] {
+    tab_to(&window, "chip bottom 1");
+    for label in ["Weekday", "BS date", "AD date"] {
         let chip = element(&window, label);
         assert_eq!(
             chip.accessible_role(),
@@ -1068,7 +1119,7 @@ fn wr08_ac3_each_line_shows_its_fields_as_chips() {
             "{label}"
         );
     }
-    for label in ["Remove Weekday", "Remove Time", "Remove BS date"] {
+    for label in ["Remove Weekday", "Remove BS date", "Remove AD date"] {
         assert!(exists(&window, label), "{label}");
     }
     assert!(
@@ -1085,15 +1136,18 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
     scroll_to_end(&window);
     for label in [
         "Weekday, long",
+        "Day",
+        "Month",
+        "Year",
         "BS date, short",
-        "AD date",
+        "Time",
         "Tithi",
         "Holiday",
     ] {
         assert!(exists(&window, label), "{label} is offered");
     }
     assert!(
-        !elements(&window, "Time")
+        !elements(&window, "BS date")
             .iter()
             .any(|e| e.accessible_role() == Some(AccessibleRole::Button)),
         "a field in use is not offered"
@@ -1101,13 +1155,13 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
     click(&window, "Tithi");
     assert_eq!(
         top(&f),
-        ids(&["weekday", "time", "zone_time", "tithi"]),
+        ids(&["weekday", "bs_date", "tithi"]),
         "at the end of the top line"
     );
 
     // Once it is on a line, it is no longer offered, on either line.
-    scroll_to_end(&window);
-    click(&window, "Add field to the bottom line");
+    tab_to(&window, "add bottom");
+    press(&window, Key::Return);
     scroll_to_end(&window);
     assert!(
         !elements(&window, "Tithi")
@@ -1116,7 +1170,7 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
         "a field appears at most once"
     );
     click(&window, "Holiday");
-    assert_eq!(bottom(&f), ids(&["bs_date", "ad_short", "holiday"]));
+    assert_eq!(bottom(&f), ids(&["ad_date", "holiday"]));
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
     assert!(!last.top.is_empty(), "the bar updated on each change");
 }
@@ -1126,8 +1180,14 @@ fn wr08_ac3_every_field_can_be_added_until_none_is_left() {
     let (f, window) = opened();
     for name in [
         "Weekday, long",
+        "Day",
+        "Month",
+        "Month, short",
+        "Year",
+        "Time",
+        "Extra clock time",
         "BS date, short",
-        "AD date",
+        "AD date, short",
         "Tithi",
         "Holiday",
     ] {
@@ -1137,7 +1197,7 @@ fn wr08_ac3_every_field_can_be_added_until_none_is_left() {
     }
     // The button is disabled now, so it is no longer a stop; its chips are, and bring it in view.
     tab_to(&window, "chip top 1");
-    assert_eq!(top(&f).len() + bottom(&f).len(), 10);
+    assert_eq!(top(&f).len() + bottom(&f).len(), 14);
     assert!(
         !element(&window, "Add field to the top line")
             .accessible_enabled()
@@ -1161,21 +1221,24 @@ fn wr08_ac3_a_chip_is_removed_with_its_button_and_focus_moves_to_its_neighbour()
     settings_window::refresh(&f.state);
     crate::update_bar(&f.state);
     let before = parts(&f);
-    click(&window, "Remove Time");
-    assert_eq!(top(&f), ids(&["weekday", "zone_time"]));
-    assert!(!exists(&window, "Time"));
+    click(&window, "Remove BS date");
+    assert_eq!(top(&f), ids(&["weekday"]));
+    assert!(!exists(&window, "BS date"));
     settle(&window);
     assert_eq!(
         focused(&window),
-        "chip top 2",
+        "chip top 1",
         "the chip that took its place"
     );
     assert!(
         parts(&f) < before,
-        "the bar lost the time: {before} parts before"
+        "the bar lost the date: {before} parts before"
     );
 
     // Delete does the same from the keyboard.
+    window.invoke_field_added(0, "time".into());
+    walk(&window);
+    tab_to(&window, "chip top 2");
     press(&window, Key::Delete);
     settle(&window);
     assert_eq!(top(&f), ids(&["weekday"]));
@@ -1224,31 +1287,23 @@ fn wr08_ac3_a_focused_chip_moves_left_and_right_with_its_buttons_and_with_alt_ar
     );
     click(&window, "Move Weekday right");
     settle(&window);
-    assert_eq!(top(&f), ids(&["time", "weekday", "zone_time"]));
+    assert_eq!(top(&f), ids(&["bs_date", "weekday"]));
     assert_eq!(focused(&window), "chip top 2", "the focus follows the chip");
 
     press_with(&window, &[Key::Alt], Key::RightArrow);
     settle(&window);
-    assert_eq!(top(&f), ids(&["time", "zone_time", "weekday"]));
-    assert_eq!(focused(&window), "chip top 3");
-    press_with(&window, &[Key::Alt], Key::RightArrow);
-    settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["time", "zone_time", "weekday"]),
+        ids(&["bs_date", "weekday"]),
         "it stops at the right end"
     );
 
     press_with(&window, &[Key::Alt], Key::LeftArrow);
     settle(&window);
-    assert_eq!(top(&f), ids(&["time", "weekday", "zone_time"]));
-    assert_eq!(focused(&window), "chip top 2");
+    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert_eq!(focused(&window), "chip top 1");
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
-    assert!(
-        last.top.starts_with(|c: char| c.is_ascii_digit()),
-        "the bar follows: {}",
-        last.top
-    );
+    assert!(last.top.starts_with("Thu"), "the bar follows: {}", last.top);
 }
 
 #[test]
@@ -1263,11 +1318,11 @@ fn wr08_ac3_a_refresh_does_not_take_the_focus_from_a_chip() {
         settle(&window);
     }
     assert_eq!(focused(&window), "chip top 2");
-    press_with(&window, &[Key::Alt], Key::RightArrow);
+    press_with(&window, &[Key::Alt], Key::LeftArrow);
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["weekday", "zone_time", "time"]),
+        ids(&["bs_date", "weekday"]),
         "the key reached the chip"
     );
 
@@ -1276,11 +1331,11 @@ fn wr08_ac3_a_refresh_does_not_take_the_focus_from_a_chip() {
     elapse(2100);
     walk(&window);
     assert_eq!(window.get_save_status(), 0);
-    press_with(&window, &[Key::Alt], Key::LeftArrow);
+    press_with(&window, &[Key::Alt], Key::RightArrow);
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["weekday", "time", "zone_time"]),
+        ids(&["weekday", "bs_date"]),
         "and still does after the note"
     );
     press(&window, Key::Escape);
@@ -1293,45 +1348,39 @@ fn wr08_ac3_a_refresh_does_not_take_the_focus_from_a_chip() {
 #[test]
 fn wr08_ac3_alt_up_and_alt_down_move_a_chip_to_the_other_line() {
     let (f, window) = opened();
-    tab_to(&window, "chip top 3");
+    tab_to(&window, "chip top 2");
     press_with(&window, &[Key::Alt], Key::DownArrow);
     settle(&window);
-    assert_eq!(
-        chips(&f),
-        (
-            ids(&["weekday", "time"]),
-            ids(&["bs_date", "ad_short", "zone_time"])
-        )
-    );
+    assert_eq!(chips(&f), (ids(&["weekday"]), ids(&["ad_date", "bs_date"])));
     assert_eq!(
         focused(&window),
-        "chip bottom 3",
+        "chip bottom 2",
         "the focus follows the chip"
     );
 
     press_with(&window, &[Key::Alt], Key::DownArrow);
     settle(&window);
-    assert_eq!(bottom(&f).len(), 3, "nothing is below the bottom line");
+    assert_eq!(bottom(&f).len(), 2, "nothing is below the bottom line");
 
     press_with(&window, &[Key::Alt], Key::UpArrow);
     settle(&window);
-    assert_eq!(top(&f), ids(&["weekday", "time", "zone_time"]));
-    assert_eq!(focused(&window), "chip top 3");
+    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert_eq!(focused(&window), "chip top 2");
     press_with(&window, &[Key::Alt], Key::UpArrow);
     settle(&window);
-    assert_eq!(top(&f).len(), 3, "nothing is above the top line");
+    assert_eq!(top(&f).len(), 2, "nothing is above the top line");
 }
 
 #[test]
 fn wr08_ac3_a_line_can_be_left_empty_and_the_bar_shows_the_other_alone() {
     let (f, window) = opened();
-    for _ in 0..3 {
+    for _ in 0..2 {
         tab_to(&window, "chip top 1");
         press_with(&window, &[Key::Alt], Key::DownArrow);
         settle(&window);
     }
     assert_eq!(top(&f), Vec::<String>::new());
-    assert_eq!(bottom(&f).len(), 5);
+    assert_eq!(bottom(&f).len(), 3);
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
     assert!(
         last.top.is_empty(),
@@ -1350,7 +1399,7 @@ fn wr08_the_menu_bar_title_follows_the_top_line() {
     // Only a date on the top line, so the title doesn't depend on the minute.
     let (f, window) = opened();
     window.invoke_field_added(0, "bs_short".into());
-    for _ in 0..3 {
+    for _ in 0..2 {
         window.invoke_chip_removed(0, 0);
     }
     assert_eq!(top(&f), ids(&["bs_short"]));
@@ -1363,7 +1412,7 @@ fn wr08_the_menu_bar_title_follows_the_top_line() {
 #[test]
 fn wr08_ac3_reset_to_default_restores_the_two_lines() {
     let (f, window) = opened();
-    click(&window, "Remove Time");
+    click(&window, "Remove Weekday");
     window.invoke_field_added(0, "tithi".into());
     assert_ne!(top(&f), Settings::default().bar_top);
     scroll_to_end(&window);
@@ -1380,7 +1429,7 @@ fn wr08_ac3_every_line_edit_updates_the_bar_and_is_saved() {
     assert!(f.bar.lines.borrow().len() > before, "the bar was told");
     let_the_save_happen();
     let saved = f.store.saved.borrow().last().cloned().expect("a write");
-    assert_eq!(saved.bar_top, ids(&["time", "zone_time"]));
+    assert_eq!(saved.bar_top, ids(&["bs_date"]));
 }
 
 #[test]
@@ -1711,13 +1760,15 @@ fn full_order() -> Vec<&'static str> {
         "zone",
         "bar",
         "lock",
+        "bar top bold",
+        "bar bottom bold",
+        "bar fullscreen",
+        "bar zone long",
         "add top",
         "chip top 1",
         "chip top 2",
-        "chip top 3",
         "add bottom",
         "chip bottom 1",
-        "chip bottom 2",
         "reset lines",
         "reset position",
         "shortcut",
@@ -1775,13 +1826,19 @@ fn wr10_ac2_an_open_add_field_list_adds_its_items_to_the_order() {
         "Enter opens the list and keeps the focus"
     );
     press(&window, Key::Tab);
-    // The five unused fields come next, in the order of the requirement's table.
+    // The eleven unused fields come next, in the order of the requirement's table.
     for expected in [
         "add item 1",
         "add item 2",
         "add item 3",
         "add item 4",
         "add item 5",
+        "add item 6",
+        "add item 7",
+        "add item 8",
+        "add item 9",
+        "add item 10",
+        "add item 11",
     ] {
         assert_eq!(focused(&window), expected);
         press(&window, Key::Tab);
@@ -1815,6 +1872,22 @@ fn wr10_ac2_every_control_has_a_name_and_the_right_role() {
         ("theme", "Theme", AccessibleRole::TabList),
         ("theme", "English", AccessibleRole::Tab),
         ("launch", "Launch at login", AccessibleRole::Switch),
+        ("bar top bold", "Bold top line", AccessibleRole::Switch),
+        (
+            "bar bottom bold",
+            "Bold bottom line",
+            AccessibleRole::Switch,
+        ),
+        (
+            "bar fullscreen",
+            "Hide over full-screen apps",
+            AccessibleRole::Switch,
+        ),
+        (
+            "bar zone long",
+            "Long time zone name",
+            AccessibleRole::Switch,
+        ),
         ("zone", "Extra clock", AccessibleRole::TextInput),
         ("chip top 1", "Remove Weekday", AccessibleRole::Button),
         (

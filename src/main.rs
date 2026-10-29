@@ -805,6 +805,7 @@ fn main() -> anyhow::Result<()> {
     {
         let s = state.borrow();
         bar.set_locked(s.settings.bar_locked);
+        bar.set_hide_fullscreen(s.settings.bar_hide_fullscreen);
         bar.set_position(&s.settings.bar_position());
         bar.set_lines(&bar_lines(&jiff::Zoned::now(), &s.settings));
         bar.set_shown(s.settings.bar);
@@ -968,6 +969,12 @@ const TOOLTIP_SNAPSHOT_TICKS: u32 = 16;
 fn handle_tray_event(event: TrayEvent, state: &Rc<RefCell<AppState>>, slot: &PopupSlot) {
     match event {
         TrayEvent::Open => {
+            // Settings is modal for the bar: while it is open, a bar or tray click brings it
+            // forward instead of opening the popup behind it (WR-06 AC1).
+            if settings_window::is_open(state) {
+                settings_window::open(state, Request::default());
+                return;
+            }
             let just_hidden = state
                 .borrow()
                 .popup_hidden_at
@@ -997,6 +1004,10 @@ fn handle_tray_event(event: TrayEvent, state: &Rc<RefCell<AppState>>, slot: &Pop
 fn handle_bar_event(event: BarEvent, state: &Rc<RefCell<AppState>>, slot: &PopupSlot) {
     match event {
         BarEvent::Toggle(anchor) => {
+            if settings_window::is_open(state) {
+                settings_window::open(state, Request::default());
+                return;
+            }
             // The bar claims the foreground before this runs, which deactivates an open popup. If
             // that deactivation is handled first, the popup is already hidden here, and the click
             // meant "close": the same guard as the tray keeps it from reopening.
@@ -1010,7 +1021,13 @@ fn handle_bar_event(event: BarEvent, state: &Rc<RefCell<AppState>>, slot: &Popup
                 open_popup(slot, state, ui_bridge::PopupAnchor::Bar(anchor));
             }
         }
-        BarEvent::Open(anchor) => open_popup_if_hidden(slot, state, anchor),
+        BarEvent::Open(anchor) => {
+            if settings_window::is_open(state) {
+                settings_window::open(state, Request::default());
+            } else {
+                open_popup_if_hidden(slot, state, anchor);
+            }
+        }
         BarEvent::Moved(saved) => {
             state.borrow_mut().settings.set_bar_position(&saved);
             settings_window::save_later(state);
@@ -1495,8 +1512,14 @@ fn wire_converter(
             } else {
                 Direction::AdToBs
             };
-            let outcome = converter::convert(input.as_str(), direction, lang);
+            // Insert the date separators as the digits arrive (WR-07 AC1); pasted separators are
+            // already there and pass through.
+            let text = converter::with_separators(input.as_str(), direction);
+            let outcome = converter::convert(&text, direction, lang);
             if let Some(popup) = popup_weak.upgrade() {
+                if text != input.as_str() {
+                    popup.set_converter_input(text.as_str().into());
+                }
                 ui_bridge::set_converter(&popup, &outcome);
             }
         }

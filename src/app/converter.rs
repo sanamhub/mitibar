@@ -15,6 +15,35 @@ pub enum Direction {
     AdToBs,
 }
 
+/// Adds the date separators to a run of digits as it is typed (WR-07 AC1): `20810102` becomes
+/// `2081/01/02` for BS and `20261022` becomes `2026-10-22` for AD. Typed or pasted separators are
+/// left alone, and so is a run too short to place one or too long to be a date.
+#[must_use]
+pub fn with_separators(input: &str, dir: Direction) -> String {
+    if input
+        .chars()
+        .any(|c| !c.is_ascii_digit() && !('\u{0966}'..='\u{096F}').contains(&c))
+    {
+        return input.to_owned();
+    }
+    let digits: Vec<char> = input.chars().collect();
+    if digits.len() <= 4 || digits.len() > 8 {
+        return input.to_owned();
+    }
+    let separator = match dir {
+        Direction::BsToAd => '/',
+        Direction::AdToBs => '-',
+    };
+    let mut out = String::with_capacity(digits.len() + 2);
+    for (index, digit) in digits.iter().enumerate() {
+        if index == 4 || index == 6 {
+            out.push(separator);
+        }
+        out.push(*digit);
+    }
+    out
+}
+
 /// The converter result area (WR-07 AC1).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConvertOutcome {
@@ -419,5 +448,28 @@ mod tests {
             days_between("2081", "2081/01/01", Lang::En),
             ConvertOutcome::Empty
         );
+    }
+
+    #[test]
+    fn wr07_ac1_digits_get_their_separators_as_they_arrive() {
+        let cases = [
+            ("20810102", Direction::BsToAd, "2081/01/02"),
+            ("208101", Direction::BsToAd, "2081/01"),
+            ("2081", Direction::BsToAd, "2081"),
+            ("20261022", Direction::AdToBs, "2026-10-22"),
+            ("२०८१०१०२", Direction::BsToAd, "२०८१/०१/०२"),
+        ];
+        for (input, direction, expected) in cases {
+            assert_eq!(with_separators(input, direction), expected, "{input:?}");
+        }
+    }
+
+    #[test]
+    fn wr07_ac1_typed_or_pasted_separators_are_kept() {
+        for input in ["2081/01/02", "2081-01-02", "2081.01.02", "2081 01 02"] {
+            assert_eq!(with_separators(input, Direction::BsToAd), input);
+        }
+        // Too many digits for a date: leave the field alone and let the parser report it.
+        assert_eq!(with_separators("208101021", Direction::BsToAd), "208101021");
     }
 }

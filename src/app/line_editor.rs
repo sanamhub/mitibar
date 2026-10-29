@@ -150,12 +150,24 @@ mod tests {
     }
 
     #[test]
-    fn the_defaults_leave_five_fields_to_add() {
+    fn the_defaults_leave_eleven_fields_to_add() {
         let settings = Settings::default();
         let offered: Vec<&str> = unused(&settings).iter().map(|field| field.id()).collect();
         assert_eq!(
             offered,
-            ["weekday_long", "bs_short", "ad_date", "tithi", "holiday"]
+            [
+                "weekday_long",
+                "day",
+                "month",
+                "month_short",
+                "year",
+                "time",
+                "zone_time",
+                "bs_short",
+                "ad_short",
+                "tithi",
+                "holiday"
+            ]
         );
     }
 
@@ -166,7 +178,7 @@ mod tests {
             add(&mut settings, Line::Top, BarField::Tithi),
             Some(At {
                 line: Line::Top,
-                index: 3
+                index: 2
             })
         );
         assert_eq!(
@@ -176,8 +188,10 @@ mod tests {
         );
         assert_eq!(
             add(&mut settings, Line::Bottom, BarField::Time),
-            None,
-            "a field in use is not offered"
+            Some(At {
+                line: Line::Bottom,
+                index: 1
+            })
         );
         assert_eq!(
             add(&mut settings, Line::Bottom, BarField::Holiday),
@@ -189,8 +203,8 @@ mod tests {
         assert_eq!(
             lines(&settings),
             (
-                vec!["weekday", "time", "zone_time", "tithi"],
-                vec!["bs_date", "ad_short", "holiday"]
+                vec!["weekday", "bs_date", "tithi"],
+                vec!["ad_date", "time", "holiday"]
             )
         );
     }
@@ -202,19 +216,20 @@ mod tests {
             assert!(add(&mut settings, Line::Bottom, field).is_some());
         }
         assert!(unused(&settings).is_empty());
-        assert_eq!(settings.bar_bottom.len() + settings.bar_top.len(), 10);
+        assert_eq!(settings.bar_bottom.len() + settings.bar_top.len(), 14);
     }
 
     #[test]
     fn a_chip_is_removed_from_its_line() {
         let mut settings = Settings::default();
         assert!(remove(&mut settings, Line::Top, 1));
-        assert_eq!(
-            lines(&settings),
-            (vec!["weekday", "zone_time"], vec!["bs_date", "ad_short"])
-        );
+        assert_eq!(lines(&settings), (vec!["weekday"], vec!["ad_date"]));
         assert!(!remove(&mut settings, Line::Top, 5), "no such chip");
-        assert!(unused(&settings).iter().any(|field| field.id() == "time"));
+        assert!(
+            unused(&settings)
+                .iter()
+                .any(|field| field.id() == "bs_date")
+        );
     }
 
     #[test]
@@ -243,22 +258,22 @@ mod tests {
                 index: 1
             })
         );
-        assert_eq!(settings.bar_top, ["time", "weekday", "zone_time"]);
+        assert_eq!(settings.bar_top, ["bs_date", "weekday"]);
         assert_eq!(
-            move_within(&mut settings, Line::Top, 2, -1),
+            move_within(&mut settings, Line::Top, 1, -1),
             Some(At {
                 line: Line::Top,
-                index: 1
+                index: 0
             })
         );
-        assert_eq!(settings.bar_top, ["time", "zone_time", "weekday"]);
+        assert_eq!(settings.bar_top, ["weekday", "bs_date"]);
         assert_eq!(
             move_within(&mut settings, Line::Top, 0, -1),
             None,
             "left end"
         );
         assert_eq!(
-            move_within(&mut settings, Line::Top, 2, 1),
+            move_within(&mut settings, Line::Top, 1, 1),
             None,
             "right end"
         );
@@ -272,26 +287,23 @@ mod tests {
             None,
             "one place at a time"
         );
-        assert_eq!(settings.bar_top, ["time", "zone_time", "weekday"]);
+        assert_eq!(settings.bar_top, ["weekday", "bs_date"]);
     }
 
     #[test]
     fn a_chip_moves_to_the_other_line_at_the_same_place_or_the_end() {
         let mut settings = Settings::default();
-        // Alt+Down on the top line's last chip: the bottom line has two, so it goes to the end.
+        // Alt+Down on the top line's last chip: the bottom line has one, so it goes to the end.
         assert_eq!(
-            move_across(&mut settings, Line::Top, 2, false),
+            move_across(&mut settings, Line::Top, 1, false),
             Some(At {
                 line: Line::Bottom,
-                index: 2
+                index: 1
             })
         );
         assert_eq!(
             lines(&settings),
-            (
-                vec!["weekday", "time"],
-                vec!["bs_date", "ad_short", "zone_time"]
-            )
+            (vec!["weekday"], vec!["ad_date", "bs_date"])
         );
         // Alt+Up on the bottom line's first chip: it takes the same place above.
         assert_eq!(
@@ -303,10 +315,7 @@ mod tests {
         );
         assert_eq!(
             lines(&settings),
-            (
-                vec!["bs_date", "weekday", "time"],
-                vec!["ad_short", "zone_time"]
-            )
+            (vec!["ad_date", "weekday"], vec!["bs_date"])
         );
     }
 

@@ -17,7 +17,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicIsize, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, Ordering};
 
 use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows::Win32::Graphics::Gdi::{
@@ -36,11 +36,11 @@ use windows::Win32::UI::WindowsAndMessaging::{
     IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE, MF_CHECKED, MF_STRING, MF_UNCHECKED,
     PostMessageW, RegisterClassW, RegisterWindowMessageW, SM_CXDRAG, SM_CYDRAG, SW_HIDE,
     SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetForegroundWindow,
-    SetWindowLongPtrW, SetWindowPos, ShowWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON, TrackPopupMenuEx,
-    ULW_ALPHA, UpdateLayeredWindow, WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED, WM_DISPLAYCHANGE,
-    WM_DPICHANGED, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE,
-    WM_RBUTTONUP, WM_SETTINGCHANGE, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
-    WS_EX_TOPMOST, WS_POPUP,
+    SetWindowLongPtrW, SetWindowPos, ShowWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON, TPM_WORKAREA,
+    TrackPopupMenuEx, ULW_ALPHA, UpdateLayeredWindow, WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED,
+    WM_DISPLAYCHANGE, WM_DPICHANGED, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP,
+    WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_RBUTTONUP, WM_SETTINGCHANGE, WNDCLASSW, WS_EX_LAYERED,
+    WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::{PCWSTR, w};
 
@@ -78,6 +78,8 @@ const WM_MOUSELEAVE: u32 = 0x02A3;
 
 /// The `TaskbarCreated` registered message id, read by the window procedure without a borrow.
 static TASKBAR_CREATED: AtomicU32 = AtomicU32::new(0);
+/// A right-click menu is open; the bar must not re-assert topmost above it (WR-08 AC6).
+static MENU_OPEN: AtomicBool = AtomicBool::new(false);
 /// The controller window, which re-posted messages go to whichever window received them.
 static CONTROLLER: AtomicIsize = AtomicIsize::new(0);
 
@@ -165,6 +167,8 @@ struct Controller {
     hidden_reason: Option<Hidden>,
     /// A full-screen app is in front (ADR-0019 point 4).
     fullscreen: bool,
+    /// Whether a full-screen app hides the bar (`bar_hide_fullscreen`).
+    hide_fullscreen: bool,
     hooks: Option<Hooks>,
     /// `Option` so `deliver` can take the callback out, drop the borrow, call it, and put it back.
     on_event: Option<Box<dyn FnMut(BarEvent)>>,
@@ -191,6 +195,35 @@ impl WindowsBar {
         // Cannot re-enter: this runs before the event loop starts, so no window message and no
         // callback can fire yet.
         inner.borrow_mut().bind(cell);
+        // Log the layout inputs once, so a bar that lands in the wrong place can be diagnosed
+        // from the log without a debug build (WR-08 AC5, AC8).
+        let monitors = monitors::list();
+        if let Some(primary) = monitors.iter().find(|monitor| monitor.primary) {
+            let taskbar = bar_place::taskbar_of(primary).map_or_else(
+                || "none".to_owned(),
+                |(edge, rect)| {
+                    format!(
+                        "{edge:?} {}x{} at {},{}",
+                        rect.right - rect.left,
+                        rect.bottom - rect.top,
+                        rect.left,
+                        rect.top
+                    )
+                },
+            );
+            log::info!(
+                "bar: {} monitor(s); primary {} {}x{} at {},{} dpi {}; taskbar {taskbar}",
+                monitors.len(),
+                primary.name,
+                primary.bounds.right - primary.bounds.left,
+                primary.bounds.bottom - primary.bounds.top,
+                primary.bounds.left,
+                primary.bounds.top,
+                primary.dpi
+            );
+        } else {
+            log::warn!("bar: no monitor found at startup");
+        }
         Self { inner }
     }
 }
@@ -214,6 +247,11 @@ impl Bar for WindowsBar {
         let mut controller = self.inner.borrow_mut();
         controller.locked = locked;
         controller.pointer.set_locked(locked);
+    }
+
+    fn set_hide_fullscreen(&self, hide: bool) {
+        // Cannot re-enter, as `set_shown`.
+        self.inner.borrow_mut().set_hide_fullscreen(hide);
     }
 
     fn set_position(&self, saved: &Saved) {
@@ -271,6 +309,7 @@ impl Controller {
             visible: false,
             hidden_reason: None,
             fullscreen: false,
+            hide_fullscreen: true,
             hooks,
             on_event,
             on_scheme,
@@ -299,6 +338,17 @@ impl Controller {
             return;
         }
         self.enabled = on;
+        self.refresh();
+    }
+
+    fn set_hide_fullscreen(&mut self, hide: bool) {
+        if self.hide_fullscreen == hide {
+            return;
+        }
+        self.hide_fullscreen = hide;
+        if !hide {
+            self.fullscreen = false;
+        }
         self.refresh();
     }
 
@@ -432,7 +482,7 @@ impl Controller {
     /// Re-asserts `HWND_TOPMOST` without activating (ADR-0019 point 3). Called when the bar is
     /// shown and on foreground changes, never on a timer.
     fn raise(&self) {
-        if self.bar.0.is_null() {
+        if self.bar.0.is_null() || MENU_OPEN.load(Ordering::Relaxed) {
             return;
         }
         // SAFETY: SetWindowPos on our own window, which it neither moves nor resizes nor
@@ -499,7 +549,11 @@ impl Controller {
             // this flag.
             unsafe { MonitorFromWindow(self.bar, MONITOR_DEFAULTTONEAREST) }
         });
-        let front = foreground::fullscreen_window(bar_monitor);
+        let front = if self.hide_fullscreen {
+            foreground::fullscreen_window(bar_monitor)
+        } else {
+            None
+        };
         if let Some(hooks) = self.hooks.as_mut() {
             match front {
                 Some(window) => hooks.watch(window),
@@ -894,18 +948,21 @@ unsafe fn run_menu(labels: &MenuLabels, locked: bool, bar: HWND, point: POINT) -
     let previous = unsafe { GetForegroundWindow() };
     // SAFETY: SetForegroundWindow is safe on our window.
     let _ = unsafe { SetForegroundWindow(bar) };
+    // While the modal menu runs, a foreground event must not raise the topmost bar over it.
+    MENU_OPEN.store(true, Ordering::Relaxed);
     // SAFETY: TrackPopupMenuEx blocks and dispatches messages; nothing borrows the controller
     // here, so re-entrant messages (the timer, other windows) are handled normally.
     let command = unsafe {
         TrackPopupMenuEx(
             menu,
-            TPM_RETURNCMD.0 | TPM_RIGHTBUTTON.0,
+            TPM_RETURNCMD.0 | TPM_RIGHTBUTTON.0 | TPM_WORKAREA.0,
             point.x,
             point.y,
             bar,
             None,
         )
     };
+    MENU_OPEN.store(false, Ordering::Relaxed);
     // SAFETY: the menu is ours.
     let _ = unsafe { DestroyMenu(menu) };
     let chosen = usize::try_from(command.0)
