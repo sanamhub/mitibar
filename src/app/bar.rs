@@ -244,7 +244,7 @@ mod tests {
             (BarField::MonthShort, "Kar", "कार्तिक"),
             (BarField::Year, "2083", "२०८३"),
             (BarField::Time, "6:31 PM", "६:३१ PM"),
-            (BarField::ZoneTime, "+08 8:46 PM", "+08 ८:४६ PM"),
+            (BarField::ZoneTime, "SGT 8:46 PM", "SGT ८:४६ PM"),
             (BarField::BsDate, "Kartik 5, 2083", "कार्तिक ५, २०८३"),
             (BarField::BsShort, "Kartik 5", "कार्तिक ५"),
             (BarField::AdDate, "Oct 22, 2026", "Oct २२, २०२६"),
@@ -402,7 +402,7 @@ mod tests {
     #[test]
     fn wr08_ac2_the_zone_is_short_by_default_or_the_city_when_asked() {
         let short = settings("en", &[BarField::ZoneTime], &[]);
-        assert_eq!(bar_lines(&thursday(), &short).top, "+08 8:46 PM");
+        assert_eq!(bar_lines(&thursday(), &short).top, "SGT 8:46 PM");
 
         let mut long = short;
         long.bar_zone_long = true;
@@ -427,7 +427,7 @@ mod tests {
         let mut s = settings("en", &[BarField::Time, BarField::ZoneTime], &[]);
         s.clock_24h = true;
         s.show_seconds = true;
-        assert_eq!(bar_lines(&thursday(), &s).top, "18:31:00 · +08 20:46:00");
+        assert_eq!(bar_lines(&thursday(), &s).top, "18:31:00 · SGT 20:46:00");
     }
 
     #[test]

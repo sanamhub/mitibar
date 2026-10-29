@@ -75,14 +75,7 @@ pub fn zone_time(now: &jiff::Zoned, s: &Settings) -> String {
     let label = if s.bar_zone_long {
         city_of(&s.extra_time_zone)
     } else {
-        // The tz database's abbreviation, falling back to the UTC offset when it has none.
-        extra
-            .time_zone()
-            .preceding(extra.timestamp())
-            .next()
-            .map(|transition| transition.abbreviation().to_owned())
-            .filter(|abbreviation| !abbreviation.is_empty())
-            .unwrap_or_else(|| extra.offset().to_string())
+        short_zone_name(&extra)
     };
     format!(
         "{label} {}",
@@ -132,6 +125,43 @@ pub fn header(now: &jiff::Zoned, lang: Lang) -> Header {
 }
 
 /// The city part of an IANA id (`America/Argentina/Buenos_Aires` -> `Buenos Aires`), WR-05 AC3.
+/// Common names for zones the tz database labels only with an offset such as `+08`. These are
+/// the zones a user in Nepal most often adds; any other zone keeps its database abbreviation.
+const COMMON_ZONE_NAMES: &[(&str, &str)] = &[
+    ("Asia/Kathmandu", "NPT"),
+    ("Asia/Singapore", "SGT"),
+    ("Asia/Kuala_Lumpur", "MYT"),
+    ("Asia/Dubai", "GST"),
+    ("Asia/Muscat", "GST"),
+    ("Asia/Qatar", "AST"),
+    ("Asia/Riyadh", "AST"),
+    ("Asia/Kuwait", "AST"),
+    ("Asia/Bahrain", "AST"),
+    ("Asia/Bangkok", "ICT"),
+    ("Asia/Ho_Chi_Minh", "ICT"),
+    ("Asia/Thimphu", "BTT"),
+    ("Asia/Yangon", "MMT"),
+];
+
+/// The zone's short name: a common name for the zones above, else the tz database's abbreviation,
+/// else the UTC offset.
+fn short_zone_name(zoned: &jiff::Zoned) -> String {
+    let zone = zoned.time_zone();
+    if let Some((_, name)) = zone
+        .iana_name()
+        .and_then(|id| COMMON_ZONE_NAMES.iter().find(|(known, _)| *known == id))
+    {
+        return (*name).to_owned();
+    }
+    let info = zone.to_offset_info(zoned.timestamp());
+    let abbreviation = info.abbreviation();
+    if abbreviation.is_empty() || abbreviation.starts_with(['+', '-']) {
+        zoned.offset().to_string()
+    } else {
+        abbreviation.to_owned()
+    }
+}
+
 fn city_of(zone_id: &str) -> String {
     zone_id
         .rsplit('/')
@@ -187,6 +217,23 @@ fn push_digits(out: &mut String, n: i8, width: u8, lang: Lang) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_zone_gets_a_common_name_its_database_abbreviation_or_its_offset() {
+        let at = |zone: &str| -> String {
+            "2026-01-15T12:00:00Z"
+                .parse::<jiff::Timestamp>()
+                .expect("timestamp")
+                .in_tz(zone)
+                .map(|zoned| short_zone_name(&zoned))
+                .expect("zone")
+        };
+        assert_eq!(at("Asia/Singapore"), "SGT");
+        assert_eq!(at("Asia/Qatar"), "AST");
+        assert_eq!(at("Asia/Tokyo"), "JST");
+        assert_eq!(at("America/New_York"), "EST");
+        assert_eq!(at("Asia/Tashkent"), "+05");
+    }
 
     fn kathmandu(ts: &str) -> jiff::Zoned {
         ts.parse().expect("valid fixed Zoned")

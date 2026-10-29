@@ -563,7 +563,10 @@ fn wire_bar(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
         let state = state.clone();
         move |value| {
             state.borrow_mut().settings.bar_hide_fullscreen = value;
-            if let Some(bar) = state.borrow().bar.clone() {
+            // Bind first: the borrow must end before the bar runs, as in `set_bar_locked`, since
+            // showing or hiding the bar can deliver window messages that borrow the state.
+            let bar = state.borrow().bar.clone();
+            if let Some(bar) = bar {
                 bar.set_hide_fullscreen(value);
             }
             applied(&state);

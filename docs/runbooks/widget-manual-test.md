@@ -91,8 +91,8 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] A fresh profile shows the weekday and BS date on the top line and the AD date on the bottom
       line, with no time and no time zone. The bottom line is bold and the top line is regular.
 - [ ] Switch bold on the top line and off the bottom line: each line follows.
-- [ ] Add the extra clock: it shows a short zone (`SGT`, or `+08` when the database has no
-      abbreviation); "Long time zone name" switches it to the city name.
+- [ ] Set the extra clock to Asia/Singapore: it shows `SGT` and the time; "Long time zone name"
+      switches it to `Singapore`. A zone with no common name, such as Asia/Tashkent, shows `+05`.
 - [ ] Remove a field: the bar shrinks to the new text and does not keep a wider empty pill.
 - [ ] Hide over full-screen apps off: the bar stays over a full-screen video; on: it disappears
       and returns when the video ends.
