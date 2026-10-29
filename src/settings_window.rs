@@ -364,7 +364,8 @@ pub(crate) fn apply_shortcut(state: &Rc<RefCell<AppState>>) {
         Some(hotkeys) => match hotkeys.set(combo) {
             Ok(()) => ShortcutNote::Nothing,
             Err(refused) => {
-                log::warn!("global shortcut: {}", refused.0);
+                let named = combo.map_or_else(|| "the shortcut".to_owned(), |c| c.to_string());
+                log::warn!("global shortcut: the OS refused {named}: {}", refused.0);
                 ShortcutNote::InUse
             }
         },

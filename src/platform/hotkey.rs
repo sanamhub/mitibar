@@ -138,7 +138,8 @@ impl Hotkeys for SystemHotkeys {
                 Ok(())
             }
             Err(err) => {
-                log::warn!("global shortcut: the OS refused {combo}: {err}");
+                // The caller logs the refusal with the combination and the note; logging here too
+                // printed the same failure twice at startup.
                 Err(Refused(err.to_string()))
             }
         }
