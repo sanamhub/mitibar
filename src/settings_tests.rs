@@ -1303,7 +1303,13 @@ fn wr08_ac3_a_focused_chip_moves_left_and_right_with_its_buttons_and_with_alt_ar
     assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
     assert_eq!(focused(&window), "chip top 1");
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
-    assert!(last.top.starts_with("Thu"), "the bar follows: {}", last.top);
+    // The bar reads the real clock, so the expected weekday is today's.
+    let today = jiff::Zoned::now().strftime("%a").to_string();
+    assert!(
+        last.top.starts_with(&today),
+        "the bar follows: {}",
+        last.top
+    );
 }
 
 #[test]
@@ -1432,7 +1438,8 @@ fn wr08_ac3_a_preset_replaces_the_lines() {
     assert_eq!(top(&f), ids(&["weekday_long", "bs_date"]));
     assert_eq!(bottom(&f), ids(&["ad_date"]));
     let lines = f.bar.lines.borrow().last().cloned().expect("lines");
-    assert!(lines.top.starts_with("Thursday"));
+    let today = jiff::Zoned::now().strftime("%A").to_string();
+    assert!(lines.top.starts_with(&today), "{}", lines.top);
 }
 
 #[test]

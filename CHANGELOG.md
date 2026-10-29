@@ -4,7 +4,13 @@ All notable changes to MitiBar are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and MitiBar follows
 [Semantic Versioning](https://semver.org/).
 
-## [0.2.0] - Unreleased
+## [Unreleased]
+
+## [0.2.0-beta.1] - 2026-10-29
+
+The first release from this repository, unsigned on Windows and macOS. Settings and behaviour may
+still change before 0.2.0. The idle memory, CPU and cold-start targets are not confirmed on a quiet
+machine yet.
 
 ### Added
 
@@ -12,7 +18,9 @@ All notable changes to MitiBar are recorded here. The format follows
   month and year, the BS and AD dates, tithi, the time and its zone. Settings shows a live
   preview.
 - Each bar line has its own bold switch.
-- The time zone is shown in short form by default, with a long-form option.
+- The time zone is shown in short form by default, such as `SGT 10:11 AM`, with a long-form
+  option. Zones the time zone database names only by offset get their common name when there is
+  one, such as SGT, NPT, MYT, GST and AST.
 - The bar hides while a full-screen app is in front, and returns when it ends. A switch in
   Settings turns that off.
 
@@ -36,6 +44,8 @@ All notable changes to MitiBar are recorded here. The format follows
 - The bar's right-click menu opens above the bar and flips inside the work area.
 - The bar width follows its content when a token is removed.
 - Switching the theme with the popup open repaints the whole window.
+- The bar no longer raises itself over its own right-click menu.
+- A global shortcut the system refuses is logged once, with the key combination.
 
 ## [0.1.0-beta.1] - 2026-10-23
 
