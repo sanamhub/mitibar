@@ -26,7 +26,7 @@ mod tests {
     /// every table row is in the markup, so the two can't drift apart.
     #[test]
     fn tokens_match_design_table() {
-        let design = include_str!("../../../docs/design/widget-design.md");
+        let design = include_str!("../docs/design/widget-design.md");
         let markup = include_str!("../ui/theme.slint");
 
         let unquote = |s: &str| {
@@ -69,7 +69,7 @@ mod tests {
     /// light, white at 6 % in dark, both over the surface).
     #[test]
     fn focus_ring_ink_has_at_least_3_to_1_contrast() {
-        let design = include_str!("../../../docs/design/widget-design.md");
+        let design = include_str!("../docs/design/widget-design.md");
         let mut values = std::collections::HashMap::new();
         for line in design.lines() {
             let cells: Vec<&str> = line.split('|').map(str::trim).collect();
@@ -140,7 +140,7 @@ mod tests {
     /// §7). WCAG 2.1 wants 4.5:1 for text this size, in both themes.
     #[test]
     fn wr03_ac3_todays_numeral_on_the_sindoor_disc_has_at_least_4_5_to_1_contrast() {
-        let design = include_str!("../../../docs/design/widget-design.md");
+        let design = include_str!("../docs/design/widget-design.md");
         let mut values = std::collections::HashMap::new();
         for line in design.lines() {
             let cells: Vec<&str> = line.split('|').map(str::trim).collect();

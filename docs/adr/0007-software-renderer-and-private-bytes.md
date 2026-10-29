@@ -1,4 +1,6 @@
-# ADR-0018: Software renderer by default, idle memory judged on private bytes
+> Moved from nepdate-rust ADR-0018. The decision and its text are unchanged.
+
+# ADR-0007: Software renderer by default, idle memory judged on private bytes
 
 - **Status:** accepted, conditional on the Devanagari check in Decision 1
 - **Date:** 2026-10-18

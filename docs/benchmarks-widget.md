@@ -1,7 +1,7 @@
 # MitiBar performance
 
 Measured on one Windows x64 machine on 2026-10-19: Acer Nitro AN515-58, Intel Core i5-12500H,
-32 GB RAM, Windows 11 Home 10.0.26300. Build: `cargo build -p mitibar --profile release-widget`
+32 GB RAM, Windows 11 Home 10.0.26300. Build: `cargo build --profile release-widget`
 (`opt-level = "s"`, fat LTO, `panic = "abort"`, stripped). The app used Slint's software
 renderer, with the popup closed, the Windows 11 taskbar text on, English, a 12-hour clock and
 seconds hidden. Settings came from a temporary file with `launch_at_login = false`. The idle and
@@ -23,9 +23,9 @@ Cold start is the `tray ready in ...` line, from the start of `main` to the firs
 Each run is a fresh process with the same settings. The load is sampled before the run, during the
 startup interval and after it. A run is LOADED when any of those samples is 15 % or more.
 
-ADR-0018 judges idle memory on private bytes and records the working set without a verdict. The
+ADR-0007 judges idle memory on private bytes and records the working set without a verdict. The
 CPU edge is 0.5 % of one core. Binary size is load-independent. Memory is in MiB, written MB as
-in ADR-0018; the exact byte counts are in brackets.
+in ADR-0007; the exact byte counts are in brackets.
 
 ## Results
 
@@ -63,3 +63,5 @@ number to count. Cold start is below 500 ms on every run, also on a busy machine
 0.1.0 is not releasable until a quiet 5-minute row passes private bytes and CPU, and the cold
 starts have quiet samples. The macOS and Linux binaries are built in the release workflow and are
 not measured here.
+
+

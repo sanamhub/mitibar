@@ -1,38 +1,47 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sanamhub/nepdate-rust/main/apps/mitibar/icons/128x128.png" width="96" alt="MitiBar icon">
-</p>
+# MitiBar
 
-<h1 align="center">MitiBar</h1>
+MitiBar keeps today's Bikram Sambat date in a floating bar and the system tray. It opens a
+month grid, day detail, a BS/AD converter and settings. It makes no network requests.
 
-<p align="center">
-  <a href="https://github.com/sanamhub/nepdate-rust/releases"><img src="https://img.shields.io/github/v/release/sanamhub/nepdate-rust?include_prereleases&filter=mitibar-v*&label=MitiBar" alt="MitiBar release"></a>
-  <a href="https://github.com/sanamhub/nepdate-rust/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
-</p>
+It is for people who read the Nepali date every day and do not want to open a calendar app for it.
 
-MitiBar keeps today's Bikram Sambat date in the tray. It opens a month grid, day detail, a BS/AD
-converter and settings, and on Windows 11 it can draw the date and time inside the taskbar. It
-makes no network requests.
+![MitiBar bar in the light theme](docs/screenshots/bar-light.png)
 
-<a href="https://slint.dev"><img src="https://raw.githubusercontent.com/slint-ui/slint/v1.18.1/logo/MadeWithSlint-logo-whitebg.png" alt="Made with Slint" width="160"></a>
+![MitiBar bar in the dark theme](docs/screenshots/bar-dark.png)
 
-## Download
+## Install
 
-Get it from the [releases](https://github.com/sanamhub/nepdate-rust/releases): an NSIS installer
-or portable zip for Windows (x64 and ARM64), a universal `.dmg` for macOS, and an `.AppImage` or
-`.deb` for Linux. The beta is not code-signed, so Windows SmartScreen and macOS Gatekeeper warn on
-the first start; the release notes say how to open it and how to check a download against
-`SHA256SUMS` and its build attestation.
+Download the latest release from
+[GitHub Releases](https://github.com/sanamhub/mitibar/releases).
+
+| System | Package |
+|---|---|
+| Windows 10 and 11 | `MitiBar-<version>-windows-x64-setup.exe` (per-user, no admin) or the portable `.zip` |
+| macOS 11 or later | `.dmg` with a universal `MitiBar.app` |
+| Linux x86_64 | `.AppImage` or `.deb` |
+
+On Linux, MitiBar needs a tray (StatusNotifier/AppIndicator), fontconfig, xkbcommon and D-Bus. It
+uses a software renderer, so no OpenGL driver is needed.
 
 ## Build
 
-From the repository root:
+Rust 1.98 is pinned in `rust-toolchain.toml`.
 
 ```bash
-cargo run -p mitibar --release
+cargo run --release
 ```
 
-On Linux, install `libxkbcommon-dev`, `libwayland-dev`, `libfontconfig1-dev` and `libdbus-1-dev`
-first. The renderer is software only, so no OpenGL or GPU driver is needed.
+On Linux, install the build dependencies first:
+
+```bash
+sudo apt install libxkbcommon-dev libwayland-dev libfontconfig1-dev libdbus-1-dev
+```
+
+Run the checks with:
+
+```bash
+cargo xtask ci
+```
 
 Settings live in `%APPDATA%\mitibar\settings.toml` on Windows,
 `~/Library/Application Support/mitibar/settings.toml` on macOS and
@@ -40,11 +49,19 @@ Settings live in `%APPDATA%\mitibar\settings.toml` on Windows,
 
 ## Status
 
-0.1.0-beta.1 is the first public pre-release, unsigned. 0.1.0 waits for a quiet idle and
-cold-start measurement and a manual pass on macOS and Linux. Release instructions are in
-[`docs/runbooks/release-mitibar.md`](https://github.com/sanamhub/nepdate-rust/blob/main/docs/runbooks/release-mitibar.md).
+0.2.0 is in development. Windows is the primary target. macOS and Linux packages are built by the
+release workflow; the manual test runbook is in
+[`docs/runbooks/widget-manual-test.md`](docs/runbooks/widget-manual-test.md).
+
+## Data
+
+MitiBar is built on the [`nepdate`](https://crates.io/crates/nepdate) and
+[`nepdate-patro`](https://crates.io/crates/nepdate-patro) crates. The calendar data and the
+conversion rules come from [NepDate](https://nepdate.com), maintained by Raju Prasai and Sanam
+Pakuwal. The MIT licence and the data notice apply.
 
 ## License
 
-MIT, see the repository [`LICENSE`](https://github.com/sanamhub/nepdate-rust/blob/main/LICENSE). The bundled Noto fonts are under the SIL Open
-Font License. Slint is used under its royalty-free licence.
+MIT. The bundled Noto Sans and Noto Sans Devanagari fonts are under the SIL Open Font License.
+Slint is used under its royalty-free licence. See [LICENSE](LICENSE).
+

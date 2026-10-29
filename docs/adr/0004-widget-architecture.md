@@ -1,4 +1,6 @@
-# ADR-0015: Widget internal architecture
+> Moved from nepdate-rust ADR-0015. The decision and its text are unchanged.
+
+# ADR-0004: Widget internal architecture
 
 - **Status:** accepted
 - **Date:** 2026-09-24

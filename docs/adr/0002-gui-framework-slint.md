@@ -1,4 +1,6 @@
-# ADR-0010: GUI framework for the widget: Slint
+> Moved from nepdate-rust ADR-0010. The decision and its text are unchanged.
+
+# ADR-0002: GUI framework for the widget: Slint
 
 - **Status:** accepted (license option: see ADR-0013)
 - **Date:** 2026-09-24

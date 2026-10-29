@@ -1,11 +1,7 @@
-# cargo-deny configuration. The widget's Slint license exception follows ADR-0013.
+# cargo-deny configuration. The Slint licence exception follows the repository LICENSE.
 
 [graph]
 all-features = true
-# Exclude the benchmark crate and, with it, its GPL competitor dependencies (dev-only, never
-# distributed). The widget stays in the graph, so the Slint license exceptions below
-# actually apply.
-exclude = ["nepdate-bench"]
 
 [advisories]
 version = 2
@@ -44,7 +40,7 @@ confidence-threshold = 0.9
 unused-allowed-license = "allow" # the list covers optional dependencies
 
 # Slint is triple-licensed; the widget uses the Royalty-free 2.0 option (ADR-0013), which needs
-# the "Made with Slint" badge on the download pages (ADR-0020). Allow it for Slint crates only.
+# visible attribution (AboutSlint). Allow it for Slint crates only.
 [[licenses.exceptions]]
 name = "slint"
 allow = ["LicenseRef-Slint-Royalty-free-2.0"]

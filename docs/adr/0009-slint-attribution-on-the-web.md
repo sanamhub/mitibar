@@ -1,4 +1,6 @@
-# ADR-0020: Slint attribution on the download pages, not inside the app
+> Moved from nepdate-rust ADR-0020. The decision and its text are unchanged.
+
+# ADR-0009: Slint attribution on the download pages, not inside the app
 
 - **Status:** accepted
 - **Date:** 2026-10-22

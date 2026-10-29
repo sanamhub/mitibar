@@ -15,3 +15,5 @@ Each line exercises a shaping feature. All must render correctly at 14 px and 24
 | 9 | नयाँ वर्ष · गणतन्त्र दिवस · बिस्का जात्रा | chandrabindu ँ, conjuncts in events |
 | 10 | २०८३ असोज ८ गते, बिहिवार | a full widget header line |
 | 11 | Ashoj 8, 2083 · 2026-09-24 · 2:05 PM | Latin fallback in the same line |
+
+

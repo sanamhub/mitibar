@@ -60,6 +60,10 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] A corrupt settings file starts with defaults and leaves a `.broken-*` file.
 - [ ] The zone filter narrows the list as text is typed.
 - [ ] BS to AD and AD to BS, including Devanagari digits.
+- [ ] Type `20810102` in the BS field: the separators appear as `2081/01/02`; type `20261022`
+      in the AD field: it becomes `2026-10-22`. A pasted date with separators is kept.
+- [ ] Settings is modal: with it open, a bar click and a tray click bring Settings forward and
+      do not toggle the popup behind it.
 - [ ] Invalid and out-of-range input shows the range message.
 - [ ] Days-between on the Days tab.
 - [ ] Type in the converter with an IME active.
@@ -84,12 +88,24 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 ## Floating bar (WR-08, Windows)
 
 - [ ] First run: the bar sits at its default position on the primary monitor, fully on-screen.
+- [ ] A fresh profile shows the weekday and BS date on the top line and the AD date on the bottom
+      line, with no time and no time zone. The bottom line is bold and the top line is regular.
+- [ ] Switch bold on the top line and off the bottom line: each line follows.
+- [ ] Add the extra clock: it shows a short zone (`SGT`, or `+08` when the database has no
+      abbreviation); "Long time zone name" switches it to the city name.
+- [ ] Remove a field: the bar shrinks to the new text and does not keep a wider empty pill.
+- [ ] Hide over full-screen apps off: the bar stays over a full-screen video; on: it disappears
+      and returns when the video ends.
 - [ ] Light and dark theme, including a live switch.
 - [ ] Drag it: it follows the pointer, stays on one monitor and snaps to the taskbar's centre
       line within 8 px. Quit and start again: it is where it was left.
 - [ ] Lock position: a drag does nothing and a click still toggles the popup.
 - [ ] Click toggles the popup beside the bar; double-click leaves it open; right-click menu items
       all work in English and Nepali; Hide bar and the tray's Show bar agree.
+- [ ] The menu opens above the bar, not behind it, and near the bottom or right work-area edge its
+      last items are still on screen at 100 %, 150 % and 200 %.
+- [ ] The log has one startup line with the monitor count, primary size, DPI and taskbar edge; a
+      bar in the wrong place can be explained from that line.
 - [ ] Settings line editor: add, remove, move and move across lines; the bar updates each time.
 - [ ] Restart Explorer: the bar stays or returns. Scale 100 %, 150 % and 200 %.
 
@@ -113,4 +129,6 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - IME typing in the converter is untested.
 - Text quality with the software renderer is verified on Windows x64 only; macOS and Linux have
   not been run.
-- The 3-OS checklist has not been completed for 0.1.0.
+- The 3-OS checklist has not been completed for 0.2.0.
+
+

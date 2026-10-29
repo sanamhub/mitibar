@@ -1,4 +1,6 @@
-# ADR-0016: Windows taskbar text
+> Moved from nepdate-rust ADR-0016. The decision and its text are unchanged.
+
+# ADR-0005: Windows taskbar text
 
 - **Status:** accepted
 - **Date:** 2026-10-15

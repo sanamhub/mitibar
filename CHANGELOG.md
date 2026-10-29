@@ -4,13 +4,38 @@ All notable changes to MitiBar are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and MitiBar follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - Unreleased
+
+### Added
+
+- Bar lines are built from a chosen set of tokens: weekday in long or short form, BS day,
+  month and year, the BS and AD dates, tithi, the time and its zone. Settings shows a live
+  preview.
+- Each bar line has its own bold switch.
+- The time zone is shown in short form by default, with a long-form option.
+- The bar hides while a full-screen app is in front, and returns when it ends. A switch in
+  Settings turns that off.
 
 ### Changed
 
-- macOS: the menu-bar title is the bar's top line from Settings (the bottom line when the top is
-  empty), not the fixed day and month. The day and month stay as the fallback when both lines are
-  empty.
+- MitiBar has its own repository and version line. It depends on the published `nepdate` and
+  `nepdate-patro` crates.
+- A new install shows the weekday and BS date on the top line, the AD date on the bottom line,
+  and no time. An existing settings file keeps its choices.
+- macOS shows the bar's top line as the menu-bar title.
+- The converter inserts the date separators as digits are typed, and accepts typed or pasted
+  separators.
+
+### Fixed
+
+- The bar no longer stops responding after the settings window has been open while other apps
+  were used. A state borrow was held while the popup hid, so the next borrow panicked.
+- Settings is modal for the bar: a click on the bar or the tray brings the settings window
+  forward instead of acting behind it.
+- The popup opens on the monitor with the bar, not always on the primary monitor.
+- The bar's right-click menu opens above the bar and flips inside the work area.
+- The bar width follows its content when a token is removed.
+- Switching the theme with the popup open repaints the whole window.
 
 ## [0.1.0-beta.1] - 2026-10-23
 
@@ -44,3 +69,4 @@ measurements ran on a loaded machine ([benchmarks](https://github.com/sanamhub/n
 - Single instance: a second launch opens the running instance's popup and exits.
 - Software rendering only, so no OpenGL or GPU driver is loaded.
 - App icon: a calendar page with "सं".
+

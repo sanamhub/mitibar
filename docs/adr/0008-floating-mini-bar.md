@@ -1,4 +1,6 @@
-# ADR-0019: A floating mini bar replaces the taskbar text, plus one global shortcut
+> Moved from nepdate-rust ADR-0019. The decision and its text are unchanged.
+
+# ADR-0008: A floating mini bar replaces the taskbar text, plus one global shortcut
 
 - **Status:** accepted
 - **Date:** 2026-10-22

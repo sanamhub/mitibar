@@ -1,9 +1,9 @@
 # Widget design tokens
 
-Design decisions for `apps/mitibar`, fixed before the first `.slint` file. Requirements:
-ADR-0008 and [`widget-requirements.md`](widget-requirements.md). Fonts: ADR-0010. License:
-ADR-0013. Sections 5 to 9 were revised on 2026-10-22 after the beta test (ADR-0019,
-ADR-0020).
+Design decisions for `the repository root`, fixed before the first `.slint` file. Requirements:
+ADR-0001 and [`widget-requirements.md`](widget-requirements.md). Fonts: ADR-0002. License:
+ADR-0013. Sections 5 to 9 were revised on 2026-10-22 after the beta test (ADR-0008,
+ADR-0009).
 
 ## 1. Subject
 
@@ -33,7 +33,7 @@ surface. The other accents stay the same in both modes.
 ## 3. Type scale and spacing
 
 Two bundled families, one role each: Noto Sans for Latin (AD dates, clock, chrome), Noto Sans
-Devanagari for Nepali. Both OFL-1.1 (ADR-0010).
+Devanagari for Nepali. Both OFL-1.1 (ADR-0002).
 
 | Step | Size | Use |
 |---|---|---|
@@ -59,7 +59,7 @@ sections 16.
 - Digits follow the language: Devanagari for `ne`, ASCII for `en`. `nepdate` provides both via
   `Lang::digits`.
 
-## 5. Mini bar (WR-08, ADR-0019)
+## 5. Mini bar (WR-08, ADR-0008)
 
 A pill that reads like the system clock, not like a badge. It floats over the taskbar or the
 desktop, so it carries its own quiet surface instead of relying on the taskbar's material.
@@ -233,3 +233,5 @@ About
 - One memorable element: the month grid. Keep the header, the bar and Settings quiet.
 - Controls are monochrome (`ink` on `surface`), so colour in the window always means calendar
   data.
+
+

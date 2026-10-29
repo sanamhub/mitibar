@@ -1,4 +1,4 @@
-# cargo-packager configuration for MitiBar (ADR-0012). `cargo xtask package` runs this
+# cargo-packager configuration for MitiBar (ADR-0003). `cargo xtask package` runs this
 # file with the release-widget binary (built by the xtask, or joined with lipo by the macOS job)
 # and the formats for the current OS: NSIS on Windows, .app + .dmg on macOS, .AppImage + .deb on
 # Linux.
@@ -6,14 +6,14 @@
 # Paths are relative to this file because cargo-packager changes into the config directory.
 name = "mitibar"
 productName = "MitiBar"
-version = "0.1.0-beta.1"
+version = "0.2.0"
 identifier = "sanamhub.MitiBar"
 description = "A tray calendar for Nepal, showing today's Bikram Sambat date."
 longDescription = "MitiBar keeps today's Bikram Sambat date in the tray, with a month grid, tithi, public holidays, a converter and settings. It makes no network requests."
-homepage = "https://github.com/sanamhub/nepdate-rust"
+homepage = "https://github.com/sanamhub/mitibar"
 authors = ["Sanam Pakuwal"]
 publisher = "Sanam Pakuwal"
-licenseFile = "../../LICENSE"
+licenseFile = "LICENSE"
 category = "Utility"
 
 binaries = [
@@ -34,7 +34,7 @@ icons = [
     "icons/icon.icns",
 ]
 
-# The per-user install needs no administrator rights (ADR-0012). cargo-packager's NSIS default
+# The per-user install needs no administrator rights (ADR-0003). cargo-packager's NSIS default
 # is `%LOCALAPPDATA%\MitiBar`, which is the same directory as the log folder
 # `%LOCALAPPDATA%\mitibar` on case-insensitive Windows. The template is cargo-packager's own with
 # one change: `.onInit` defaults to `%LOCALAPPDATA%\Programs\MitiBar`, so the directory page
@@ -43,6 +43,7 @@ icons = [
 installMode = "currentUser"
 template = "packaging/installer.nsi"
 
-# A menu-bar app: no Dock icon (ADR-0012).
+# A menu-bar app: no Dock icon (ADR-0003).
 [macos]
 backgroundApp = true
+

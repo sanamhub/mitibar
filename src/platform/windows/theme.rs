@@ -44,7 +44,7 @@ mod tests {
     /// the theme drift test. Changing one constant makes it fail.
     #[test]
     fn wr08_ac7_palette_matches_design() {
-        let design = include_str!("../../../../../docs/design/widget-design.md");
+        let design = include_str!("../../../docs/design/widget-design.md");
         let unquote = |s: &str| {
             s.strip_prefix('`')
                 .and_then(|s| s.strip_suffix('`'))

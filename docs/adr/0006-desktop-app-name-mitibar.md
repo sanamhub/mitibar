@@ -1,4 +1,6 @@
-# ADR-0017: The desktop app is called MitiBar
+> Moved from nepdate-rust ADR-0017. The decision and its text are unchanged.
+
+# ADR-0006: The desktop app is called MitiBar
 
 - **Status:** accepted
 - **Date:** 2026-10-17

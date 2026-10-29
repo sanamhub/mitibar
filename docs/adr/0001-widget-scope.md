@@ -1,4 +1,6 @@
-# ADR-0008: Widget scope (minimal) and use of NepDateWidget
+> Moved from nepdate-rust ADR-0008. The decision and its text are unchanged.
+
+# ADR-0001: Widget scope (minimal) and use of NepDateWidget
 
 - **Status:** accepted
 - **Date:** 2026-09-24 (revised 2026-09-25: permission from the NepDateWidget author, see A)

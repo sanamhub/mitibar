@@ -1,6 +1,6 @@
 # MitiBar: Functional requirements (v0.1)
 
-Source of truth for the widget (ADR-0008). NepDateWidget may be read for reference, but
+Source of truth for the widget (ADR-0001). NepDateWidget may be read for reference, but
 only what is listed here gets built. Every requirement has an ID
 (`WR-xx`) and testable acceptance criteria (`AC`). Commits and PRs reference these IDs.
 Anything not listed here is out of scope.
@@ -10,8 +10,8 @@ Glossary: **BS** = Bikram Sambat (Nepali) date. **AD** = Gregorian date.
 mini bar on Windows (WR-08).
 
 Revised on 2026-10-22 after the owner tested the first beta build: WR-01 AC5, WR-02, WR-03 AC6,
-WR-06, WR-08, WR-09 AC2, WR-10 AC2 and WR-12 changed, and WR-13 to WR-15 are new (ADR-0019,
-ADR-0020).
+WR-06, WR-08, WR-09 AC2, WR-10 AC2 and WR-12 changed, and WR-13 to WR-15 are new (ADR-0008,
+ADR-0009).
 
 ---
 
@@ -56,7 +56,7 @@ ADR-0020).
   Windows 10 can't round a window's corners, so there the popup keeps square corners with a
   1 px `hairline` border. On macOS and Linux the corners are rounded with a 10 px radius when
   the window can be transparent, and square with the hairline border when it can't.
-- AC6: No third-party branding anywhere in the app (ADR-0020).
+- AC6: No third-party branding anywhere in the app (ADR-0009).
 
 ## WR-03 Month grid
 
@@ -179,13 +179,13 @@ and the other new keys take their defaults.
 
 ## WR-08 Mini bar (Windows)
 
-A floating, draggable pill with one or two lines of date and time (ADR-0019). Windows 10
+A floating, draggable pill with one or two lines of date and time (ADR-0008). Windows 10
 (1809+) and 11. macOS shows the bar's top line as the menu-bar title instead (WR-01 AC2);
 Linux has the tray icon only.
 
 - AC1: With `bar = true` the bar is shown at start. It never takes focus, has no taskbar button
   and no Alt+Tab entry, stays above the taskbar and other windows, and stays visible through
-  Win+D. It hides while a full-screen app is in front (ADR-0019 §4) and shows again within
+  Win+D. It hides while a full-screen app is in front (ADR-0008 §4) and shows again within
   1 s after. After Explorer restarts it's back within 5 s.
 - AC2: Each line is a list of fields, shown in order with ` · ` between them (the dot in
   `ink-muted`). A field with nothing to show is left out together with its separator. If the
@@ -214,12 +214,12 @@ Linux has the tray icon only.
   or Alt+Left and Alt+Right, and to the other line with Alt+Up and Alt+Down. At least one field
   stays: the last chip's remove button is disabled. "Reset to default" restores the AC2
   defaults. The bar updates on every change.
-- AC4: Dragging follows ADR-0019 §5: past the system drag distance it moves with the pointer,
+- AC4: Dragging follows ADR-0008 §5: past the system drag distance it moves with the pointer,
   stays fully on one monitor, and snaps to the taskbar's centre line within 8 logical px.
   Release saves the position (`bar_monitor`, `bar_x`, `bar_y`). With `bar_locked = true` a
   drag does nothing and a click still toggles the popup. After a restart the bar is where it
   was left.
-- AC5: The default position (ADR-0019 §7) is used on first run, when the saved monitor is
+- AC5: The default position (ADR-0008 §7) is used on first run, when the saved monitor is
   gone, and after "Reset position" in Settings or the bar menu.
 - AC6: A click toggles the popup (WR-02 AC1 placement). A double-click opens it and leaves it
   open. A right-click opens the menu: Open · Copy today (BS) · Copy today (AD) · Customize
@@ -232,7 +232,7 @@ Linux has the tray icon only.
   keeping its place on the same monitor (AC4) or moving fully on-screen.
 - AC9: Idle cost: it redraws only when its text, colour, DPI, size or position changes (at most
   once a minute with seconds hidden). Top-most upkeep and the full-screen check run on
-  foreground-window changes, not on a timer. No measurable idle CPU (ADR-0008 §C).
+  foreground-window changes, not on a timer. No measurable idle CPU (ADR-0001 §C).
 - AC10: Any failure hides the bar and logs one line. The tray icon and the popup keep working,
   and the app never ends because of the bar.
 
@@ -255,7 +255,7 @@ Linux has the tray icon only.
 
 ## WR-10 Non-functional
 
-- AC1: Targets of ADR-0008 §C (size, RAM, start time, idle CPU) are measured by
+- AC1: Targets of ADR-0001 §C (size, RAM, start time, idle CPU) are measured by
   `cargo xtask widget-idle`.
 - AC2: Accessibility: every interactive control has an accessible name. The popup and the
   Settings window are keyboard-operable. Popup keys:
@@ -288,13 +288,13 @@ Linux has the tray icon only.
 
 ## WR-12 Windows taskbar text (withdrawn)
 
-Replaced by the mini bar, WR-08 (ADR-0019 supersedes ADR-0016). ID kept so later IDs don't
+Replaced by the mini bar, WR-08 (ADR-0008 supersedes ADR-0005). ID kept so later IDs don't
 change.
 
 ## WR-13 Global shortcut
 
 - AC1: One system-wide shortcut toggles the popup from any app (WR-02 AC1 placement). Default
-  Win+Shift+N on Windows, Cmd+Shift+N on macOS, Super+Shift+N on Linux X11 (ADR-0019).
+  Win+Shift+N on Windows, Cmd+Shift+N on macOS, Super+Shift+N on Linux X11 (ADR-0008).
 - AC2: In Settings the shortcut field records the next key combination pressed while it has
   focus. A combination needs a non-modifier key and either Win/Cmd/Super or at least two other
   modifiers. Ctrl+Alt combinations are refused with the note `Ctrl+Alt is AltGr on many
@@ -329,8 +329,10 @@ change.
 
 ## WR-15 No branding in the app
 
-- AC1: The app shows no third-party logo or badge (ADR-0020). Settings → About lists the
+- AC1: The app shows no third-party logo or badge (ADR-0009). Settings → About lists the
   third-party notices as plain text.
-- AC2: The "Made with Slint" badge is in `apps/mitibar/README.md`, in the root `README.md`
+- AC2: The "Made with Slint" badge is in `README.md`, in the root `README.md`
   MitiBar section, and in every `mitibar-v*` release's notes. The release workflow adds it to
   the notes, and `xtask`'s workflow test fails if it doesn't.
+
+

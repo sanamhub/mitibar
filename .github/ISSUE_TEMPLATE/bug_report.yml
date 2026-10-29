@@ -1,0 +1,29 @@
+name: Bug report
+description: Something in MitiBar doesn't work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: input
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that shows the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: MitiBar version
+      placeholder: 0.2.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and display scale
+      placeholder: Windows 11, 150%

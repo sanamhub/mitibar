@@ -1,4 +1,6 @@
-# ADR-0012: Packaging, signing and releases
+> Moved from nepdate-rust ADR-0012. The decision and its text are unchanged.
+
+# ADR-0003: Packaging, signing and releases
 
 - **Status:** accepted
 - **Date:** 2026-09-24 (revised 2026-09-25: trusted publishing, preflight, notes from changelog;

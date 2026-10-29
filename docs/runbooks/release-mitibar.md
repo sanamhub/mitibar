@@ -1,28 +1,23 @@
 # Runbook: release MitiBar
 
-Owner: maintainer. Approver: a second maintainer. Decided in ADR-0012. The tag is
-`mitibar-vX.Y.Z`; the display name is MitiBar and every identifier is `mitibar` (ADR-0017).
-The workflow creates a **draft**; a second maintainer installs the assets and publishes it.
+Owner: maintainer. Approver: a second maintainer. Decided in ADR-0003 and ADR-0010. The tag is
+`vX.Y.Z`; the display name is MitiBar and every identifier is `mitibar` (ADR-0006). The workflow
+creates a **draft**; a second maintainer installs the assets and publishes it.
 
 ## Before tagging
 
 1. CI green on all 3 OSes. `docs/runbooks/widget-manual-test.md` completed on Windows, macOS and
    Linux for this version (attach the ticked copy to the release PR).
-2. `apps/mitibar/Cargo.toml` and `apps/mitibar/Packager.toml` have the new `version`; the
-   changelog has a `## [X.Y.Z] - YYYY-MM-DD` section; `cargo xtask release-check mitibar X.Y.Z`
-   passes.
-3. `cargo xtask data-status` exits 0. It fails only when public holidays reach less than 183 days
-   ahead; copy any `WARNING` line for tithi or events into the release PR. If it fails, land the
-   data through the hub's
-   [data-update runbook](https://github.com/sanamhub/nepdate/blob/main/docs/runbooks/data-update.md)
-   first, never by lowering the threshold.
-4. `docs/benchmarks-widget.md` has current numbers from a quiet machine (ADR-0008 §C), and no
-   row is LOADED. Idle memory is judged on private bytes (ADR-0018). **0.1.0 is not releasable
-   yet:** the software build measures 34.35 MB private and 1.217 % of one core, but the 5-minute
-   row is LOADED (47.9 % before, 31.2 % during). The five cold starts are 62.4 to 80.4 ms, also
-   LOADED (19.4 to 32.4 % during startup). A quiet 5-minute row and quiet cold starts must pass
-   on this build. A pre-release (`X.Y.Z-beta.N`) may go out without the quiet rows, as long as
-   its changelog section says the performance targets are not yet confirmed.
+2. `Cargo.toml` and `Packager.toml` have the new `version`; the changelog has a
+   `## [X.Y.Z] - YYYY-MM-DD` section; `cargo xtask release-check X.Y.Z` passes.
+3. The `nepdate` and `nepdate-patro` dependencies are exact published versions and `Cargo.toml`
+   has no `[patch.crates-io]` section. **A patch is a release blocker:** remove it, wait for the
+   SDK release, or publish the SDK change first. A release never ships a git dependency.
+4. `docs/benchmarks-widget.md` has current numbers from a quiet machine (ADR-0001 §C), and no
+   row is LOADED. Idle memory is judged on private bytes (ADR-0007). The 0.2.0 build has not had
+   a quiet five-minute row yet; run one before the tag. A pre-release (`X.Y.Z-beta.N`) may go out
+   without the quiet rows, as long as its changelog section says the performance targets are not
+   yet confirmed.
 5. `cargo xtask ci` passes locally.
 
 ## Build the packages locally (optional)
@@ -30,12 +25,11 @@ The workflow creates a **draft**; a second maintainer installs the assets and pu
 Windows and Linux build their own host package; macOS builds both arches and joins them:
 
 ```bash
-cargo xtask icons --check
 cargo xtask package                  # Windows: NSIS + portable zip, Linux: AppImage + deb
 # macOS:
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
-cargo build -p mitibar --profile release-widget --target aarch64-apple-darwin
-cargo build -p mitibar --profile release-widget --target x86_64-apple-darwin
+cargo build --profile release-widget --target aarch64-apple-darwin
+cargo build --profile release-widget --target x86_64-apple-darwin
 mkdir -p target/universal/release-widget
 lipo -create -output target/universal/release-widget/mitibar \
   target/aarch64-apple-darwin/release-widget/mitibar \
@@ -60,7 +54,7 @@ Outputs are in `dist/` (override with `CARGO_TARGET_DIR` for the build cache, no
 
 ```bash
 sha256sum -c SHA256SUMS
-gh attestation verify mitibar_<version>_x64-setup.exe --repo sanamhub/nepdate-rust
+gh attestation verify mitibar_<version>_x64-setup.exe --repo sanamhub/mitibar
 ```
 
 On Windows without `sha256sum`:
@@ -122,7 +116,7 @@ Get-Content SHA256SUMS | ForEach-Object {
 Do this on each OS on a clean user account, with the network disconnected or a firewall log open:
 
 1. The tray/menu bar shows today's BS day. Compare the date with
-   `cargo run -p nepdate --example convert --features jiff -- --today` and with the wall clock.
+   the wall clock and an independent Nepali calendar and with the wall clock.
 2. Open the popup: the header shows the BS long date, weekday, AD date in the language's digits,
    and the clock. The month grid shows today, the AD day, the tithi and the next-holiday line.
 3. Click today's cell: the detail card shows the tithi, holiday and events. Copy BS and AD, then
@@ -134,7 +128,7 @@ Do this on each OS on a clean user account, with the network disconnected or a f
    first instance's popup. On Windows, confirm no second process remains.
 6. No network requests: on Windows, Resource Monitor or `Get-NetTCPConnection -OwningProcess
    <pid>` shows no connections; on macOS/Linux, `lsof -i -p <pid>` is empty. The app has no
-   telemetry and no update check (ADR-0008 B.8).
+   telemetry and no update check (ADR-0001 B.8).
 7. Uninstall and repeat the cleanup check in the OS section above.
 
 ## Known gaps before 1.0
@@ -144,7 +138,7 @@ These are accepted for 0.x previews and recorded here so a 1.0 release cannot sk
 | Gap | Today | Needed before 1.0 |
 |---|---|---|
 | Signing credentials | The Windows and macOS signing steps exist and are gated on `WINDOWS_SIGNING_ENABLED` / `MACOS_SIGNING_ENABLED`, but no certificate, Developer ID or notarization secrets are configured here. 0.x ships unsigned and says so. | Provision Azure Artifact Signing and the Apple Developer ID plus notarization secrets, set both variables, and verify a signed asset. |
-| Signing not exercised | `xtask/src/workflow.rs` checks the order (sign `mitibar.exe`, package, sign the NSIS setup; sign `MitiBar.app`, build the DMG, notarize and staple it), but no workflow run has exercised the tools. | A `workflow_dispatch` dry run with both variables on, on all 3 OSes. |
+| Signing not exercised | The release workflow runs the signing steps only when the repository variable is true, but no workflow run has exercised the tools. | A `workflow_dispatch` dry run with both variables on, on all 3 OSes. |
 | Windows ARM64 package | The matrix builds `aarch64-pc-windows-msvc` and names the installer and portable zip arm64, but this was not built or installed locally. | The first workflow run on `windows-latest`; optionally a real ARM64 machine. |
 | Quiet performance | The current software build: the 5-minute row is 34.35 MB private, 73.59 MB working set and 1.217 % of one core, but LOADED (47.9 % before, 31.2 % during). Cold starts are 62.4 to 80.4 ms, also LOADED (19.4 to 32.4 % during startup). The last quiet software row was 34.68 MB and 0.335 %. | A quiet 5-minute row that passes private bytes and CPU on the shipped build, and quiet cold starts. |
 | Text quality at 100 % and 200 % | Windows x64 was checked with 55 software/femtovg sheets: every conjunct, reph and matra is the same, none is wrong. macOS and Linux were not checked. | Check text quality on macOS and Linux and tick the checklist line. |
@@ -154,8 +148,8 @@ These are accepted for 0.x previews and recorded here so a 1.0 release cannot sk
 ## Releasing
 
 ```bash
-git tag mitibar-vX.Y.Z
-git push origin mitibar-vX.Y.Z
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 `release-mitibar.yml` runs `preflight`, builds and packages on the 3 OSes (signing only where
@@ -173,7 +167,7 @@ then publishes the draft. The release notes name any unsigned-preview warnings.
 1. Read the release page: notes match the changelog, the draft is now published, and the assets
    include the installers, `SHA256SUMS` and the SBOM.
 2. Check `gh attestation verify` on one asset from a different machine.
-3. Add an empty `## [Unreleased]` to `apps/mitibar/CHANGELOG.md` for the next cycle.
+3. Date the released section and add a new empty `## [Unreleased]` to `CHANGELOG.md`.
 4. Record the release in the maintainer notes.
 
 ## Rolling back
@@ -188,3 +182,5 @@ A desktop release is rolled back by hiding it, not deleting it:
 5. If the failure is a bad login item or installer, the runbook owner removes it from the
    affected OS as described above. The app has no auto-update, so users keep the version they
    installed until they download the fixed one.
+
+
