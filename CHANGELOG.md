@@ -6,11 +6,12 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
-## [0.2.0-beta.1] - 2026-10-29
+## [0.2.0-beta.2] - 2026-10-30
 
 The first release from this repository, unsigned on Windows and macOS. Settings and behaviour may
 still change before 0.2.0. The idle memory, CPU and cold-start targets are not confirmed on a quiet
-machine yet.
+machine yet. The `v0.2.0-beta.1` tag has no release: its release workflow stopped at the SBOM
+step, and this version carries the same app.
 
 ### Added
 
