@@ -183,6 +183,9 @@ jobs:
           test -d dist/MitiBar.app
           hdiutil create -volname "MitiBar" -srcfolder dist/MitiBar.app -ov -format UDZO \
             "dist/MitiBar-${VERSION}.dmg"
+          # The app ships inside the DMG; the bare bundle is a folder, which the checksum and
+          # attestation steps cannot take as a release asset.
+          rm -rf dist/MitiBar.app
       - name: Notarize and staple macOS DMG
         if: matrix.os == 'macos-latest' && vars.MACOS_SIGNING_ENABLED == 'true'
         env:
@@ -267,6 +270,13 @@ jobs:
         run: |
           set -euo pipefail
           cd artifacts
+          # Every release asset is a file; a folder here means a build uploaded something it
+          # should not.
+          if find . -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+            echo "::error::folders among the release assets:"
+            find . -mindepth 1 -maxdepth 1 -type d
+            exit 1
+          fi
           sha256sum -- * > SHA256SUMS
           cat SHA256SUMS
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
