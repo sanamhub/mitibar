@@ -183,6 +183,9 @@ jobs:
           test -d dist/MitiBar.app
           hdiutil create -volname "MitiBar" -srcfolder dist/MitiBar.app -ov -format UDZO \
             "dist/MitiBar-${VERSION}.dmg"
+          # The app ships inside the DMG; the bare bundle is a folder, which the checksum and
+          # attestation steps cannot take as a release asset.
+          rm -rf dist/MitiBar.app
       - name: Notarize and staple macOS DMG
         if: matrix.os == 'macos-latest' && vars.MACOS_SIGNING_ENABLED == 'true'
         env:
@@ -235,9 +238,17 @@ jobs:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: |
           set -euo pipefail
-          cargo cyclonedx --format json --spec-version 1.5 --override-filename "MitiBar-${VERSION}"
+          # A dotted pre-release version in --override-filename is cut at its last dot, so the
+          # tool writes a fixed name and the step renames it.
+          cargo cyclonedx --format json --spec-version 1.5 --override-filename mitibar-sbom
           mkdir -p sbom
-          find . -name "MitiBar-${VERSION}*.cdx.json" -print -quit | xargs -r -I{} cp {} sbom/
+          found="$(find . -path ./sbom -prune -o -name 'mitibar-sbom*.json' -print -quit)"
+          if [[ -z "$found" ]]; then
+            echo "::error::cargo cyclonedx wrote no mitibar-sbom*.json"
+            find . -maxdepth 2 -name '*.json' -not -path './target/*' -print
+            exit 1
+          fi
+          cp "$found" "sbom/MitiBar-${VERSION}.cdx.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sbom
@@ -259,6 +270,13 @@ jobs:
         run: |
           set -euo pipefail
           cd artifacts
+          # Every release asset is a file; a folder here means a build uploaded something it
+          # should not.
+          if find . -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+            echo "::error::folders among the release assets:"
+            find . -mindepth 1 -maxdepth 1 -type d
+            exit 1
+          fi
           sha256sum -- * > SHA256SUMS
           cat SHA256SUMS
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
