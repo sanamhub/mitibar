@@ -125,7 +125,7 @@ Stored per user at `dirs::config_dir()/mitibar/settings.toml`: Windows
 
 | Key | Type | Default |
 |---|---|---|
-| `schema` | int | 2 |
+| `schema` | int | 3 |
 | `language` | `"en" \| "ne"` | `"en"` |
 | `theme` | `"system" \| "light" \| "dark"` | `"system"` |
 | `clock_24h` | bool | false |
@@ -134,14 +134,18 @@ Stored per user at `dirs::config_dir()/mitibar/settings.toml`: Windows
 | `launch_at_login` | bool | true |
 | `bar` | bool | true (Windows only, WR-08; ignored elsewhere) |
 | `bar_locked` | bool | false |
-| `bar_top` | array of field ids (WR-08 AC2) | `["weekday", "time", "zone_time"]` |
-| `bar_bottom` | array of field ids | `["bs_date", "ad_short"]` |
+| `bar_top_bold`, `bar_bottom_bold` | bool | false, true |
+| `bar_hide_fullscreen` | bool | true |
+| `bar_zone_long` | bool | false |
+| `bar_top` | array of field ids (WR-08 AC2) | `["weekday", "bs_date"]` |
+| `bar_bottom` | array of field ids | `["ad_date"]` |
 | `bar_monitor` | string, monitor device name, `""` = default position | `""` |
 | `bar_x`, `bar_y` | int, logical px from that monitor's top-left | 0, 0 |
 | `shortcut` | string like `"Win+Shift+N"`, `""` = none (WR-13) | `"Win+Shift+N"` (`"Cmd+Shift+N"` on macOS, `"Super+Shift+N"` on Linux) |
 
-Schema 1 files are read and rewritten as schema 2: `taskbar_text = false` becomes `bar = false`,
-and the other new keys take their defaults.
+Schema 1 files are read and rewritten as schema 3: `taskbar_text = false` becomes `bar = false`,
+the two lines take the old fixed layout, and the other new keys take their defaults. Schema 2 files
+keep the lines the owner chose and gain the schema 3 keys.
 
 - AC1: Settings opens in its own window, never on top of the popup. It sits beside the popup
   on the side with more room, top edges aligned, 8 px apart. When neither side has room, or the
@@ -196,8 +200,12 @@ Linux has the tray icon only.
   |---|---|---|---|
   | `weekday` | `Thu` | `बिहि` | short name from `nepdate` |
   | `weekday_long` | `Thursday` | `बिहिवार` | |
+  | `day` | `5` | `५` | BS day |
+  | `month` | `Kartik` | `कार्तिक` | BS month, long |
+  | `month_short` | `Kar` | `कार्तिक` | BS month, short |
+  | `year` | `2083` | `२०८३` | BS year |
   | `time` | `6:32 PM` | `६:३२ PM` | local, WR-05 AC2 format |
-  | `zone_time` | `Singapore 8:46 PM` | `Singapore ८:४६ PM` | extra zone, city part only; empty when WR-05 AC1 hides it |
+  | `zone_time` | `SGT 8:46 PM` | `SGT ८:४६ PM` | extra zone; abbreviation, or the UTC offset when the database has none, or the city with `bar_zone_long`; empty when WR-05 AC1 hides it |
   | `bs_date` | `Kartik 5, 2083` | `कार्तिक ५, २०८३` | |
   | `bs_short` | `Kartik 5` | `कार्तिक ५` | |
   | `ad_date` | `Oct 22, 2026` | `Oct २२, २०२६` | AD month names stay Latin |
@@ -205,9 +213,9 @@ Linux has the tray icon only.
   | `tithi` | `Ekadashi` | `एकादशी` | empty outside the patro coverage |
   | `holiday` | today's public holiday | same, in Nepali | empty when today isn't one |
 
-  Defaults: top `weekday, time, zone_time`; bottom `bs_date, ad_short`. Example (en):
-  `Thu · 6:32 PM · Singapore 8:46 PM` / `Kartik 5, 2083 · Oct 22`. The weekday and BS date come
-  from the same local date (WR-05 AC4). Names and digits come from `nepdate`.
+  Defaults: top `weekday, bs_date`; bottom `ad_date`, bold. Example (en):
+  `Thu · Kartik 5, 2083` / **`Oct 22, 2026`**. The weekday and BS date come from the same local
+  date (WR-05 AC4). Names and digits come from `nepdate` and follow the language setting.
 - AC3: The line editor in Settings (WR-06 AC6) shows a Top line row and a Bottom line row of
   field chips. Each chip has a remove button. "Add field" lists the fields not used on either
   line; a field appears at most once. A focused chip moves left or right with its arrow buttons
@@ -235,6 +243,10 @@ Linux has the tray icon only.
   foreground-window changes, not on a timer. No measurable idle CPU (ADR-0001 §C).
 - AC10: Any failure hides the bar and logs one line. The tray icon and the popup keep working,
   and the app never ends because of the bar.
+- AC11: Each line has its own bold switch. A fresh install has the top line regular and the
+  bottom line bold; an existing settings file keeps the old weights.
+- AC12: `bar_hide_fullscreen` (on by default) hides the bar while a full-screen app is in front
+  on its monitor and shows it again when the app ends. Turning it off keeps the bar visible.
 
 ## WR-09 Lifecycle
 
