@@ -640,6 +640,39 @@ fn wire_lines(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
             applied(&state);
         }
     });
+    window.on_preset_picked({
+        let state = state.clone();
+        move |index| {
+            {
+                let mut state = state.borrow_mut();
+                let lines = match index {
+                    // The beta's weekday and time, with the BS and AD dates below.
+                    0 => (
+                        vec![
+                            "weekday".to_owned(),
+                            "time".to_owned(),
+                            "zone_time".to_owned(),
+                        ],
+                        vec!["bs_date".to_owned(), "ad_short".to_owned()],
+                    ),
+                    // The short weekday and BS date, then the AD date.
+                    1 => (
+                        vec!["weekday".to_owned(), "bs_date".to_owned()],
+                        vec!["ad_date".to_owned()],
+                    ),
+                    // The full weekday and BS date, then the AD date.
+                    2 => (
+                        vec!["weekday_long".to_owned(), "bs_date".to_owned()],
+                        vec!["ad_date".to_owned()],
+                    ),
+                    _ => return,
+                };
+                state.settings.bar_top = lines.0;
+                state.settings.bar_bottom = lines.1;
+            }
+            applied(&state);
+        }
+    });
 }
 
 /// The shortcut field, Clear and Reset (WR-13 AC2).

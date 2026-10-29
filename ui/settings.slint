@@ -358,6 +358,7 @@ export component SettingsWindow inherits Window {
     callback chip-moved-line(int, int, bool);
     callback field-added(int, string);
     callback lines-reset();
+    callback preset-picked(int);
     callback reset-position();
     /// A key press in the shortcut field: the key's text and Win, Ctrl, Alt and Shift. Returns
     /// whether the field took it; Tab and Escape are left to the window.
@@ -828,6 +829,35 @@ export component SettingsWindow inherits Window {
                                 label: @tr("Reset position");
                                 activated => { root.reset-position(); }
                                 focused => { root.focus-on("reset position", self.absolute-position.y, self.height); }
+                            }
+                        }
+
+                        Text {
+                            text: @tr("Presets");
+                            color: Theme.ink-muted;
+                            font-size: 13px;
+                            accessible-role: none;
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            preset-time := Pill {
+                                text: @tr("Date and time");
+                                label: @tr("Date and time");
+                                activated => { root.preset-picked(0); }
+                                focused => { root.focus-on("preset time", self.absolute-position.y, self.height); }
+                            }
+                            preset-short := Pill {
+                                text: @tr("Weekday and date");
+                                label: @tr("Weekday and date");
+                                activated => { root.preset-picked(1); }
+                                focused => { root.focus-on("preset short", self.absolute-position.y, self.height); }
+                            }
+                            preset-long := Pill {
+                                text: @tr("Full weekday");
+                                label: @tr("Full weekday");
+                                activated => { root.preset-picked(2); }
+                                focused => { root.focus-on("preset long", self.absolute-position.y, self.height); }
                             }
                         }
                     }

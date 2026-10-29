@@ -347,3 +347,15 @@ msgstr "फुलस्क्रिन एपमा लुकाउनुहो�
 
 msgid "Long time zone name"
 msgstr "समय क्षेत्रको लामो नाम"
+
+msgid "Presets"
+msgstr "प्रिसेटहरू"
+
+msgid "Date and time"
+msgstr "मिति र समय"
+
+msgid "Weekday and date"
+msgstr "बार र मिति"
+
+msgid "Full weekday"
+msgstr "पूरा बार"

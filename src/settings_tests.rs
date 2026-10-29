@@ -1422,6 +1422,20 @@ fn wr08_ac3_reset_to_default_restores_the_two_lines() {
 }
 
 #[test]
+fn wr08_ac3_a_preset_replaces_the_lines() {
+    let (f, window) = opened();
+    window.invoke_preset_picked(0);
+    assert_eq!(top(&f), ids(&["weekday", "time", "zone_time"]));
+    assert_eq!(bottom(&f), ids(&["bs_date", "ad_short"]));
+
+    window.invoke_preset_picked(2);
+    assert_eq!(top(&f), ids(&["weekday_long", "bs_date"]));
+    assert_eq!(bottom(&f), ids(&["ad_date"]));
+    let lines = f.bar.lines.borrow().last().cloned().expect("lines");
+    assert!(lines.top.starts_with("Thursday"));
+}
+
+#[test]
 fn wr08_ac3_every_line_edit_updates_the_bar_and_is_saved() {
     let (f, window) = opened();
     let before = f.bar.lines.borrow().len();
@@ -1771,6 +1785,9 @@ fn full_order() -> Vec<&'static str> {
         "chip bottom 1",
         "reset lines",
         "reset position",
+        "preset time",
+        "preset short",
+        "preset long",
         "shortcut",
         "shortcut clear",
         "shortcut reset",
@@ -1902,6 +1919,9 @@ fn wr10_ac2_every_control_has_a_name_and_the_right_role() {
         ),
         ("reset lines", "Reset to default", AccessibleRole::Button),
         ("reset position", "Reset position", AccessibleRole::Button),
+        ("preset time", "Date and time", AccessibleRole::Button),
+        ("preset short", "Weekday and date", AccessibleRole::Button),
+        ("preset long", "Full weekday", AccessibleRole::Button),
         ("shortcut", "Shortcut", AccessibleRole::TextInput),
         ("shortcut clear", "Clear shortcut", AccessibleRole::Button),
         ("shortcut reset", "Reset shortcut", AccessibleRole::Button),
