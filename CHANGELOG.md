@@ -15,6 +15,9 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ### Changed
 
+- The bundled fonts are subsets, which makes the app about 0.6 MB smaller (the binary 5.1 % and
+  the installer 3.9 % below 0.2.0-beta.3). Nothing drawn changes. A new string with a character
+  outside the kept ranges needs the subset widened (see `ui/fonts/README.md`).
 - Today in the month grid is a tile inset from the cell's edges, with a soft vermillion fill, a
   vermillion border and a bold vermillion numeral, instead of a disc touching the next cell. The
   year and decade views use the same tile for this month and this year.

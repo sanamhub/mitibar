@@ -64,4 +64,70 @@ number to count. Cold start is below 500 ms on every run, also on a busy machine
 starts have quiet samples. The macOS and Linux binaries are built in the release workflow and are
 not measured here.
 
+## Size and speed work for 1.0 (2026-10-30)
+
+Same machine, `release-widget` profile, built from the `v0.2.0-beta.3` tag and from the branch
+that holds the 1.0 fixes. The aim was a smaller binary without changing behaviour, so every
+change was judged by what it does to the pixels, not only by bytes.
+
+### Sizes
+
+| Build | Binary | NSIS installer | Portable zip |
+|---|---|---|---|
+| `v0.2.0-beta.3` | 12,104,704 bytes | 6,293,930 bytes | 6,274,486 bytes |
+| Branch, before the font change | 12,175,872 bytes | 6,305,765 bytes | 6,300,397 bytes |
+| Branch, with the font subsets | 11,493,376 bytes | 6,048,181 bytes | 5,949,967 bytes |
+
+The fixes and features of this branch added 71,168 bytes (0.6 %) to the binary. The font subsets
+took 682,496 bytes out, so the binary ends 611,328 bytes (5.1 %) below beta.3 and the installer
+245,749 bytes (3.9 %) below. The 8 MB stretch goal is still missed.
+
+### What was tried
+
+- **Font subsets, kept.** Noto Sans went from 971,808 to 335,076 bytes and Noto Sans Devanagari
+  from 313,180 to 267,380 bytes, with the weight axis and every layout feature kept
+  (`ui/fonts/README.md` has the code points). Thirteen images were rendered before and after: the
+  popup in the month, year, detail, converter and upcoming views, the Settings window and the
+  bar, in English and Nepali, light and dark, and the font-test window. No pixel differs.
+  The check covers those views only; a view that was not rendered is not covered.
+- **Font subset, rejected.** Cutting the Latin font down to Latin alone made it 97,056 bytes but
+  changed the pixels of the Nepali images and of one band of the English Settings window. The
+  Latin font also maps the Devanagari block, which fits with it drawing some of that text; this
+  was not traced further. The Devanagari block stays in the Latin font.
+- **Slint `compat-1-2`, rejected.** Removing the feature does not compile: Slint 1.18 insists on a
+  `compat-1-*` feature.
+- **Not tried.** The tray icon set (121,799 bytes of PNG) is embedded in the binary, and
+  shrinking it would change what the tray shows. Other dependency features were not tried, and
+  nothing was measured to say how much each one adds.
+
+### Idle, popup closed
+
+Each row is a fresh process with a temporary settings file, 15 s of warm-up and then 90 s of
+samples every 5 s, from a script that reads the process's own counters and the total CPU load.
+This is a shorter run than `cargo xtask widget-idle --minutes 5`, so it compares the builds with
+each other; it does not replace the 5-minute row 1.0 needs. A row is LOADED when any sample of
+total CPU load, less the process's own share, reaches 15 %.
+
+| Build | Private bytes | Working set | CPU, % of one core | Load max | Row |
+|---|---|---|---|---|---|
+| `v0.2.0-beta.3`, round 1 | 32.95 MiB | 59.50 MiB | 0.017 | 8.0 % | quiet |
+| `v0.2.0-beta.3`, round 2 | 32.99 MiB | 50.93 MiB | 0.000 | 11.0 % | quiet |
+| Branch, before fonts, round 1 | 33.06 MiB | 59.68 MiB | 0.000 | 9.0 % | quiet |
+| Branch, before fonts, round 2 | 33.17 MiB | 51.11 MiB | 0.000 | 14.0 % | quiet |
+| Branch, with fonts, round 1 | 32.45 MiB | 49.70 MiB | 0.000 | 11.0 % | quiet |
+| Branch, with fonts, round 2 | 32.47 MiB | 49.73 MiB | 0.000 | 13.0 % | quiet |
+| Branch, with fonts, round 3 | 32.65 MiB | 49.79 MiB | 0.000 | 15.0 % | LOADED, no verdict |
+
+Two earlier rounds of the font build (33.86 and 32.46 MiB, 0.446 and 0.173 % CPU) ran while the
+machine was busy, with load peaks of 28 % and 16 %, and are left out.
+
+The private bytes stay at about 33 MiB with the 40 MiB target, and the idle CPU is 0.000 to
+0.017 % against the 0.5 % edge, in every quiet row. The private bytes are about 0.6 MiB lower
+with the font subsets. The working set swings from run to run (59.7 and 51.1 MiB for the same
+build before the change, 49.7 MiB in both quiet rounds after), so no figure is claimed for it.
+The working set is recorded, not judged (ADR-0007). Each quiet row is 90 s, not the 5 minutes ADR-0007
+asks for, so the 1.0 row is still to be taken.
+
+Cold start was not measured again.
+
 
