@@ -678,6 +678,40 @@ fn the_settings_window_and_the_popup_carry_the_app_icon() {
     assert!(f.popup.get_shown_icon_width() > 0, "the popup has no icon");
 }
 
+#[test]
+fn every_window_in_the_markup_takes_the_app_icon_and_paints_the_theme() {
+    for (file, markup) in [
+        ("popup", include_str!("../ui/popup.slint")),
+        ("settings", include_str!("../ui/settings.slint")),
+        ("font-test", include_str!("../ui/font-test.slint")),
+    ] {
+        let windows = markup.matches("inherits Window").count();
+        assert!(windows > 0, "{file} declares no window");
+        assert_eq!(
+            markup.matches("icon: AppInfo.window-icon;").count(),
+            windows,
+            "{file}: every window needs the app icon"
+        );
+        assert!(
+            markup.contains("Theme.surface"),
+            "{file}: the window must paint the theme's surface"
+        );
+    }
+    // A window declared in any other file would escape this check.
+    for (file, markup) in [
+        ("app", include_str!("../ui/app.slint")),
+        ("converter", include_str!("../ui/converter.slint")),
+        ("day-detail", include_str!("../ui/day-detail.slint")),
+        ("month-grid", include_str!("../ui/month-grid.slint")),
+        ("tray", include_str!("../ui/tray.slint")),
+    ] {
+        assert!(
+            !markup.contains("inherits Window"),
+            "{file} declares a window; add it to the list above"
+        );
+    }
+}
+
 /// Both windows' resolved scheme, as the markup paints it.
 fn dark_now(f: &Fixture, window: &SettingsWindow) -> (bool, bool) {
     (
