@@ -15,14 +15,21 @@ export global Theme {
 
     // The standard widgets (Button, ComboBox, SpinBox) read `Palette`, not `Theme`. Keep their
     // scheme on the same side as the app's explicit choice; "system" leaves it to the OS.
+    // Assigning `Palette.color-scheme` replaces its binding to the OS value for good, so System
+    // writes `unknown`: Fluent resolves that to the OS scheme and keeps following it live.
     changed choice => {
-        if (choice != ThemeChoice.system) {
-            Palette.color-scheme = choice == ThemeChoice.dark ? ColorScheme.dark : ColorScheme.light;
-        }
+        Palette.color-scheme = choice == ThemeChoice.system
+            ? ColorScheme.unknown
+            : choice == ThemeChoice.dark ? ColorScheme.dark : ColorScheme.light;
     }
 
+    // Whether the standard widgets paint dark. `Palette.color-scheme` reads `unknown` under
+    // System and the markup cannot reach the OS value, so this is read from the colour Palette
+    // resolves, which is the only place the OS scheme shows through.
+    out property <bool> widgets-dark: Palette.background.to-hsv().value < 0.5;
+
     out property <bool> is-dark: choice == ThemeChoice.system
-        ? Palette.color-scheme == ColorScheme.dark
+        ? widgets-dark
         : choice == ThemeChoice.dark;
 
     // Light values (lokta paper white).

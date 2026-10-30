@@ -6,6 +6,11 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Switching the theme from Light or Dark back to System follows Windows again, and keeps
+  following it when Windows changes between light and dark mode.
+
 ## [0.2.0-beta.3] - 2026-10-30
 
 A second beta with the new app icon and a tidier Settings window, converter and menus. Still

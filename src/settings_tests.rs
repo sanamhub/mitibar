@@ -671,6 +671,62 @@ fn wr06_ac5_the_theme_applies_to_the_popup_and_the_settings_window() {
     );
 }
 
+/// Both windows' resolved scheme, as the markup paints it.
+fn dark_now(f: &Fixture, window: &SettingsWindow) -> (bool, bool) {
+    (
+        f.popup.global::<crate::Theme>().get_is_dark(),
+        window.global::<crate::Theme>().get_is_dark(),
+    )
+}
+
+#[test]
+fn every_switch_between_light_dark_and_system_follows_the_os_in_both_modes() {
+    // theme_picked: 0 System, 1 Light, 2 Dark.
+    for os_dark in [true, false] {
+        for path in [[1, 0], [2, 0], [0, 1], [0, 2], [1, 2], [2, 1], [1, 1]] {
+            let (f, window) = opened();
+            crate::test_support::set_os_dark(f.popup.window(), os_dark);
+            for pick in path {
+                window.invoke_theme_picked(pick);
+                slint::platform::update_timers_and_animations();
+                let expect = match pick {
+                    1 => false,
+                    2 => true,
+                    _ => os_dark,
+                };
+                assert_eq!(
+                    dark_now(&f, &window),
+                    (expect, expect),
+                    "os dark {os_dark}, picks {path:?}, after {pick}"
+                );
+            }
+            // System keeps following the OS afterwards, not the last explicit pick.
+            window.invoke_theme_picked(0);
+            slint::platform::update_timers_and_animations();
+            crate::test_support::set_os_dark(f.popup.window(), !os_dark);
+            assert_eq!(
+                dark_now(&f, &window),
+                (!os_dark, !os_dark),
+                "os dark {os_dark}, picks {path:?}, then the OS flips"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_standard_widgets_follow_the_scheme_the_app_resolves() {
+    let (f, window) = opened();
+    crate::test_support::set_os_dark(f.popup.window(), true);
+    window.invoke_theme_picked(1);
+    slint::platform::update_timers_and_animations();
+    window.invoke_theme_picked(0);
+    slint::platform::update_timers_and_animations();
+    assert!(
+        window.global::<crate::Theme>().get_widgets_dark(),
+        "Button and ComboBox read Palette, which must be dark again"
+    );
+}
+
 #[test]
 fn wr06_ac5_the_24_hour_clock_applies_to_the_popup_and_the_bar() {
     let (f, window) = opened();

@@ -5,6 +5,8 @@
 
 use std::cell::Cell;
 
+use slint::private_unstable_api::re_exports::{ColorScheme, WindowInner};
+
 thread_local! {
     static READY: Cell<bool> = const { Cell::new(false) };
 }
@@ -17,4 +19,17 @@ pub(crate) fn init_platform() {
             ready.set(true);
         }
     });
+}
+
+/// Reports the OS colour scheme, as the winit backend does when Windows switches between light
+/// and dark mode. The scheme is shared by every window on the thread.
+pub(crate) fn set_os_dark(window: &slint::Window, dark: bool) {
+    let scheme = if dark {
+        ColorScheme::Dark
+    } else {
+        ColorScheme::Light
+    };
+    WindowInner::from_pub(window)
+        .context()
+        .set_color_scheme(scheme);
 }
