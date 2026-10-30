@@ -19,3 +19,18 @@ and 24 px, where the full detail would turn to noise.
 | `08-tithi-ring.svg` | Thirty ticks around the day, the current tithi in sindoor. It shows the lunar cycle that makes the Nepali calendar different. |
 | `09-ma-with-tika.svg` | The letter म (miti, "date") with a sindoor tika above it, white on warm ink. It names the app. |
 | `10-two-dates.svg` | Two overlapping cards: the BS day in sindoor in front, the AD day in Latin on marigold behind. It is the converter idea, which is what the app is for. |
+
+## Chosen
+
+The maintainer picked a blend of 01 and 11 in two colourways, which follow the system theme. Both are
+in this folder with their digits drawn as paths.
+
+| File | Use |
+|---|---|
+| `11-today-ring-light.svg` | Light system theme: a patro page on lokta paper, a Dhaka-cloth crown and today's BS day inside a sindoor ring. |
+| `12-today-ring-dark.svg` | Dark system theme: the same drawing on warm ink, with the cloth and the digits in lokta white. |
+
+The day shown is a placeholder (१५). Building them into `icons/`, the tray, `Packager.toml` and the
+installer comes next. A package has one icon file per size, so the dark variant needs a decision for
+the installer and the executable: they can only carry one, and the theme-following pair applies to
+the tray and the in-app surfaces.
