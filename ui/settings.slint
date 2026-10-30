@@ -298,6 +298,37 @@ component Row inherits HorizontalLayout {
     }
 }
 
+/// A group of related rows on a `surface-raised` card with a hairline border (widget-design §8).
+/// The card is a named group for assistive technology; the caller draws its heading as the first
+/// child, because the heading often carries a button.
+component SectionCard inherits Rectangle {
+    in property <string> title;
+    preferred-height: body.preferred-height;
+    min-height: body.min-height;
+    background: Theme.surface-raised;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Theme.hairline;
+    accessible-role: groupbox;
+    accessible-label: root.title;
+    body := VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+        @children
+    }
+}
+
+/// The heading of a card: `base` size, semibold, with room on the right for its button.
+component CardTitle inherits Text {
+    color: Theme.ink;
+    font-size: 14px;
+    font-weight: 600;
+    vertical-alignment: center;
+    horizontal-stretch: 1;
+    overflow: elide;
+    accessible-role: none;
+}
+
 export component SettingsWindow inherits Window {
     title: @tr("{0} Settings", AppInfo.app-name);
     // A fixed size: the content scrolls when it needs more room (widget-design §8).
@@ -615,24 +646,6 @@ export component SettingsWindow inherits Window {
                             }
                         }
                         Row {
-                            text: @tr("Bold top line");
-                            top-bold-control := Toggle {
-                                label: @tr("Bold top line");
-                                checked: root.data.bar-top-bold;
-                                toggled => { root.bar-top-bold-changed(!root.data.bar-top-bold); }
-                                focused => { root.focus-on("bar top bold", self.absolute-position.y, self.height); }
-                            }
-                        }
-                        Row {
-                            text: @tr("Bold bottom line");
-                            bottom-bold-control := Toggle {
-                                label: @tr("Bold bottom line");
-                                checked: root.data.bar-bottom-bold;
-                                toggled => { root.bar-bottom-bold-changed(!root.data.bar-bottom-bold); }
-                                focused => { root.focus-on("bar bottom bold", self.absolute-position.y, self.height); }
-                            }
-                        }
-                        Row {
                             text: @tr("Hide over full-screen apps");
                             fullscreen-control := Toggle {
                                 label: @tr("Hide over full-screen apps");
@@ -651,166 +664,176 @@ export component SettingsWindow inherits Window {
                             }
                         }
 
-                        HorizontalLayout {
-                            spacing: 8px;
-                            Text {
-                                text: @tr("Top line");
-                                color: Theme.ink-muted;
-                                font-size: 13px;
-                                vertical-alignment: center;
-                                horizontal-stretch: 1;
-                                accessible-role: none;
-                            }
-                            add-top := Pill {
-                                horizontal-stretch: 0;
-                                text: @tr("Add field");
-                                label: @tr("Add field to the top line");
-                                has-icon: true;
-                                enabled: root.data.unused.length > 0;
-                                activated => { root.add-open = root.add-open == 0 ? -1 : 0; }
-                                focused => { root.focus-on("add top", self.absolute-position.y, self.height); }
-                                LineIcon {
-                                    commands: "M 8 3 L 8 13 M 3 8 L 13 8";
-                                    color: add-top.foreground;
+                        SectionCard {
+                            title: @tr("Top line");
+                            HorizontalLayout {
+                                spacing: 8px;
+                                CardTitle { text: @tr("Top line"); }
+                                add-top := Pill {
+                                    horizontal-stretch: 0;
+                                    text: @tr("Add field");
+                                    label: @tr("Add field to the top line");
+                                    has-icon: true;
+                                    enabled: root.data.unused.length > 0;
+                                    activated => { root.add-open = root.add-open == 0 ? -1 : 0; }
+                                    focused => { root.focus-on("add top", self.absolute-position.y, self.height); }
+                                    LineIcon {
+                                        commands: "M 8 3 L 8 13 M 3 8 L 13 8";
+                                        color: add-top.foreground;
+                                    }
+                                }
+                                Timer {
+                                    interval: 1ms;
+                                    running: root.focus-pending && root.focus-line == 0 && root.focus-index < 0;
+                                    triggered => {
+                                        add-top.focus();
+                                        root.focus-pending = false;
+                                    }
                                 }
                             }
-                            Timer {
-                                interval: 1ms;
-                                running: root.focus-pending && root.focus-line == 0 && root.focus-index < 0;
-                                triggered => {
-                                    add-top.focus();
-                                    root.focus-pending = false;
+                            if root.add-open == 0: VerticalLayout {
+                                for id[k] in root.data.unused: Pill {
+                                    bordered: false;
+                                    text: FieldNames.name(id);
+                                    label: FieldNames.name(id);
+                                    activated => {
+                                        root.add-open = -1;
+                                        root.field-added(0, id);
+                                    }
+                                    focused => { root.focus-on("add item " + (k + 1), self.absolute-position.y, self.height); }
                                 }
                             }
-                        }
-                        if root.add-open == 0: VerticalLayout {
-                            for id[k] in root.data.unused: Pill {
-                                bordered: false;
-                                text: FieldNames.name(id);
-                                label: FieldNames.name(id);
-                                activated => {
-                                    root.add-open = -1;
-                                    root.field-added(0, id);
+                            Rectangle {
+                                height: 28px;
+                                WheelScroll {
+                                    content-x <=> top-chips.content-x;
+                                    content-width: top-chips.content-width;
                                 }
-                                focused => { root.focus-on("add item " + (k + 1), self.absolute-position.y, self.height); }
-                            }
-                        }
-                        Rectangle {
-                            height: 28px;
-                            WheelScroll {
-                                content-x <=> top-chips.content-x;
-                                content-width: top-chips.content-width;
-                            }
-                            top-chips := Flickable {
-                                width: parent.width;
-                                height: parent.height;
-                                content-width: top-row.preferred-width;
-                                interactive: false;
-                                top-row := HorizontalLayout {
-                                    spacing: 6px;
-                                    for id[i] in root.data.top: Chip {
-                                        id: id;
-                                        can-remove: !root.data.only-one-field;
-                                        can-left: i > 0;
-                                        can-right: i < root.data.top.length - 1;
-                                        focus-wanted: root.focus-pending && root.focus-line == 0 && root.focus-index == i;
-                                        focus-served => { root.focus-pending = false; }
-                                        remove => { root.chip-removed(0, i); }
-                                        move-left => { root.chip-moved(0, i, -1); }
-                                        move-right => { root.chip-moved(0, i, 1); }
-                                        move-up => { root.chip-moved-line(0, i, true); }
-                                        move-down => { root.chip-moved-line(0, i, false); }
-                                        focused => {
-                                            root.focus-on("chip top " + (i + 1), self.absolute-position.y, self.height);
-                                            if (self.x + top-chips.content-x < 0px) {
-                                                top-chips.content-x = -self.x;
-                                            } else if (self.x + self.width + top-chips.content-x > top-chips.width) {
-                                                top-chips.content-x = top-chips.width - self.x - self.width;
+                                top-chips := Flickable {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    content-width: top-row.preferred-width;
+                                    interactive: false;
+                                    top-row := HorizontalLayout {
+                                        spacing: 6px;
+                                        for id[i] in root.data.top: Chip {
+                                            id: id;
+                                            can-remove: !root.data.only-one-field;
+                                            can-left: i > 0;
+                                            can-right: i < root.data.top.length - 1;
+                                            focus-wanted: root.focus-pending && root.focus-line == 0 && root.focus-index == i;
+                                            focus-served => { root.focus-pending = false; }
+                                            remove => { root.chip-removed(0, i); }
+                                            move-left => { root.chip-moved(0, i, -1); }
+                                            move-right => { root.chip-moved(0, i, 1); }
+                                            move-up => { root.chip-moved-line(0, i, true); }
+                                            move-down => { root.chip-moved-line(0, i, false); }
+                                            focused => {
+                                                root.focus-on("chip top " + (i + 1), self.absolute-position.y, self.height);
+                                                if (self.x + top-chips.content-x < 0px) {
+                                                    top-chips.content-x = -self.x;
+                                                } else if (self.x + self.width + top-chips.content-x > top-chips.width) {
+                                                    top-chips.content-x = top-chips.width - self.x - self.width;
+                                                }
                                             }
                                         }
                                     }
+                                }
+                            }
+                            Row {
+                                text: @tr("Bold");
+                                top-bold-control := Toggle {
+                                    label: @tr("Bold top line");
+                                    checked: root.data.bar-top-bold;
+                                    toggled => { root.bar-top-bold-changed(!root.data.bar-top-bold); }
+                                    focused => { root.focus-on("bar top bold", self.absolute-position.y, self.height); }
                                 }
                             }
                         }
 
-                        HorizontalLayout {
-                            spacing: 8px;
-                            Text {
-                                text: @tr("Bottom line");
-                                color: Theme.ink-muted;
-                                font-size: 13px;
-                                vertical-alignment: center;
-                                horizontal-stretch: 1;
-                                accessible-role: none;
-                            }
-                            add-bottom := Pill {
-                                horizontal-stretch: 0;
-                                text: @tr("Add field");
-                                label: @tr("Add field to the bottom line");
-                                has-icon: true;
-                                enabled: root.data.unused.length > 0;
-                                activated => { root.add-open = root.add-open == 1 ? -1 : 1; }
-                                focused => { root.focus-on("add bottom", self.absolute-position.y, self.height); }
-                                LineIcon {
-                                    commands: "M 8 3 L 8 13 M 3 8 L 13 8";
-                                    color: add-bottom.foreground;
+                        SectionCard {
+                            title: @tr("Bottom line");
+                            HorizontalLayout {
+                                spacing: 8px;
+                                CardTitle { text: @tr("Bottom line"); }
+                                add-bottom := Pill {
+                                    horizontal-stretch: 0;
+                                    text: @tr("Add field");
+                                    label: @tr("Add field to the bottom line");
+                                    has-icon: true;
+                                    enabled: root.data.unused.length > 0;
+                                    activated => { root.add-open = root.add-open == 1 ? -1 : 1; }
+                                    focused => { root.focus-on("add bottom", self.absolute-position.y, self.height); }
+                                    LineIcon {
+                                        commands: "M 8 3 L 8 13 M 3 8 L 13 8";
+                                        color: add-bottom.foreground;
+                                    }
+                                }
+                                Timer {
+                                    interval: 1ms;
+                                    running: root.focus-pending && root.focus-line == 1 && root.focus-index < 0;
+                                    triggered => {
+                                        add-bottom.focus();
+                                        root.focus-pending = false;
+                                    }
                                 }
                             }
-                            Timer {
-                                interval: 1ms;
-                                running: root.focus-pending && root.focus-line == 1 && root.focus-index < 0;
-                                triggered => {
-                                    add-bottom.focus();
-                                    root.focus-pending = false;
+                            if root.add-open == 1: VerticalLayout {
+                                for id[k] in root.data.unused: Pill {
+                                    bordered: false;
+                                    text: FieldNames.name(id);
+                                    label: FieldNames.name(id);
+                                    activated => {
+                                        root.add-open = -1;
+                                        root.field-added(1, id);
+                                    }
+                                    focused => { root.focus-on("add item " + (k + 1), self.absolute-position.y, self.height); }
                                 }
                             }
-                        }
-                        if root.add-open == 1: VerticalLayout {
-                            for id[k] in root.data.unused: Pill {
-                                bordered: false;
-                                text: FieldNames.name(id);
-                                label: FieldNames.name(id);
-                                activated => {
-                                    root.add-open = -1;
-                                    root.field-added(1, id);
+                            Rectangle {
+                                height: 28px;
+                                WheelScroll {
+                                    content-x <=> bottom-chips.content-x;
+                                    content-width: bottom-chips.content-width;
                                 }
-                                focused => { root.focus-on("add item " + (k + 1), self.absolute-position.y, self.height); }
-                            }
-                        }
-                        Rectangle {
-                            height: 28px;
-                            WheelScroll {
-                                content-x <=> bottom-chips.content-x;
-                                content-width: bottom-chips.content-width;
-                            }
-                            bottom-chips := Flickable {
-                                width: parent.width;
-                                height: parent.height;
-                                content-width: bottom-row.preferred-width;
-                                interactive: false;
-                                bottom-row := HorizontalLayout {
-                                    spacing: 6px;
-                                    for id[i] in root.data.bottom: Chip {
-                                        id: id;
-                                        can-remove: !root.data.only-one-field;
-                                        can-left: i > 0;
-                                        can-right: i < root.data.bottom.length - 1;
-                                        focus-wanted: root.focus-pending && root.focus-line == 1 && root.focus-index == i;
-                                        focus-served => { root.focus-pending = false; }
-                                        remove => { root.chip-removed(1, i); }
-                                        move-left => { root.chip-moved(1, i, -1); }
-                                        move-right => { root.chip-moved(1, i, 1); }
-                                        move-up => { root.chip-moved-line(1, i, true); }
-                                        move-down => { root.chip-moved-line(1, i, false); }
-                                        focused => {
-                                            root.focus-on("chip bottom " + (i + 1), self.absolute-position.y, self.height);
-                                            if (self.x + bottom-chips.content-x < 0px) {
-                                                bottom-chips.content-x = -self.x;
-                                            } else if (self.x + self.width + bottom-chips.content-x > bottom-chips.width) {
-                                                bottom-chips.content-x = bottom-chips.width - self.x - self.width;
+                                bottom-chips := Flickable {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    content-width: bottom-row.preferred-width;
+                                    interactive: false;
+                                    bottom-row := HorizontalLayout {
+                                        spacing: 6px;
+                                        for id[i] in root.data.bottom: Chip {
+                                            id: id;
+                                            can-remove: !root.data.only-one-field;
+                                            can-left: i > 0;
+                                            can-right: i < root.data.bottom.length - 1;
+                                            focus-wanted: root.focus-pending && root.focus-line == 1 && root.focus-index == i;
+                                            focus-served => { root.focus-pending = false; }
+                                            remove => { root.chip-removed(1, i); }
+                                            move-left => { root.chip-moved(1, i, -1); }
+                                            move-right => { root.chip-moved(1, i, 1); }
+                                            move-up => { root.chip-moved-line(1, i, true); }
+                                            move-down => { root.chip-moved-line(1, i, false); }
+                                            focused => {
+                                                root.focus-on("chip bottom " + (i + 1), self.absolute-position.y, self.height);
+                                                if (self.x + bottom-chips.content-x < 0px) {
+                                                    bottom-chips.content-x = -self.x;
+                                                } else if (self.x + self.width + bottom-chips.content-x > bottom-chips.width) {
+                                                    bottom-chips.content-x = bottom-chips.width - self.x - self.width;
+                                                }
                                             }
                                         }
                                     }
+                                }
+                            }
+                            Row {
+                                text: @tr("Bold");
+                                bottom-bold-control := Toggle {
+                                    label: @tr("Bold bottom line");
+                                    checked: root.data.bar-bottom-bold;
+                                    toggled => { root.bar-bottom-bold-changed(!root.data.bar-bottom-bold); }
+                                    focused => { root.focus-on("bar bottom bold", self.absolute-position.y, self.height); }
                                 }
                             }
                         }

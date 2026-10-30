@@ -1781,15 +1781,15 @@ fn full_order() -> Vec<&'static str> {
         "zone",
         "bar",
         "lock",
-        "bar top bold",
-        "bar bottom bold",
         "bar fullscreen",
         "bar zone long",
         "add top",
         "chip top 1",
         "chip top 2",
+        "bar top bold",
         "add bottom",
         "chip bottom 1",
+        "bar bottom bold",
         "reset lines",
         "reset position",
         "preset time",
@@ -1799,6 +1799,40 @@ fn full_order() -> Vec<&'static str> {
         "shortcut clear",
         "shortcut reset",
     ]
+}
+
+/// A card's box, found by its accessible name.
+fn card_box(window: &SettingsWindow, title: &str) -> (f32, f32, f32, f32) {
+    let card = ElementHandle::find_by_accessible_label(window, title)
+        .find(|e| e.accessible_role() == Some(AccessibleRole::Groupbox))
+        .unwrap_or_else(|| panic!("no card named {title}"));
+    let at = card.absolute_position();
+    let size = card.size();
+    (at.x, at.y, at.x + size.width, at.y + size.height)
+}
+
+#[test]
+fn the_top_and_bottom_lines_are_two_cards_that_each_hold_their_own_controls() {
+    let (_f, window) = opened();
+    tab_to(&window, "bar bottom bold");
+    let top = card_box(&window, "Top line");
+    let bottom = card_box(&window, "Bottom line");
+    assert!(top.3 <= bottom.1, "the cards do not overlap");
+    assert!(bottom.1 - top.3 >= 8.0, "and have a gap between them");
+    assert!((top.0 - bottom.0).abs() < 0.5 && (top.2 - bottom.2).abs() < 0.5);
+    let inside = |card: (f32, f32, f32, f32), label: &str| {
+        let e = element(&window, label);
+        let (x, y) = (e.absolute_position().x, e.absolute_position().y);
+        x >= card.0 && y >= card.1 && x + e.size().width <= card.2 && y + e.size().height <= card.3
+    };
+    for label in ["Add field to the top line", "Bold top line"] {
+        assert!(inside(top, label), "{label} is in the top card");
+        assert!(!inside(bottom, label), "{label} is not in the bottom card");
+    }
+    for label in ["Add field to the bottom line", "Bold bottom line"] {
+        assert!(inside(bottom, label), "{label} is in the bottom card");
+        assert!(!inside(top, label), "{label} is not in the top card");
+    }
 }
 
 #[test]
@@ -1811,6 +1845,10 @@ fn wr10_ac2_the_settings_window_tab_order_is_asserted_at_every_stop() {
         assert_eq!(focused(&window), expected, "Tab order");
     }
     for expected in order.iter().rev() {
+        // The testing backend leaves out what the scroll view clips, so bring the field into view first.
+        if *expected == "zone" {
+            window.set_scroll_y(-100.0);
+        }
         press_shift_tab(&window);
         assert_eq!(focused(&window), *expected, "Shift+Tab order");
     }
@@ -2291,17 +2329,17 @@ fn the_wheel_scrolls_a_chip_line_wider_than_the_window_sideways() {
         "the page stays where it is"
     );
 
-    // The row is 438 px wider than its window, so eight notches in all bring the last chip into
+    // The row is 462 px wider than its window, so eight notches in all bring the last chip into
     // view and stop at its end; a ninth would pass to the page.
     for _ in 0..7 {
         wheel_over(&window, &row, -60.0);
     }
     walk(&window);
     let end = right_edge(&element(&window, "Weekday, long"));
-    // The row's window ends 16 px (the page's padding) plus 14 px (the scroll bar's room) before
-    // the window's edge.
+    // The row's window ends 16 px (the page's padding), 14 px (the scroll bar's room) and 12 px
+    // (the card's padding) before the window's edge.
     assert!(
-        (end - (window_right - 30.0)).abs() < 0.01,
+        (end - (window_right - 42.0)).abs() < 0.01,
         "the last chip ends at the row's end: {end}"
     );
     assert!(

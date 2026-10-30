@@ -102,7 +102,7 @@ fn day_label(popup: &PopupWindow, day: &str) -> String {
     cell.accessible_label.to_string()
 }
 
-fn click(popup: &PopupWindow, label: &str) {
+pub(crate) fn click(popup: &PopupWindow, label: &str) {
     element(popup, label).invoke_accessible_default_action();
 }
 
@@ -476,7 +476,7 @@ fn converter_converts_typed_input_both_ways() {
     element(&popup, "Date to convert").set_accessible_value("2024-04-13");
     assert_eq!(popup.get_converter_data().short.as_str(), "2081/01/01");
 
-    click(&popup, "Days tab");
+    click(&popup, "Days");
     element(&popup, "From BS date").set_accessible_value("2081/01/01");
     element(&popup, "To BS date").set_accessible_value("2081/02/01");
     assert_eq!(popup.get_converter_data().short.as_str(), "31 days");
@@ -1485,24 +1485,14 @@ fn overlays_take_and_return_focus() {
     assert_eq!(focused(&popup), "", "no base control keeps focus");
     for expected in [
         "converter close",
-        "converter convert tab",
-        "converter days tab",
-        "converter bs to ad",
-        "converter ad to bs",
+        "converter mode",
         "converter input",
         "converter close",
     ] {
         press(&popup, slint::platform::Key::Tab);
         assert_eq!(focused(&popup), expected, "converter Tab order");
     }
-    for expected in [
-        "converter input",
-        "converter ad to bs",
-        "converter bs to ad",
-        "converter days tab",
-        "converter convert tab",
-        "converter close",
-    ] {
+    for expected in ["converter input", "converter mode", "converter close"] {
         press_shift_tab(&popup);
         assert_eq!(focused(&popup), expected, "converter Shift+Tab order");
     }
@@ -1530,7 +1520,7 @@ fn overlays_take_and_return_focus() {
 
     // A reopened converter does not report the control that had focus when it closed.
     click(&popup, "Convert");
-    for _ in 0..6 {
+    for _ in 0..3 {
         press(&popup, slint::platform::Key::Tab);
     }
     assert_eq!(focused(&popup), "converter input");

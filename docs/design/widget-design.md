@@ -82,6 +82,12 @@ desktop, so it carries its own quiet surface instead of relying on the taskbar's
   (taskbar) theme. Hover raises it to `surface-raised`. No shadow; dragging doesn't change the
   look, only the position.
 - Width follows the text; it's measured once per text change, never per frame.
+- Menu: the right-click menu and the tray menu share one grouping, with a rule between groups:
+  Open, then Copy today (BS) and (AD), then the bar's own items (Customize bar, Lock position, Hide
+  bar; Show bar in the tray), then Settings with the gear, then Quit alone. The system draws the
+  menu, so its colours, spacing and radius follow Windows; the design sets the order, the rules and
+  the icon. The bar's order lives in one list, `MENU_LAYOUT`, which a test checks; the tray menu in
+  `ui/tray.slint` follows it by hand.
 
 ## 6. Shapes
 
@@ -152,8 +158,9 @@ Decided after the owner's first run of the beta build, with the numbers each cho
 - Header: left-aligned text, the three pill actions on the right of the first line. The date is
   `display`, 20 px, the largest size that fits "Baishakh 31, 2081" beside the pills; the Convert
   label is 13 px for the same reason. A click on the date opens Go to date (WR-14 AC3); on hover
-  it gets the borderless pill of the month title. Convert has an icon and a label; Settings and Pin are
-  icon-only pills with tooltips and accessible names. A pinned Pin pill is filled with `ink`, its
+  it gets the borderless pill of the month title. Convert has an icon and a label; Settings (a
+  filled eight-tooth gear in the iOS Settings style, `ui/icons/settings.svg`, drawn in `ink` so it
+  follows the theme) and Pin are icon-only pills with tooltips and accessible names. A pinned Pin pill is filled with `ink`, its
   icon in `surface`.
 - Pills: 28 px high, `surface-raised` fill, 1 px `hairline` border, `base` text. They are the only
   button style in the popup, so actions are easy to spot. Text pills pad 10 px each side. With an
@@ -173,6 +180,12 @@ Decided after the owner's first run of the beta build, with the numbers each cho
   `sindoor` treatment; the viewed one gets a `hairline` ring.
 - Day tooltip: a `surface-raised` card, 6 px radius, `hairline` border, `body` text, placed so
   it never covers the hovered day.
+- Converter: a 320 px `surface-raised` card, padded 12 px, rows 8 px apart. One three-way segmented
+  control picks the mode (BS → AD, AD → BS, Days) and spans the card. Every row is a 72 px label
+  column in `body` `ink-muted` and a field column that runs to the card's inner edge, so the
+  fields line up in every mode. The result sits in a `surface` box with a `hairline` border and a
+  6 px radius under a `Result` label: the converted date at `title` size, the long form in
+  `body` `ink-muted`. An error is `ink` in the same box; `sindoor` stays for the calendar.
 
 ## 8. Settings window (WR-06)
 
@@ -193,10 +206,18 @@ Clock
 Bar
   Show bar                              [●──]
   Lock position                         [──○]
-  Top line                         (+ Add field)
-  (Weekday ×) (Time ×) (Extra clock time ×)
-  Bottom line                      (+ Add field)
-  (BS date ×) (AD date, short ×)
+  Hide over full-screen apps            [●──]
+  Long time zone name                   [──○]
+  ╭────────────────────────────────────╮
+  │ Top line                    (+ Add field) │
+  │ (Weekday ×) (Time ×) (Extra clock time ×) │
+  │ Bold                                [──○] │
+  ╰────────────────────────────────────╯
+  ╭────────────────────────────────────╮
+  │ Bottom line                 (+ Add field) │
+  │ (BS date ×) (AD date, short ×)             │
+  │ Bold                                [●──] │
+  ╰────────────────────────────────────╯
   (Reset to default) (Reset position)
 Shortcut
   Open MitiBar
@@ -208,6 +229,11 @@ About
 
 - Section headings are `title`, sentence case, no rules between rows; one `hairline` divider
   under the header only.
+- Section card: a group that has its own heading and controls sits on a `surface-raised` card with
+  a 1 px `hairline` border and a 6 px radius, padded 12 px, rows 8 px apart, 8 px between cards.
+  The heading is `base`, semibold, `ink`, with the group's button on its right. The bar's top and
+  bottom lines are two such cards, each with its chips and its own Bold switch, so a switch sits
+  under the line it changes. The card is a named group for assistive technology.
 - Rows: label left in `ink`, control right-aligned. Help text, when a row needs it, is `body`
   `ink-muted` under the label. The line editor and the shortcut field are wider than a row, so
   their label sits above them in `body` `ink-muted`.

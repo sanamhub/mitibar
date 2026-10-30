@@ -1,8 +1,10 @@
-// The converter (WR-07): an inline card inside the popup, opened from the header. The
-// "Convert" tab converts one date; the "Days" tab counts between two BS dates. `app::converter`
-// does the work; `ui_bridge::set_converter` fills `data`.
+// The converter (WR-07): an inline card inside the popup, opened from the header. One selector
+// picks the mode: BS to AD, AD to BS, or the days between two BS dates. Every row is a label
+// column and a field column, and the result has a box of its own. `app::converter` does the work;
+// `ui_bridge::set_converter` fills `data`.
 
 import { FocusFrame } from "focus-frame.slint";
+import { Segmented } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Button, LineEdit } from "std-widgets.slint";
 
@@ -10,6 +12,30 @@ export struct ConverterData {
     short: string,
     long: string,
     error: string,
+}
+
+/// The card's padding, and the label column every row shares (widget-design §7a).
+global ConverterLayout {
+    out property <length> padding: 12px;
+    out property <length> label-width: 72px;
+    out property <length> gap: 8px;
+}
+
+/// A label on the left and a field on the right, both columns the same in every row.
+component ConverterRow inherits HorizontalLayout {
+    in property <string> text;
+    in property <bool> top-aligned: false;
+    spacing: ConverterLayout.gap;
+    Text {
+        width: ConverterLayout.label-width;
+        text: root.text;
+        color: Theme.ink-muted;
+        font-size: 13px;
+        vertical-alignment: root.top-aligned ? top : center;
+        overflow: elide;
+        accessible-role: none;
+    }
+    @children
 }
 
 export component Converter inherits Rectangle {
@@ -33,8 +59,11 @@ export component Converter inherits Rectangle {
     in-out property <string> active-control: "";
     changed active-control => { root.control-focused(root.active-control); }
 
+    /// The selector's position: BS to AD, AD to BS, then Days.
+    property <int> mode: root.tab == 1 ? 2 : root.direction;
+
     width: 320px;
-    height: 300px;
+    height: 264px;
     background: Theme.surface-raised;
     border-radius: 6px;
     border-width: 1px;
@@ -44,8 +73,8 @@ export component Converter inherits Rectangle {
     TouchArea {}
 
     VerticalLayout {
-        padding: 12px;
-        spacing: 8px;
+        padding: ConverterLayout.padding;
+        spacing: ConverterLayout.gap;
 
         HorizontalLayout {
             spacing: 8px;
@@ -71,79 +100,26 @@ export component Converter inherits Rectangle {
             }
         }
 
-        HorizontalLayout {
-            spacing: 4px;
-            FocusFrame {
-                width: convert-tab.width;
-                height: convert-tab.height;
-                focused: convert-tab.has-focus;
-                convert-tab := Button {
-                    text: @tr("Convert");
-                    checkable: true;
-                    checked: root.tab == 0;
-                    accessible-label: @tr("Convert tab");
-                    clicked => { root.tab = 0; }
-                    changed has-focus => {
-                        if (convert-tab.has-focus) { root.active-control = "converter convert tab"; }
-                    }
+        Segmented {
+            label: @tr("Conversion");
+            options: [@tr("BS → AD"), @tr("AD → BS"), @tr("Days")];
+            segment-width: (root.width - 2 * ConverterLayout.padding) / 3;
+            selected: root.mode;
+            picked(index) => {
+                if (index == 2) {
+                    root.tab = 1;
+                    root.days-edited(root.from, root.to);
+                } else {
+                    root.tab = 0;
+                    root.direction = index;
+                    root.edited(root.input, index);
                 }
             }
-            FocusFrame {
-                width: days-tab.width;
-                height: days-tab.height;
-                focused: days-tab.has-focus;
-                days-tab := Button {
-                    text: @tr("Days");
-                    checkable: true;
-                    checked: root.tab == 1;
-                    accessible-label: @tr("Days tab");
-                    clicked => { root.tab = 1; }
-                    changed has-focus => {
-                        if (days-tab.has-focus) { root.active-control = "converter days tab"; }
-                    }
-                }
-            }
+            focused => { root.active-control = "converter mode"; }
         }
 
-        if root.tab == 0: VerticalLayout {
-            spacing: 6px;
-            HorizontalLayout {
-                spacing: 4px;
-                FocusFrame {
-                    width: bs-button.width;
-                    height: bs-button.height;
-                    focused: bs-button.has-focus;
-                    bs-button := Button {
-                        text: "BS → AD";
-                        checkable: true;
-                        checked: root.direction == 0;
-                        clicked => {
-                            root.direction = 0;
-                            root.edited(root.input, 0);
-                        }
-                        changed has-focus => {
-                            if (bs-button.has-focus) { root.active-control = "converter bs to ad"; }
-                        }
-                    }
-                }
-                FocusFrame {
-                    width: ad-button.width;
-                    height: ad-button.height;
-                    focused: ad-button.has-focus;
-                    ad-button := Button {
-                        text: "AD → BS";
-                        checkable: true;
-                        checked: root.direction == 1;
-                        clicked => {
-                            root.direction = 1;
-                            root.edited(root.input, 1);
-                        }
-                        changed has-focus => {
-                            if (ad-button.has-focus) { root.active-control = "converter ad to bs"; }
-                        }
-                    }
-                }
-            }
+        if root.tab == 0: ConverterRow {
+            text: root.direction == 0 ? @tr("BS date") : @tr("AD date");
             FocusFrame {
                 horizontal-stretch: 1;
                 height: input.height;
@@ -151,7 +127,7 @@ export component Converter inherits Rectangle {
                 input := LineEdit {
                     width: 100%;
                     text <=> root.input;
-                    placeholder-text: "2081/01/01 or 2024-04-13";
+                    placeholder-text: root.direction == 0 ? "2081/01/01" : "2024-04-13";
                     accessible-label: @tr("Date to convert");
                     edited(text) => { root.edited(text, root.direction); }
                     changed has-focus => {
@@ -161,8 +137,8 @@ export component Converter inherits Rectangle {
             }
         }
 
-        if root.tab == 1: VerticalLayout {
-            spacing: 6px;
+        if root.tab == 1: ConverterRow {
+            text: @tr("From");
             FocusFrame {
                 horizontal-stretch: 1;
                 height: from-input.height;
@@ -170,7 +146,7 @@ export component Converter inherits Rectangle {
                 from-input := LineEdit {
                     width: 100%;
                     text <=> root.from;
-                    placeholder-text: @tr("From BS date");
+                    placeholder-text: "2081/01/01";
                     accessible-label: @tr("From BS date");
                     edited(text) => { root.days-edited(text, root.to); }
                     changed has-focus => {
@@ -178,6 +154,9 @@ export component Converter inherits Rectangle {
                     }
                 }
             }
+        }
+        if root.tab == 1: ConverterRow {
+            text: @tr("To");
             FocusFrame {
                 horizontal-stretch: 1;
                 height: to-input.height;
@@ -185,7 +164,7 @@ export component Converter inherits Rectangle {
                 to-input := LineEdit {
                     width: 100%;
                     text <=> root.to;
-                    placeholder-text: @tr("To BS date");
+                    placeholder-text: "2081/01/01";
                     accessible-label: @tr("To BS date");
                     edited(text) => { root.days-edited(root.from, text); }
                     changed has-focus => {
@@ -195,23 +174,41 @@ export component Converter inherits Rectangle {
             }
         }
 
-        if root.data.error != "": Text {
-            text: root.data.error;
-            color: Theme.sindoor;
-            font-size: 12px;
-            wrap: word-wrap;
+        ConverterRow {
+            vertical-stretch: 1;
+            top-aligned: true;
+            text: @tr("Result");
+            result := Rectangle {
+                horizontal-stretch: 1;
+                min-height: 64px;
+                background: Theme.surface;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: Theme.hairline;
+                VerticalLayout {
+                    padding: 8px;
+                    spacing: 4px;
+                    alignment: start;
+                    // An error is plain `ink`: red stays for today and holidays.
+                    if root.data.error != "": Text {
+                        text: root.data.error;
+                        color: Theme.ink;
+                        font-size: 13px;
+                        wrap: word-wrap;
+                    }
+                    if root.data.error == "" && root.data.short != "": Text {
+                        text: root.data.short;
+                        color: Theme.ink;
+                        font-size: 16px;
+                    }
+                    if root.data.error == "" && root.data.long != "": Text {
+                        text: root.data.long;
+                        color: Theme.ink-muted;
+                        font-size: 13px;
+                        wrap: word-wrap;
+                    }
+                }
+            }
         }
-        if root.data.error == "" && root.data.short != "": Text {
-            text: root.data.short;
-            color: Theme.ink;
-            font-size: 16px;
-        }
-        if root.data.error == "" && root.data.long != "": Text {
-            text: root.data.long;
-            color: Theme.ink-muted;
-            font-size: 13px;
-            wrap: word-wrap;
-        }
-        Rectangle { vertical-stretch: 1; }
     }
 }

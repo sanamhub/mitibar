@@ -5,7 +5,7 @@
 import { AppInfo } from "app-info.slint";
 import { Converter, ConverterData } from "converter.slint";
 import { DayDetail, DayDetailData } from "day-detail.slint";
-import { LineIcon, Pill, TooltipTiming } from "controls.slint";
+import { GearIcon, LineIcon, Pill, TooltipTiming } from "controls.slint";
 import { FocusFrame } from "focus-frame.slint";
 import { MonthGrid, CellData, ZoomCellData } from "month-grid.slint";
 import { LineEdit } from "std-widgets.slint";
@@ -468,8 +468,7 @@ export component PopupWindow inherits Window {
                         root.pill-tip-y = y + h + 4px;
                     }
                     tip-dismissed => { root.pill-tip = ""; }
-                    LineIcon {
-                        commands: "M 2 4 L 14 4 M 2 8 L 14 8 M 2 12 L 14 12 M 5 2 L 5 6 M 11 6 L 11 10 M 6 10 L 6 14";
+                    GearIcon {
                         color: settings-pill.foreground;
                     }
                 }

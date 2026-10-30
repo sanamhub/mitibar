@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>The bar pill</title>
+<rect x="8" y="8" width="1008" height="1008" rx="216" fill="#FDFBF8" stroke="#E7E0D6" stroke-width="16"/>
+<rect x="96" y="288" width="832" height="448" rx="112" fill="#211C17"/>
+<rect x="204" y="388" width="300" height="52" rx="26" fill="#9B9288"/>
+<rect x="204" y="500" width="440" height="84" rx="42" fill="#F1ECE4"/>
+<circle cx="768" cy="544" r="72" fill="#C12B2B"/>
+</svg>

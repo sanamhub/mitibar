@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>Sun over the ridge</title>
+<defs><clipPath id="t"><rect width="1024" height="1024" rx="224"/></clipPath></defs>
+<rect width="1024" height="1024" rx="224" fill="#FDFBF8"/>
+<g clip-path="url(#t)">
+<circle cx="512" cy="400" r="210" fill="#C12B2B"/>
+<path d="M0 840 220 560 336 688 520 400 720 690 820 590 1024 840V1024H0Z" fill="#211C17"/>
+<path d="M520 400 584 490 540 470 520 510 496 470 448 494Z" fill="#FDFBF8"/>
+</g>
+</svg>

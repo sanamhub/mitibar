@@ -341,7 +341,7 @@ fn a_five_row_and_a_six_row_month_both_end_at_the_holiday_line() {
 
 // Icons and captions.
 
-/// The boxes of the `LineIcon`s and the texts that sit inside `container`.
+/// The boxes of the icons (`LineIcon` and `GearIcon`) and the texts that sit inside `container`.
 fn parts_in(popup: &PopupWindow, container: Rect) -> (Vec<Rect>, Vec<Rect>) {
     let inside = |type_name: &str| {
         ElementHandle::find_by_element_type_name(popup, type_name)
@@ -349,7 +349,9 @@ fn parts_in(popup: &PopupWindow, container: Rect) -> (Vec<Rect>, Vec<Rect>) {
             .filter(|rect| container.holds(*rect))
             .collect::<Vec<_>>()
     };
-    (inside("LineIcon"), inside("Text"))
+    let mut icons = inside("LineIcon");
+    icons.extend(inside("GearIcon"));
+    (icons, inside("Text"))
 }
 
 fn pill(popup: &PopupWindow, label: &str) -> Rect {
@@ -417,4 +419,37 @@ fn the_holiday_line_chevron_is_level_with_its_text() {
         dline.abs() < 0.01,
         "the chevron is {dline} px off the line's middle"
     );
+}
+
+// The converter's two columns.
+
+/// A field starts this far right of the selector's left edge: the label column (72 px) and the
+/// gap after it (8 px).
+const CONVERTER_FIELD_OFFSET: f32 = 72.0 + 8.0;
+
+#[test]
+fn the_converter_rows_share_one_field_column_that_ends_at_the_selector_in_every_mode() {
+    let (popup, _state, _) = app(date(2081, 1, 1));
+    crate::interaction_tests::click(&popup, "Convert");
+    let selector = pill(&popup, "Conversion");
+    for (mode, fields) in [
+        ("BS → AD", vec!["Date to convert"]),
+        ("AD → BS", vec!["Date to convert"]),
+        ("Days", vec!["From BS date", "To BS date"]),
+    ] {
+        crate::interaction_tests::click(&popup, mode);
+        for label in fields {
+            let field = pill(&popup, label);
+            assert!(
+                (field.x - selector.x - CONVERTER_FIELD_OFFSET).abs() < 0.5,
+                "{mode}: {label} starts {} px from the selector's edge",
+                field.x - selector.x
+            );
+            assert!(
+                (field.right() - selector.right()).abs() < 0.5,
+                "{mode}: {label} ends {} px from the selector's right edge",
+                selector.right() - field.right()
+            );
+        }
+    }
 }

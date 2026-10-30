@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>Patro grid with today</title>
+<rect x="8" y="8" width="1008" height="1008" rx="216" fill="#FDFBF8" stroke="#E7E0D6" stroke-width="16"/>
+<circle cx="232" cy="232" r="76" fill="#6E655C"/>
+<circle cx="512" cy="232" r="76" fill="#6E655C"/>
+<circle cx="792" cy="232" r="76" fill="#6E655C"/>
+<circle cx="232" cy="512" r="76" fill="#6E655C"/>
+<circle cx="512" cy="512" r="130" fill="#C12B2B"/>
+<circle cx="792" cy="512" r="76" fill="#6E655C"/>
+<circle cx="232" cy="792" r="76" fill="#6E655C"/>
+<circle cx="512" cy="792" r="76" fill="#6E655C"/>
+<circle cx="792" cy="792" r="76" fill="#6E655C"/>
+</svg>
