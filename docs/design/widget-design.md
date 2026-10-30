@@ -82,6 +82,11 @@ desktop, so it carries its own quiet surface instead of relying on the taskbar's
   (taskbar) theme. Hover raises it to `surface-raised`. No shadow; dragging doesn't change the
   look, only the position.
 - Width follows the text; it's measured once per text change, never per frame.
+- Menu: the right-click menu and the tray menu share one grouping, with a rule between groups:
+  Open, then Copy today (BS) and (AD), then the bar's own items (Customize bar, Lock position, Hide
+  bar; Show bar in the tray), then Settings with the gear, then Quit alone. The system draws the
+  menu, so its colours, spacing and radius follow Windows; the design sets the order, the rules and
+  the icon. The order lives in one list, MENU_LAYOUT, which a test checks.
 
 ## 6. Shapes
 

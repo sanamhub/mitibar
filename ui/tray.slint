@@ -44,14 +44,17 @@ export component TrayComponent inherits SystemTrayIcon {
 
     Menu {
         MenuItem { title: MenuText.open; activated => { root.open(); } }
+        MenuSeparator {}
         MenuItem { title: MenuText.copy-bs; activated => { root.copy-bs(); } }
         MenuItem { title: MenuText.copy-ad; activated => { root.copy-ad(); } }
+        if root.bar-supported : MenuSeparator {}
         if root.bar-supported : MenuItem {
             title: MenuText.show-bar;
             checkable: true;
             checked: root.bar-shown;
             activated => { root.show-bar(); }
         }
+        MenuSeparator {}
         MenuItem {
             title: MenuText.settings;
             icon: root.dark-taskbar
@@ -59,6 +62,7 @@ export component TrayComponent inherits SystemTrayIcon {
                 : @image-url("icons/settings-light-16.png");
             activated => { root.settings(); }
         }
+        MenuSeparator {}
         MenuItem { title: MenuText.quit; activated => { root.quit(); } }
     }
 

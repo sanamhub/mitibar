@@ -18,7 +18,8 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] macOS shows the bar's top line as the title and follows a line edit in Settings at once.
 - [ ] Tooltip shows `MitiBar` and the BS and AD dates.
 - [ ] Left click opens the popup; a second click closes it. On macOS, Open is the first menu item.
-- [ ] Menu order is Open, Copy today (BS), Copy today (AD), Settings, Quit, in the current language.
+- [ ] Menu order is Open, Copy today (BS), Copy today (AD), Show bar (Windows), Settings, Quit, in the current language,
+      with a rule between the groups and the gear on Settings.
 - [ ] Copy BS and Copy AD put the exact strings on the clipboard.
 - [ ] Linux without a tray (GNOME without the AppIndicator extension): the popup opens at start
       and the app keeps running.
@@ -55,6 +56,11 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] Sleep and resume: the display is correct within 61 s.
 
 ## Settings and converter (WR-06, WR-07)
+
+- [ ] Settings: the bar's top and bottom lines are two cards, each with its own Add field, chips and
+      Bold switch; Tab goes through a card before the next. Light and dark, 100 % and 150 %.
+- [ ] Converter: one selector (BS to AD, AD to BS, Days); the fields line up in all three modes and the
+      result sits in its own box; Tab goes close, selector, field(s), close; the arrow keys change mode.
 
 - [ ] Every setting applies immediately and survives a restart.
 - [ ] A corrupt settings file starts with defaults and leaves a `.broken-*` file.
@@ -102,6 +108,9 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] Lock position: a drag does nothing and a click still toggles the popup.
 - [ ] Click toggles the popup beside the bar; double-click leaves it open; right-click menu items
       all work in English and Nepali; Hide bar and the tray's Show bar agree.
+- [ ] The bar's menu has the same groups as the tray's, with the bar's own items (Customize bar, Lock
+      position, Hide bar) between Copy and Settings, and the gear on Settings in light and dark at 100 %,
+      150 % and 200 %.
 - [ ] The menu opens above the bar, not behind it, and near the bottom or right work-area edge its
       last items are still on screen at 100 %, 150 % and 200 %.
 - [ ] The log has one startup line with the monitor count, primary size, DPI and taskbar edge; a

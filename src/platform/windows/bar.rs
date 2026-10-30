@@ -33,14 +33,15 @@ use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CS_DBLCLKS, CS_HREDRAW, CS_VREDRAW, CreatePopupMenu, CreateWindowExW,
     DefWindowProcW, DestroyMenu, DestroyWindow, FindWindowW, GWLP_USERDATA, GetCursorPos,
     GetForegroundWindow, GetSystemMetrics, GetWindowLongPtrW, HCURSOR, HICON, HWND_TOPMOST,
-    IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE, MENUITEMINFOW, MF_CHECKED, MF_STRING,
-    MF_UNCHECKED, MIIM_BITMAP, PostMessageW, RegisterClassW, RegisterWindowMessageW, SM_CXDRAG,
-    SM_CYDRAG, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER,
-    SetForegroundWindow, SetMenuItemInfoW, SetWindowLongPtrW, SetWindowPos, ShowWindow,
-    TPM_RETURNCMD, TPM_RIGHTBUTTON, TPM_WORKAREA, TrackPopupMenuEx, ULW_ALPHA, UpdateLayeredWindow,
-    WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED, WM_DISPLAYCHANGE, WM_DPICHANGED, WM_LBUTTONDBLCLK,
-    WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_RBUTTONUP, WM_SETTINGCHANGE,
-    WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+    IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE, MENUITEMINFOW, MF_CHECKED, MF_SEPARATOR,
+    MF_STRING, MF_UNCHECKED, MIIM_BITMAP, PostMessageW, RegisterClassW, RegisterWindowMessageW,
+    SM_CXDRAG, SM_CYDRAG, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
+    SWP_NOZORDER, SetForegroundWindow, SetMenuItemInfoW, SetWindowLongPtrW, SetWindowPos,
+    ShowWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON, TPM_WORKAREA, TrackPopupMenuEx, ULW_ALPHA,
+    UpdateLayeredWindow, WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED, WM_DISPLAYCHANGE, WM_DPICHANGED,
+    WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_RBUTTONUP,
+    WM_SETTINGCHANGE, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST,
+    WS_POPUP,
 };
 use windows::core::{PCWSTR, w};
 
@@ -49,7 +50,7 @@ use crate::app::bar_place::{
     self, Monitor, Point, Rect, Saved, Size, drag_to, monitor_at, snap, to_saved,
 };
 use crate::app::bar_pointer::{Action as PointerAction, Pointer};
-use crate::platform::bar::{Anchor, Bar, BarEvent, MenuItem, MenuLabels};
+use crate::platform::bar::{Anchor, Bar, BarEvent, MENU_LAYOUT, MenuEntry, MenuItem, MenuLabels};
 use crate::platform::taskbar_scheme::taskbar_is_dark;
 
 use super::foreground::{self, Hooks};
@@ -978,28 +979,34 @@ unsafe fn run_menu(labels: &MenuLabels, locked: bool, bar: HWND, point: POINT) -
     // SAFETY: the popup menu is ours and the labels are UTF-16 buffers we own.
     let menu = unsafe { CreatePopupMenu() }.ok()?;
     let mut gear = None;
-    let items = [
-        (MenuItem::Open, &labels.open),
-        (MenuItem::CopyBs, &labels.copy_bs),
-        (MenuItem::CopyAd, &labels.copy_ad),
-        (MenuItem::Customize, &labels.customize),
-        (MenuItem::Lock, &labels.lock),
-        (MenuItem::Hide, &labels.hide),
-        (MenuItem::Settings, &labels.settings),
-        (MenuItem::Quit, &labels.quit),
-    ];
-    for (index, (item, label)) in items.iter().enumerate() {
-        let text: Vec<u16> = label.encode_utf16().chain(std::iter::once(0)).collect();
-        let flags = if *item == MenuItem::Lock {
-            MF_STRING | if locked { MF_CHECKED } else { MF_UNCHECKED }
-        } else {
-            MF_STRING
-        };
-        // SAFETY: the menu and the text buffer are valid for this call.
-        let _ = unsafe { AppendMenuW(menu, flags, index + 1, PCWSTR(text.as_ptr())) };
-        if *item == MenuItem::Settings {
-            // SAFETY: the menu is ours and the bitmap is kept until the menu is destroyed.
-            gear = unsafe { set_gear(menu, index + 1, bar) };
+    // The command id is the item's place among the items, so a separator does not shift it.
+    let mut items: Vec<MenuItem> = Vec::new();
+    for entry in MENU_LAYOUT {
+        match entry {
+            MenuEntry::Separator => {
+                // SAFETY: the menu is ours; a separator takes no text or id.
+                let _ = unsafe { AppendMenuW(menu, MF_SEPARATOR, 0, PCWSTR::null()) };
+            }
+            MenuEntry::Item(item) => {
+                items.push(*item);
+                let id = items.len();
+                let text: Vec<u16> = labels
+                    .label(*item)
+                    .encode_utf16()
+                    .chain(std::iter::once(0))
+                    .collect();
+                let flags = if *item == MenuItem::Lock {
+                    MF_STRING | if locked { MF_CHECKED } else { MF_UNCHECKED }
+                } else {
+                    MF_STRING
+                };
+                // SAFETY: the menu and the text buffer are valid for this call.
+                let _ = unsafe { AppendMenuW(menu, flags, id, PCWSTR(text.as_ptr())) };
+                if *item == MenuItem::Settings {
+                    // SAFETY: the menu is ours and the bitmap is kept until the menu is destroyed.
+                    gear = unsafe { set_gear(menu, id, bar) };
+                }
+            }
         }
     }
     // The bar never activates, so claim the foreground for the menu to dismiss on a click
@@ -1033,7 +1040,7 @@ unsafe fn run_menu(labels: &MenuLabels, locked: bool, bar: HWND, point: POINT) -
         .ok()
         .and_then(|command| command.checked_sub(1))
         .and_then(|index| items.get(index))
-        .map(|(item, _)| *item);
+        .copied();
     let opens_popup = matches!(
         chosen,
         Some(MenuItem::Open | MenuItem::Customize | MenuItem::Settings)

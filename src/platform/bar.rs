@@ -31,6 +31,49 @@ pub enum MenuItem {
     Quit,
 }
 
+impl MenuLabels {
+    /// The label of `item`.
+    #[cfg_attr(not(windows), allow(dead_code))]
+    pub fn label(&self, item: MenuItem) -> &str {
+        match item {
+            MenuItem::Open => &self.open,
+            MenuItem::CopyBs => &self.copy_bs,
+            MenuItem::CopyAd => &self.copy_ad,
+            MenuItem::Customize => &self.customize,
+            MenuItem::Lock => &self.lock,
+            MenuItem::Hide => &self.hide,
+            MenuItem::Settings => &self.settings,
+            MenuItem::Quit => &self.quit,
+        }
+    }
+}
+
+/// A row of the bar's right-click menu: an item or the rule between two groups.
+#[cfg_attr(not(windows), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MenuEntry {
+    Item(MenuItem),
+    Separator,
+}
+
+/// The menu's groups, in the order of the tray menu (Open, Copy, Settings, Quit) with the bar's own
+/// items between Copy and Settings: what you open, what you copy, the bar, then the app.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub const MENU_LAYOUT: &[MenuEntry] = &[
+    MenuEntry::Item(MenuItem::Open),
+    MenuEntry::Separator,
+    MenuEntry::Item(MenuItem::CopyBs),
+    MenuEntry::Item(MenuItem::CopyAd),
+    MenuEntry::Separator,
+    MenuEntry::Item(MenuItem::Customize),
+    MenuEntry::Item(MenuItem::Lock),
+    MenuEntry::Item(MenuItem::Hide),
+    MenuEntry::Separator,
+    MenuEntry::Item(MenuItem::Settings),
+    MenuEntry::Separator,
+    MenuEntry::Item(MenuItem::Quit),
+];
+
 /// Where the popup opens for something done on the bar (ADR-0019 point 8): the bar's rectangle,
 /// the work area of its monitor and that monitor's DPI, all in physical pixels.
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -114,3 +157,62 @@ impl Bar for Noop {
 pub use super::windows::render::render as render_bar;
 #[cfg(all(windows, feature = "snapshot"))]
 pub use super::windows::theme::palette as bar_palette;
+
+#[cfg(test)]
+mod tests {
+    use super::{MENU_LAYOUT, MenuEntry, MenuItem};
+
+    fn items() -> Vec<MenuItem> {
+        MENU_LAYOUT
+            .iter()
+            .filter_map(|entry| match entry {
+                MenuEntry::Item(item) => Some(*item),
+                MenuEntry::Separator => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_menu_lists_every_item_once() {
+        let items = items();
+        for item in [
+            MenuItem::Open,
+            MenuItem::CopyBs,
+            MenuItem::CopyAd,
+            MenuItem::Customize,
+            MenuItem::Lock,
+            MenuItem::Hide,
+            MenuItem::Settings,
+            MenuItem::Quit,
+        ] {
+            assert_eq!(items.iter().filter(|i| **i == item).count(), 1, "{item:?}");
+        }
+    }
+
+    #[test]
+    fn separators_only_sit_between_two_items() {
+        assert!(matches!(MENU_LAYOUT.first(), Some(MenuEntry::Item(_))));
+        assert!(matches!(MENU_LAYOUT.last(), Some(MenuEntry::Item(_))));
+        for pair in MENU_LAYOUT.windows(2) {
+            assert!(
+                pair != [MenuEntry::Separator, MenuEntry::Separator],
+                "two separators in a row"
+            );
+        }
+    }
+
+    #[test]
+    fn the_app_items_come_last_and_quit_is_alone() {
+        let items = items();
+        assert_eq!(items.last(), Some(&MenuItem::Quit));
+        let quit = MENU_LAYOUT.len() - 1;
+        assert_eq!(
+            MENU_LAYOUT[quit - 1],
+            MenuEntry::Separator,
+            "Quit is set apart"
+        );
+        let settings = items.iter().position(|i| *i == MenuItem::Settings);
+        let customize = items.iter().position(|i| *i == MenuItem::Customize);
+        assert!(customize < settings, "the bar's items come before Settings");
+    }
+}
