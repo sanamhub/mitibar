@@ -347,9 +347,9 @@ impl Controller {
             return;
         }
         self.hide_fullscreen = hide;
-        if !hide {
-            self.fullscreen = false;
-        }
+        // Turning it on while a full-screen app is already in front hides the bar at once, and
+        // turning it off shows the bar again; either way the foreground window is looked at anew.
+        self.on_foreground();
         self.refresh();
     }
 
@@ -542,26 +542,27 @@ impl Controller {
         unsafe { (GetSystemMetrics(SM_CXDRAG), GetSystemMetrics(SM_CYDRAG)) }
     }
 
-    /// The foreground window changed, or the full-screen window moved or resized: re-run the
-    /// full-screen check and re-assert top-most (ADR-0019 points 3 and 4).
+    /// The foreground window changed, or it moved or resized: re-run the full-screen check and
+    /// re-assert top-most (ADR-0019 points 3 and 4). The foreground window is watched whether or
+    /// not it is full screen yet, so a window that goes full screen in place is noticed too.
     fn on_foreground(&mut self) {
         let bar_monitor = (!self.bar.0.is_null()).then(|| {
             // SAFETY: MonitorFromWindow is a read-only query and always returns a monitor with
             // this flag.
             unsafe { MonitorFromWindow(self.bar, MONITOR_DEFAULTTONEAREST) }
         });
-        let front = if self.hide_fullscreen {
-            foreground::fullscreen_window(bar_monitor)
+        let app = if self.hide_fullscreen {
+            foreground::foreground_app()
         } else {
             None
         };
         if let Some(hooks) = self.hooks.as_mut() {
-            match front {
+            match app {
                 Some(window) => hooks.watch(window),
                 None => hooks.unwatch(),
             }
         }
-        let fullscreen = front.is_some();
+        let fullscreen = app.is_some_and(|window| foreground::is_fullscreen(window, bar_monitor));
         if fullscreen != self.fullscreen {
             self.fullscreen = fullscreen;
             self.refresh();

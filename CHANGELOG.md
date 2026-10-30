@@ -26,6 +26,10 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ### Fixed
 
+- The bar hides when the app in front goes full screen in place, such as F11 in a browser or a
+  video's full-screen button, and comes back when it leaves full screen. Before, it only hid when
+  a window that was already full screen came to the front. Switching "Hide over full-screen apps"
+  on takes effect at once.
 - Switching the theme from Light or Dark back to System follows Windows again, and keeps
   following it when Windows changes between light and dark mode.
 - The Settings window shows the app icon in its title bar and on the taskbar.
