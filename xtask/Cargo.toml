@@ -11,6 +11,9 @@ serde_json = "1"
 # through Slint, so this adds no new crate.
 resvg = { version = "=0.48.1", default-features = false, features = ["text"] }
 fontdb = "=0.24.0"
+# Outlines the digits from the bundled fonts. Digits are paths in every source file, not live
+# text, so a build on a machine without the fonts renders the same shapes.
+ttf-parser = "=0.25.1"
 
 # Process memory, CPU time and thread count for the idle harness. Windows-only and xtask-only,
 # the same `windows` family the app uses (ADR-0005); it never reaches a shipped binary.

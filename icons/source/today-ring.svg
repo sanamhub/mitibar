@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<title>Today ring on the patro</title>
+<defs><clipPath id="tile"><rect x="64" y="64" width="896" height="896" rx="200"/></clipPath></defs>
+<g clip-path="url(#tile)">
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="{{tile}}"/>
+  <path d="M40 214 l86 -150 l86 150 Z" fill="#C12B2B"/>
+  <path d="M126 64 l172 0 l-86 150 Z" fill="#E8A33D" fill-opacity=".85"/>
+  <path d="M212 214 l86 -150 l86 150 Z" fill="{{ink}}"/>
+  <path d="M299 64 l172 0 l-86 150 Z" fill="#5B7C99" fill-opacity=".85"/>
+  <path d="M385 214 l86 -150 l86 150 Z" fill="#E8A33D"/>
+  <path d="M471 64 l172 0 l-86 150 Z" fill="#C12B2B" fill-opacity=".85"/>
+  <path d="M558 214 l86 -150 l86 150 Z" fill="#5B7C99"/>
+  <path d="M644 64 l172 0 l-86 150 Z" fill="{{ink}}" fill-opacity=".85"/>
+  <path d="M730 214 l86 -150 l86 150 Z" fill="#C12B2B"/>
+  <path d="M816 64 l172 0 l-86 150 Z" fill="#E8A33D" fill-opacity=".85"/>
+  <path d="M902 214 l86 -150 l86 150 Z" fill="{{ink}}"/>
+  <path d="M989 64 l172 0 l-86 150 Z" fill="#5B7C99" fill-opacity=".85"/>
+</g>
+{{edge}}
+<circle cx="512" cy="590" r="260" fill="none" stroke="#C12B2B" stroke-width="50"/>
+{{digit}}
+</svg>

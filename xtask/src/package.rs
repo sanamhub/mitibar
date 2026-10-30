@@ -248,6 +248,22 @@ mod tests {
         assert!(workflow.contains(&format!("cargo install cargo-packager --version {version}")));
     }
 
+    /// The installer has its own icon slot. Without this key cargo-packager leaves the NSIS
+    /// default in the setup window and in Apps & features.
+    #[test]
+    fn the_installer_uses_the_app_icon() {
+        let root = root();
+        let config =
+            std::fs::read_to_string(root.join("Packager.toml")).expect("read Packager.toml");
+        assert!(config.contains("installerIcon = \"icons/icon.ico\""));
+        assert!(root.join("icons/icon.ico").is_file());
+        assert!(
+            config.contains("\"icons/icon.ico\"")
+                && config.contains("\"icons/icon.icns\"")
+                && config.contains("\"icons/256x256.png\"")
+        );
+    }
+
     #[test]
     fn package_formats_accept_the_release_lists_and_reject_typos() {
         assert_eq!(parse_formats("app").expect("app"), "app");
