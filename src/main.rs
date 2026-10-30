@@ -1177,7 +1177,7 @@ fn update_popup(state: &Rc<RefCell<AppState>>) {
     log::debug!("calendar built in {:?}", started.elapsed());
     ui_bridge::set_calendar(&popup, zoom, view.as_ref(), today, lang);
     let holiday = holidays::next_holiday(today, lang);
-    ui_bridge::set_next_holiday(&popup, holiday.as_ref());
+    ui_bridge::set_next_holiday(&popup, holiday.as_ref(), lang);
     ui_bridge::set_upcoming(&popup, &holidays::upcoming_holidays(today, lang, 5), lang);
     ui_bridge::set_detail(&popup, s.detail.as_ref());
     // A tooltip belongs to the cells it was shown over.

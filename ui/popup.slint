@@ -33,6 +33,8 @@ export struct UpcomingData {
     name: string,
     date: string,
     days: int,
+    /// `days` in the language's digits, for the "in N days" text.
+    days-text: string,
 }
 
 /// Who draws the popup's corners (WR-02 AC5). Set by `ui_bridge::show_popup_at` from the window.
@@ -82,6 +84,8 @@ export component PopupWindow inherits Window {
     in property <int> forced-tip-index: -1;
     in property <string> holiday-name: "";
     in property <int> holiday-days: -1;
+    /// `holiday-days` in the language's digits, for the sentence.
+    in property <string> holiday-days-text: "";
     /// 13 px for Latin, 12 px for Devanagari (WR-03 AC2), set by `ui_bridge::set_calendar`.
     in property <length> ad-day-size: 13px;
     /// 11 px for Latin, 12 px for Devanagari, set by `ui_bridge::set_calendar`.
@@ -225,9 +229,9 @@ export component PopupWindow inherits Window {
     // or that click would reopen it.
     callback hidden();
 
-    /// When a holiday falls: "today", "tomorrow" or "in N days".
-    pure function when(days: int) -> string {
-        return days == 0 ? @tr("today") : days == 1 ? @tr("tomorrow") : @tr("in {0} days", days);
+    /// When a holiday falls: "today", "tomorrow" or "in N days", N in the language's digits.
+    pure function when(days: int, days-text: string) -> string {
+        return days == 0 ? @tr("today") : days == 1 ? @tr("tomorrow") : @tr("in {0} days", days-text);
     }
 
     function open-converter() {
@@ -650,12 +654,12 @@ export component PopupWindow inherits Window {
                                 ? @tr("Public holiday today")
                                 : root.holiday-days == 1
                                     ? @tr("Public holiday tomorrow")
-                                    : @tr("Public holiday in {0} days", root.holiday-days))
+                                    : @tr("Public holiday in {0} days", root.holiday-days-text))
                             : (root.holiday-days == 0
                                 ? @tr("Next holiday: {0} today", root.holiday-name)
                                 : root.holiday-days == 1
                                     ? @tr("Next holiday: {0} tomorrow", root.holiday-name)
-                                    : @tr("Next holiday: {0} in {1} days", root.holiday-name, root.holiday-days));
+                                    : @tr("Next holiday: {0} in {1} days", root.holiday-name, root.holiday-days-text));
                     }
                     LineIcon {
                         y: (parent.height - self.height) / 2;
@@ -695,7 +699,7 @@ export component PopupWindow inherits Window {
                     focus-on-tab-navigation: true;
                     accessible-role: button;
                     accessible-label: (item.name == "" ? @tr("Public holiday") : item.name)
-                        + ", " + item.date + ", " + root.when(item.days);
+                        + ", " + item.date + ", " + root.when(item.days, item.days-text);
                     accessible-action-default => { root.upcoming-picked(i); }
                     key-pressed(event) => {
                         if (event.text == Key.Return || event.text == " ") {
@@ -734,7 +738,7 @@ export component PopupWindow inherits Window {
                             }
                         }
                         Text {
-                            text: root.when(item.days);
+                            text: root.when(item.days, item.days-text);
                             color: Theme.ink-muted;
                             font-size: 12px;
                             vertical-alignment: center;

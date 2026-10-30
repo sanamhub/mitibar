@@ -268,8 +268,9 @@ fn cell_label(date: NepaliDate, lang: Lang) -> String {
     label
 }
 
-/// Fills the WR-03 AC8 line. `None` hides it; the sentence itself is built in `.slint`.
-pub fn set_next_holiday(popup: &PopupWindow, holiday: Option<&NextHoliday>) {
+/// Fills the WR-03 AC8 line. `None` hides it; the sentence itself is built in `.slint`, with the
+/// day count in the language's digits.
+pub fn set_next_holiday(popup: &PopupWindow, holiday: Option<&NextHoliday>, lang: Lang) {
     let (name, days) = holiday.map_or(("", -1), |holiday| {
         (
             holiday.name.unwrap_or_default(),
@@ -278,6 +279,12 @@ pub fn set_next_holiday(popup: &PopupWindow, holiday: Option<&NextHoliday>) {
     });
     popup.set_holiday_name(name.into());
     popup.set_holiday_days(days);
+    popup.set_holiday_days_text(days_text(days, lang).into());
+}
+
+/// A day count in the language's digits; empty for none.
+fn days_text(days: i32, lang: Lang) -> String {
+    u32::try_from(days).map_or_else(|_| String::new(), |days| lang.digits(days, 1).to_string())
 }
 
 /// Fills the upcoming-holidays list (WR-14 AC4): the name, the BS date and how many days away.
@@ -299,6 +306,7 @@ pub fn set_upcoming(popup: &PopupWindow, holidays: &[NextHoliday], lang: Lang) {
                 .to_string()
                 .into(),
             days: i32::try_from(holiday.days_away).unwrap_or(0),
+            days_text: days_text(i32::try_from(holiday.days_away).unwrap_or(0), lang).into(),
         })
         .collect();
     popup.set_upcoming(slint::ModelRc::new(slint::VecModel::from(rows)));
@@ -818,6 +826,13 @@ fn tray_corner_position(monitor_w: f64, monitor_h: f64) -> (f64, f64) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_holiday_day_count_follows_the_language_digits() {
+        assert_eq!(days_text(9, Lang::En), "9");
+        assert_eq!(days_text(12, Lang::Ne), "१२");
+        assert_eq!(days_text(-1, Lang::Ne), "", "no holiday");
+    }
 
     #[test]
     fn day_cell_label_has_the_dates_weekday_and_tithi() {
