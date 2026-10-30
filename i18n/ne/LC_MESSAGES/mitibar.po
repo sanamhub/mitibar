@@ -90,14 +90,26 @@ msgstr "बन्द"
 msgid "Close converter"
 msgstr "रूपान्तरण बन्द गर्नुहोस्"
 
-msgid "Convert tab"
-msgstr "रूपान्तरण ट्याब"
+msgid "Conversion"
+msgstr "रूपान्तरण प्रकार"
+
+msgid "BS → AD"
+msgstr "वि.सं. → ई.सं."
+
+msgid "AD → BS"
+msgstr "ई.सं. → वि.सं."
+
+msgid "From"
+msgstr "सुरु"
+
+msgid "To"
+msgstr "अन्त्य"
+
+msgid "Result"
+msgstr "नतिजा"
 
 msgid "Days"
 msgstr "दिन"
-
-msgid "Days tab"
-msgstr "दिन ट्याब"
 
 msgid "Date to convert"
 msgstr "रूपान्तरण गर्ने मिति"

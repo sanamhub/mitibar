@@ -173,6 +173,12 @@ Decided after the owner's first run of the beta build, with the numbers each cho
   `sindoor` treatment; the viewed one gets a `hairline` ring.
 - Day tooltip: a `surface-raised` card, 6 px radius, `hairline` border, `body` text, placed so
   it never covers the hovered day.
+- Converter: a 320 px `surface-raised` card, padded 12 px, rows 8 px apart. One three-way segmented
+  control picks the mode (BS → AD, AD → BS, Days) and spans the card. Every row is a 72 px label
+  column in `body` `ink-muted` and a field column that runs to the card's inner edge, so the
+  fields line up in every mode. The result sits in a `surface` box with a `hairline` border and a
+  6 px radius under a `Result` label: the converted date at `title` size, the long form in
+  `body` `ink-muted`. An error is `ink` in the same box; `sindoor` stays for the calendar.
 
 ## 8. Settings window (WR-06)
 
