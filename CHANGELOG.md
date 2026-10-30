@@ -6,10 +6,26 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0-beta.3] - 2026-10-30
+
+A second beta with the new app icon and a tidier Settings window, converter and menus. Still
+unsigned on Windows and macOS, and the idle memory, CPU and cold-start targets are not confirmed on
+a quiet machine yet.
+
 ### Added
 
 - The app icon is the chosen today-ring patro in the light colourway. The tray shows the same
   drawing for each day in the light or dark colourway, with Devanagari digits in Nepali.
+
+### Changed
+
+- Settings shows the bar's top and bottom lines as two cards, each with its own Add field, chips
+  and Bold switch.
+- The Settings entry uses a gear icon in the popup, the tray menu and the bar's menu.
+- The converter has one selector for BS to AD, AD to BS and Days, with its fields in two aligned
+  columns and the result in its own box.
+- The bar's menu and the tray menu share one grouping, with rules between groups and Quit on its
+  own.
 
 ## [0.2.0-beta.2] - 2026-10-30
 

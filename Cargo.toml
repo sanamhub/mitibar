@@ -1,6 +1,6 @@
 [package]
 name = "mitibar"
-version = "0.2.0-beta.2"
+version = "0.2.0-beta.3"
 description = "A tray calendar for Nepal, showing today's Bikram Sambat date"
 edition = "2024"
 license = "MIT"
