@@ -193,10 +193,18 @@ Clock
 Bar
   Show bar                              [●──]
   Lock position                         [──○]
-  Top line                         (+ Add field)
-  (Weekday ×) (Time ×) (Extra clock time ×)
-  Bottom line                      (+ Add field)
-  (BS date ×) (AD date, short ×)
+  Hide over full-screen apps            [●──]
+  Long time zone name                   [──○]
+  ╭────────────────────────────────────╮
+  │ Top line                    (+ Add field) │
+  │ (Weekday ×) (Time ×) (Extra clock time ×) │
+  │ Bold                                [──○] │
+  ╰────────────────────────────────────╯
+  ╭────────────────────────────────────╮
+  │ Bottom line                 (+ Add field) │
+  │ (BS date ×) (AD date, short ×)             │
+  │ Bold                                [●──] │
+  ╰────────────────────────────────────╯
   (Reset to default) (Reset position)
 Shortcut
   Open MitiBar
@@ -208,6 +216,11 @@ About
 
 - Section headings are `title`, sentence case, no rules between rows; one `hairline` divider
   under the header only.
+- Section card: a group that has its own heading and controls sits on a `surface-raised` card with
+  a 1 px `hairline` border and a 6 px radius, padded 12 px, rows 8 px apart, 8 px between cards.
+  The heading is `base`, semibold, `ink`, with the group's button on its right. The bar's top and
+  bottom lines are two such cards, each with its chips and its own Bold switch, so a switch sits
+  under the line it changes. The card is a named group for assistive technology.
 - Rows: label left in `ink`, control right-aligned. Help text, when a row needs it, is `body`
   `ink-muted` under the label. The line editor and the shortcut field are wider than a row, so
   their label sits above them in `body` `ink-muted`.

@@ -336,6 +336,9 @@ msgstr "महिना, छोटो"
 msgid "Year"
 msgstr "वर्ष"
 
+msgid "Bold"
+msgstr "बोल्ड"
+
 msgid "Bold top line"
 msgstr "माथिल्लो लाइन बोल्ड"
 
