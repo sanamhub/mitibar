@@ -38,6 +38,9 @@ All notable changes to MitiBar are recorded here. The format follows
 - The Settings window shows the app icon in its title bar and on the taskbar.
 - Settings opens fully inside the screen's work area when the popup is low on the screen, instead
   of partly under the taskbar.
+- Reset to default restores both Bold settings as well as the two lines.
+- In Nepali, the number of days to the next holiday uses Devanagari digits, in the popup's footer
+  and in the upcoming holidays list.
 
 ## [0.2.0-beta.3] - 2026-10-30
 
