@@ -47,6 +47,7 @@ export enum FrameStyle {
 
 export component PopupWindow inherits Window {
     title: AppInfo.app-name;
+    icon: AppInfo.window-icon;
     no-frame: true;
     always-on-top: true;
     width: 360px;
@@ -56,6 +57,8 @@ export component PopupWindow inherits Window {
     default-font-family: "Noto Sans";
 
     in property <FrameStyle> frame-style: FrameStyle.square;
+    /// The window icon's width, read by the interaction tests.
+    out property <int> shown-icon-width: root.icon.width;
 
     in property <string> bs: "";
     in property <string> weekday: "";

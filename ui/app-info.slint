@@ -2,4 +2,7 @@
 // `app::APP_NAME`; no other `.slint` file holds a copy, so every window title shares one value.
 export global AppInfo {
     in property <string> app-name: "";
+    // The title-bar and taskbar icon of every top-level window. Slint scales it to the window's
+    // scale factor and, on Windows, sets the taskbar icon from it as well.
+    out property <image> window-icon: @image-url("../icons/128x128.png");
 }

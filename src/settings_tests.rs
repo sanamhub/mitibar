@@ -671,6 +671,13 @@ fn wr06_ac5_the_theme_applies_to_the_popup_and_the_settings_window() {
     );
 }
 
+#[test]
+fn the_settings_window_and_the_popup_carry_the_app_icon() {
+    let (f, window) = opened();
+    assert!(window.get_shown_icon_width() > 0, "Settings has no icon");
+    assert!(f.popup.get_shown_icon_width() > 0, "the popup has no icon");
+}
+
 /// Both windows' resolved scheme, as the markup paints it.
 fn dark_now(f: &Fixture, window: &SettingsWindow) -> (bool, bool) {
     (

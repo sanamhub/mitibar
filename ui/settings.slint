@@ -331,6 +331,7 @@ component CardTitle inherits Text {
 
 export component SettingsWindow inherits Window {
     title: @tr("{0} Settings", AppInfo.app-name);
+    icon: AppInfo.window-icon;
     // A fixed size: the content scrolls when it needs more room (widget-design §8).
     preferred-width: 420px;
     preferred-height: 680px;
@@ -364,6 +365,7 @@ export component SettingsWindow inherits Window {
     in-out property <int> zone-highlight: 0;
     /// The window's title, read by the interaction tests.
     out property <string> shown-title: root.title;
+    out property <int> shown-icon-width: root.icon.width;
     /// Where the scroll view is, and how far it can go: the interaction tests read and set them.
     in-out property <length> scroll-y <=> scroll.content-y;
     out property <length> scroll-max: max(0px, content.preferred-height - scroll.visible-height);
