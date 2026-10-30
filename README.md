@@ -60,6 +60,22 @@ MitiBar is built on the [`nepdate`](https://crates.io/crates/nepdate) and
 conversion rules come from [NepDate](https://nepdate.com), maintained by Raju Prasai and Sanam
 Pakuwal. The MIT licence and the data notice apply.
 
+## Code signing policy
+
+Windows releases will be signed with free code signing provided by
+[SignPath.io](https://about.signpath.io), with a certificate issued by the
+[SignPath Foundation](https://signpath.org). Until that certificate is issued, each release lists
+the SHA-256 sum of every file.
+
+- Committers and reviewers: [sanamhub](https://github.com/sanamhub)
+- Approvers: [sanamhub](https://github.com/sanamhub)
+
+Every signed file is built by the release workflow in this repository from a tagged commit, and
+each signing request is approved by hand.
+
+Privacy: MitiBar makes no network connections. It does not send any information to other
+computers, and it stores only its settings file and a log file on your own machine.
+
 ## License
 
 MIT. The bundled Noto Sans and Noto Sans Devanagari fonts are under the SIL Open Font License.
