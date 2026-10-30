@@ -10,6 +10,8 @@ All notable changes to MitiBar are recorded here. The format follows
 
 - The converter has a Copy button next to each result. It reads Copied for a moment, and Ctrl+C
   (Cmd+C on macOS) copies the result whose button has the focus.
+- Settings has a swap button between the Top line and Bottom line cards. It exchanges the two
+  lines together with their Bold setting.
 
 ### Fixed
 

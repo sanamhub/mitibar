@@ -1850,6 +1850,7 @@ fn full_order() -> Vec<&'static str> {
         "chip top 1",
         "chip top 2",
         "bar top bold",
+        "swap lines",
         "add bottom",
         "chip bottom 1",
         "bar bottom bold",
@@ -1896,6 +1897,41 @@ fn the_top_and_bottom_lines_are_two_cards_that_each_hold_their_own_controls() {
         assert!(inside(bottom, label), "{label} is in the bottom card");
         assert!(!inside(top, label), "{label} is not in the top card");
     }
+}
+
+#[test]
+fn the_swap_button_sits_between_the_cards_and_exchanges_the_lines_with_their_bold() {
+    let (f, window) = opened();
+    {
+        let mut s = f.state.borrow_mut();
+        s.settings.bar_top = ids(&["weekday", "bs_date"]);
+        s.settings.bar_bottom = ids(&["ad_date"]);
+        s.settings.bar_top_bold = false;
+        s.settings.bar_bottom_bold = true;
+    }
+    settings_window::refresh(&f.state);
+
+    tab_to(&window, "swap lines");
+    let top_card = card_box(&window, "Top line");
+    let bottom_card = card_box(&window, "Bottom line");
+    let swap = element(&window, "Swap top and bottom lines");
+    let at = swap.absolute_position();
+    assert!(
+        at.y >= top_card.3 && at.y + swap.size().height <= bottom_card.1,
+        "the button is between the two cards"
+    );
+
+    press(&window, Key::Return);
+    assert_eq!(top(&f), ids(&["ad_date"]));
+    assert_eq!(bottom(&f), ids(&["weekday", "bs_date"]));
+    assert!(settings(&f).bar_top_bold && !settings(&f).bar_bottom_bold);
+    assert_eq!(focused(&window), "swap lines", "focus stays on the button");
+    let last = f.bar.lines.borrow().last().cloned().expect("lines");
+    assert!(last.top_bold && !last.bottom_bold, "the bar follows");
+
+    press(&window, Key::Return);
+    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert!(!settings(&f).bar_top_bold && settings(&f).bar_bottom_bold);
 }
 
 #[test]
@@ -2023,6 +2059,11 @@ fn wr10_ac2_every_control_has_a_name_and_the_right_role() {
         (
             "add bottom",
             "Add field to the bottom line",
+            AccessibleRole::Button,
+        ),
+        (
+            "swap lines",
+            "Swap top and bottom lines",
             AccessibleRole::Button,
         ),
         ("reset lines", "Reset to default", AccessibleRole::Button),
@@ -2244,7 +2285,8 @@ fn the_saved_note_icon_is_level_with_its_text() {
 #[test]
 fn the_add_field_pill_has_the_same_air_on_both_sides_of_the_ink() {
     let (_f, window) = opened();
-    scroll_to_end(&window);
+    tab_to(&window, "add top");
+    walk(&window);
     let pill = element(&window, "Add field to the top line");
     let icons = inside(&window, &pill, "LineIcon");
     let texts = inside(&window, &pill, "Text");

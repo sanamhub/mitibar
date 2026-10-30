@@ -651,6 +651,13 @@ fn wire_lines(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
             applied(&state);
         }
     });
+    window.on_lines_swapped({
+        let state = state.clone();
+        move || {
+            line_editor::swap_lines(&mut state.borrow_mut().settings);
+            applied(&state);
+        }
+    });
     window.on_preset_picked({
         let state = state.clone();
         move |index| {

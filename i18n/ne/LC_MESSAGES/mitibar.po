@@ -108,6 +108,9 @@ msgstr "अन्त्य"
 msgid "Result"
 msgstr "नतिजा"
 
+msgid "Swap top and bottom lines"
+msgstr "माथिलो र तलको लाइन अदलाबदला गर्नुहोस्"
+
 msgid "Copy"
 msgstr "प्रतिलिपि"
 

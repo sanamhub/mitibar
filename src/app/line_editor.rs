@@ -124,6 +124,12 @@ pub fn move_across(settings: &mut Settings, line: Line, index: usize, up: bool) 
     })
 }
 
+/// Exchanges the top and bottom lines together with their bold settings.
+pub fn swap_lines(settings: &mut Settings) {
+    std::mem::swap(&mut settings.bar_top, &mut settings.bar_bottom);
+    std::mem::swap(&mut settings.bar_top_bold, &mut settings.bar_bottom_bold);
+}
+
 /// "Reset to default": the two lines of WR-08 AC2.
 pub fn reset(settings: &mut Settings) {
     settings.bar_top = ids(DEFAULT_TOP);
@@ -147,6 +153,34 @@ mod tests {
             bar_bottom: bottom.iter().map(|id| (*id).to_owned()).collect(),
             ..Settings::default()
         }
+    }
+
+    #[test]
+    fn swapping_exchanges_the_lines_and_their_bold_settings() {
+        let mut settings = with(&["weekday", "bs_date"], &["ad_date"]);
+        settings.bar_top_bold = false;
+        settings.bar_bottom_bold = true;
+        swap_lines(&mut settings);
+        assert_eq!(
+            lines(&settings),
+            (vec!["ad_date"], vec!["weekday", "bs_date"])
+        );
+        assert!(settings.bar_top_bold);
+        assert!(!settings.bar_bottom_bold);
+        swap_lines(&mut settings);
+        assert_eq!(
+            lines(&settings),
+            (vec!["weekday", "bs_date"], vec!["ad_date"])
+        );
+        assert!(!settings.bar_top_bold);
+        assert!(settings.bar_bottom_bold);
+    }
+
+    #[test]
+    fn swapping_with_an_empty_line_moves_everything_to_the_other_line() {
+        let mut settings = with(&["weekday", "bs_date"], &[]);
+        swap_lines(&mut settings);
+        assert_eq!(lines(&settings), (vec![], vec!["weekday", "bs_date"]));
     }
 
     #[test]

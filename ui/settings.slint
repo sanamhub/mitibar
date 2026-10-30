@@ -394,6 +394,7 @@ export component SettingsWindow inherits Window {
     callback chip-moved-line(int, int, bool);
     callback field-added(int, string);
     callback lines-reset();
+    callback lines-swapped();
     callback preset-picked(int);
     callback reset-position();
     /// A key press in the shortcut field: the key's text and Win, Ctrl, Alt and Shift. Returns
@@ -752,6 +753,20 @@ export component SettingsWindow inherits Window {
                                     checked: root.data.bar-top-bold;
                                     toggled => { root.bar-top-bold-changed(!root.data.bar-top-bold); }
                                     focused => { root.focus-on("bar top bold", self.absolute-position.y, self.height); }
+                                }
+                            }
+                        }
+
+                        HorizontalLayout {
+                            alignment: center;
+                            swap-lines := Pill {
+                                horizontal-stretch: 0;
+                                label: @tr("Swap top and bottom lines");
+                                activated => { root.lines-swapped(); }
+                                focused => { root.focus-on("swap lines", self.absolute-position.y, self.height); }
+                                LineIcon {
+                                    commands: "M 5 13 L 5 3 M 2.5 5.5 L 5 3 L 7.5 5.5 M 11 3 L 11 13 M 8.5 10.5 L 11 13 L 13.5 10.5";
+                                    color: swap-lines.foreground;
                                 }
                             }
                         }
