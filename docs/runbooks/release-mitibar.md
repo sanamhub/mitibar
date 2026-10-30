@@ -14,7 +14,7 @@ creates a **draft**; a second maintainer installs the assets and publishes it.
    has no `[patch.crates-io]` section. **A patch is a release blocker:** remove it, wait for the
    SDK release, or publish the SDK change first. A release never ships a git dependency.
 4. `docs/benchmarks-widget.md` has current numbers from a quiet machine (ADR-0001 §C), and no
-   row is LOADED. Idle memory is judged on private bytes (ADR-0007). The 0.2.0 build has not had
+   row is LOADED. Idle memory is judged on private bytes (ADR-0007). The 1.0.0 build has not had
    a quiet five-minute row yet; run one before the tag. A pre-release (`X.Y.Z-beta.N`) may go out
    without the quiet rows, as long as its changelog section says the performance targets are not
    yet confirmed.
@@ -90,7 +90,7 @@ Get-Content SHA256SUMS | ForEach-Object {
 
 ### macOS
 
-1. Open the `.dmg`, drag `MitiBar.app` to `/Applications`, eject the disk image. Unsigned 0.x
+1. Open the `.dmg`, drag `MitiBar.app` to `/Applications`, eject the disk image. Unsigned
    builds show the Gatekeeper warning: Control-click the app, choose Open, then confirm.
 2. Quit from the menu-bar icon. Uninstall: drag `MitiBar.app` from `/Applications` to the Trash.
 3. Remove the per-user state if needed: `~/Library/Application Support/mitibar` (settings and
@@ -137,7 +137,7 @@ These are accepted for 0.x previews and recorded here so a 1.0 release cannot sk
 
 | Gap | Today | Needed before 1.0 |
 |---|---|---|
-| Signing credentials | The Windows and macOS signing steps exist and are gated on `WINDOWS_SIGNING_ENABLED` / `MACOS_SIGNING_ENABLED`, but no certificate, Developer ID or notarization secrets are configured here. 0.x ships unsigned and says so. | Provision Azure Artifact Signing and the Apple Developer ID plus notarization secrets, set both variables, and verify a signed asset. |
+| Signing credentials | The Windows and macOS signing steps exist and are gated on `WINDOWS_SIGNING_ENABLED` / `MACOS_SIGNING_ENABLED`, but no certificate, Developer ID or notarization secrets are configured here. Until then releases ship unsigned and say so. | Provision Azure Artifact Signing and the Apple Developer ID plus notarization secrets, set both variables, and verify a signed asset. |
 | Signing not exercised | The release workflow runs the signing steps only when the repository variable is true, but no workflow run has exercised the tools. | A `workflow_dispatch` dry run with both variables on, on all 3 OSes. |
 | Windows ARM64 package | The matrix builds `aarch64-pc-windows-msvc` and names the installer and portable zip arm64, but this was not built or installed locally. | The first workflow run on `windows-latest`; optionally a real ARM64 machine. |
 | Quiet performance | The current software build: the 5-minute row is 34.35 MB private, 73.59 MB working set and 1.217 % of one core, but LOADED (47.9 % before, 31.2 % during). Cold starts are 62.4 to 80.4 ms, also LOADED (19.4 to 32.4 % during startup). The last quiet software row was 34.68 MB and 0.335 %. | A quiet 5-minute row that passes private bytes and CPU on the shipped build, and quiet cold starts. |

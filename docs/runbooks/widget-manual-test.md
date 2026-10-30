@@ -112,7 +112,7 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] First run: the bar sits at its default position on the primary monitor, fully on-screen.
 - [ ] A fresh profile shows the weekday and AD date on the top line and the BS date on the bottom
       line, with no time and no time zone. The bottom line is bold and the top line is regular.
-- [ ] A settings file from before 0.2.0 with the old default lines moves to these; one with lines
+- [ ] A settings file from a beta with the old default lines moves to these; one with lines
       the owner chose keeps them.
 - [ ] The swap button between the Top line and Bottom line cards exchanges the lines with their
       bold settings. Each preset (Default, Date and time, Minimal, All) sets both lines and both
@@ -159,6 +159,6 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - IME typing in the converter is untested.
 - Text quality with the software renderer is verified on Windows x64 only; macOS and Linux have
   not been run.
-- The 3-OS checklist has not been completed for 0.2.0.
+- The 3-OS checklist has not been completed for 1.0.0.
 
 
