@@ -1218,7 +1218,7 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
     click(&window, "Tithi");
     assert_eq!(
         top(&f),
-        ids(&["weekday", "bs_date", "tithi"]),
+        ids(&["weekday", "ad_date", "tithi"]),
         "at the end of the top line"
     );
 
@@ -1233,7 +1233,7 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
         "a field appears at most once"
     );
     click(&window, "Holiday");
-    assert_eq!(bottom(&f), ids(&["ad_date", "holiday"]));
+    assert_eq!(bottom(&f), ids(&["bs_date", "holiday"]));
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
     assert!(!last.top.is_empty(), "the bar updated on each change");
 }
@@ -1284,9 +1284,9 @@ fn wr08_ac3_a_chip_is_removed_with_its_button_and_focus_moves_to_its_neighbour()
     settings_window::refresh(&f.state);
     crate::update_bar(&f.state);
     let before = parts(&f);
-    click(&window, "Remove BS date");
+    click(&window, "Remove AD date");
     assert_eq!(top(&f), ids(&["weekday"]));
-    assert!(!exists(&window, "BS date"));
+    assert!(!exists(&window, "AD date"));
     settle(&window);
     assert_eq!(
         focused(&window),
@@ -1350,20 +1350,20 @@ fn wr08_ac3_a_focused_chip_moves_left_and_right_with_its_buttons_and_with_alt_ar
     );
     click(&window, "Move Weekday right");
     settle(&window);
-    assert_eq!(top(&f), ids(&["bs_date", "weekday"]));
+    assert_eq!(top(&f), ids(&["ad_date", "weekday"]));
     assert_eq!(focused(&window), "chip top 2", "the focus follows the chip");
 
     press_with(&window, &[Key::Alt], Key::RightArrow);
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["bs_date", "weekday"]),
+        ids(&["ad_date", "weekday"]),
         "it stops at the right end"
     );
 
     press_with(&window, &[Key::Alt], Key::LeftArrow);
     settle(&window);
-    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert_eq!(top(&f), ids(&["weekday", "ad_date"]));
     assert_eq!(focused(&window), "chip top 1");
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
     // The bar reads the real clock, so the expected weekday is today's.
@@ -1391,7 +1391,7 @@ fn wr08_ac3_a_refresh_does_not_take_the_focus_from_a_chip() {
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["bs_date", "weekday"]),
+        ids(&["ad_date", "weekday"]),
         "the key reached the chip"
     );
 
@@ -1404,7 +1404,7 @@ fn wr08_ac3_a_refresh_does_not_take_the_focus_from_a_chip() {
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["weekday", "bs_date"]),
+        ids(&["weekday", "ad_date"]),
         "and still does after the note"
     );
     press(&window, Key::Escape);
@@ -1420,7 +1420,7 @@ fn wr08_ac3_alt_up_and_alt_down_move_a_chip_to_the_other_line() {
     tab_to(&window, "chip top 2");
     press_with(&window, &[Key::Alt], Key::DownArrow);
     settle(&window);
-    assert_eq!(chips(&f), (ids(&["weekday"]), ids(&["ad_date", "bs_date"])));
+    assert_eq!(chips(&f), (ids(&["weekday"]), ids(&["bs_date", "ad_date"])));
     assert_eq!(
         focused(&window),
         "chip bottom 2",
@@ -1433,7 +1433,7 @@ fn wr08_ac3_alt_up_and_alt_down_move_a_chip_to_the_other_line() {
 
     press_with(&window, &[Key::Alt], Key::UpArrow);
     settle(&window);
-    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert_eq!(top(&f), ids(&["weekday", "ad_date"]));
     assert_eq!(focused(&window), "chip top 2");
     press_with(&window, &[Key::Alt], Key::UpArrow);
     settle(&window);
@@ -1491,18 +1491,34 @@ fn wr08_ac3_reset_to_default_restores_the_two_lines() {
 }
 
 #[test]
-fn wr08_ac3_a_preset_replaces_the_lines() {
+fn wr08_ac3_a_preset_replaces_the_lines_and_both_weights() {
     let (f, window) = opened();
-    window.invoke_preset_picked(0);
+    window.invoke_preset_picked(1);
     assert_eq!(top(&f), ids(&["weekday", "time", "zone_time"]));
     assert_eq!(bottom(&f), ids(&["bs_date", "ad_short"]));
+    assert!(!settings(&f).bar_top_bold && settings(&f).bar_bottom_bold);
 
     window.invoke_preset_picked(2);
-    assert_eq!(top(&f), ids(&["weekday_long", "bs_date"]));
-    assert_eq!(bottom(&f), ids(&["ad_date"]));
+    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert!(bottom(&f).is_empty(), "Minimal leaves one line");
+    assert!(settings(&f).bar_top_bold && !settings(&f).bar_bottom_bold);
     let lines = f.bar.lines.borrow().last().cloned().expect("lines");
-    let today = jiff::Zoned::now().strftime("%A").to_string();
-    assert!(lines.top.starts_with(&today), "{}", lines.top);
+    assert!(lines.bottom.is_empty() && lines.top_bold, "the bar follows");
+
+    window.invoke_preset_picked(3);
+    assert_eq!(top(&f).len() + bottom(&f).len(), 14, "All has every field");
+
+    window.invoke_preset_picked(0);
+    assert_eq!(top(&f), Settings::default().bar_top);
+    assert_eq!(bottom(&f), Settings::default().bar_bottom);
+    assert!(!settings(&f).bar_top_bold && settings(&f).bar_bottom_bold);
+
+    window.invoke_preset_picked(4);
+    assert_eq!(
+        top(&f),
+        Settings::default().bar_top,
+        "an unknown preset does nothing"
+    );
 }
 
 #[test]
@@ -1513,7 +1529,7 @@ fn wr08_ac3_every_line_edit_updates_the_bar_and_is_saved() {
     assert!(f.bar.lines.borrow().len() > before, "the bar was told");
     let_the_save_happen();
     let saved = f.store.saved.borrow().last().cloned().expect("a write");
-    assert_eq!(saved.bar_top, ids(&["bs_date"]));
+    assert_eq!(saved.bar_top, ids(&["ad_date"]));
 }
 
 #[test]
@@ -1856,9 +1872,10 @@ fn full_order() -> Vec<&'static str> {
         "bar bottom bold",
         "reset lines",
         "reset position",
+        "preset default",
         "preset time",
-        "preset short",
-        "preset long",
+        "preset minimal",
+        "preset all",
         "shortcut",
         "shortcut clear",
         "shortcut reset",
@@ -2068,9 +2085,10 @@ fn wr10_ac2_every_control_has_a_name_and_the_right_role() {
         ),
         ("reset lines", "Reset to default", AccessibleRole::Button),
         ("reset position", "Reset position", AccessibleRole::Button),
+        ("preset default", "Default", AccessibleRole::Button),
         ("preset time", "Date and time", AccessibleRole::Button),
-        ("preset short", "Weekday and date", AccessibleRole::Button),
-        ("preset long", "Full weekday", AccessibleRole::Button),
+        ("preset minimal", "Minimal", AccessibleRole::Button),
+        ("preset all", "All", AccessibleRole::Button),
         ("shortcut", "Shortcut", AccessibleRole::TextInput),
         ("shortcut clear", "Clear shortcut", AccessibleRole::Button),
         ("shortcut reset", "Reset shortcut", AccessibleRole::Button),

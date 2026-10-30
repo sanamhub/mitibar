@@ -202,10 +202,44 @@ mod tests {
         assert!(warnings.is_empty(), "{warnings:?}");
         assert!(path.exists(), "the defaults were written");
         let text = fs::read_to_string(&path).expect("read");
-        assert!(text.contains("schema = 3"), "{text}");
+        assert!(text.contains("schema = 4"), "{text}");
         assert!(text.contains("bar = true"), "{text}");
         assert!(text.contains("bar_top"), "{text}");
         assert!(text.contains("ad_date"), "{text}");
+    }
+
+    #[test]
+    fn a_schema_3_file_with_the_old_defaults_is_rewritten_with_the_new_ones() {
+        let dir = tempdir().expect("tempdir");
+        let path = dir.path().join("settings.toml");
+        fs::write(
+            &path,
+            "schema = 3\nbar_top = [\"weekday\", \"bs_date\"]\nbar_bottom = [\"ad_date\"]\n\
+             bar_top_bold = false\nbar_bottom_bold = true\n",
+        )
+        .expect("write");
+        let (loaded, _) = load(&path);
+        assert_eq!(loaded.bar_top, Settings::default().bar_top);
+        assert_eq!(loaded.bar_bottom, Settings::default().bar_bottom);
+        let (again, warnings) = load(&path);
+        assert_eq!(again, loaded, "the rewritten file reads back the same");
+        assert!(warnings.is_empty(), "{warnings:?}");
+    }
+
+    #[test]
+    fn a_schema_3_file_the_owner_changed_is_rewritten_with_their_lines() {
+        let dir = tempdir().expect("tempdir");
+        let path = dir.path().join("settings.toml");
+        fs::write(
+            &path,
+            "schema = 3\nbar_top = [\"weekday\", \"time\"]\nbar_bottom = [\"ad_date\"]\n",
+        )
+        .expect("write");
+        let (loaded, _) = load(&path);
+        assert_eq!(loaded.bar_top, ["weekday", "time"].map(str::to_owned));
+        let text = fs::read_to_string(&path).expect("read");
+        assert!(text.contains("schema = 4"), "{text}");
+        assert!(text.contains("\"time\""), "{text}");
     }
 
     #[test]
@@ -221,7 +255,7 @@ mod tests {
         .expect("write");
         let (loaded, warnings) = load(&path);
         assert!(!loaded.bar, "taskbar_text = false became bar = false");
-        assert_eq!(loaded.schema, 3);
+        assert_eq!(loaded.schema, 4);
         assert_eq!(loaded.language, "ne");
         assert_eq!(loaded.theme, "dark");
         assert!(!loaded.launch_at_login);
@@ -230,12 +264,12 @@ mod tests {
             ["weekday", "time", "zone_time"].map(str::to_owned).to_vec()
         );
         assert_eq!(warnings.len(), 1, "{warnings:?}");
-        assert!(warnings[0].contains("schema 3"), "{warnings:?}");
+        assert!(warnings[0].contains("schema 4"), "{warnings:?}");
 
         let text = fs::read_to_string(&path).expect("read");
         assert!(
-            text.contains("schema = 3"),
-            "rewritten as schema 3:\n{text}"
+            text.contains("schema = 4"),
+            "rewritten as schema 4:\n{text}"
         );
         assert!(
             !text.contains("taskbar_text"),
@@ -258,7 +292,7 @@ mod tests {
         assert!(
             fs::read_to_string(&path)
                 .expect("read")
-                .contains("schema = 3")
+                .contains("schema = 4")
         );
     }
 
@@ -271,7 +305,7 @@ mod tests {
         fs::create_dir(path.with_extension("toml.tmp")).expect("block the temp file");
         let (loaded, warnings) = load(&path);
         assert!(!loaded.bar);
-        assert_eq!(loaded.schema, 3);
+        assert_eq!(loaded.schema, 4);
         assert!(
             warnings.iter().any(|w| w.contains("could not rewrite")),
             "{warnings:?}"
@@ -302,7 +336,7 @@ mod tests {
             "{warnings:?}"
         );
         assert!(
-            warnings.iter().any(|w| w.contains("schema 3")),
+            warnings.iter().any(|w| w.contains("schema 4")),
             "{warnings:?}"
         );
     }
@@ -319,7 +353,7 @@ mod tests {
         let (loaded, warnings) = load(&path);
         assert!(!loaded.bar);
         assert_eq!(warnings.len(), 1, "{warnings:?}");
-        assert!(warnings[0].contains("schema 3"), "{warnings:?}");
+        assert!(warnings[0].contains("schema 4"), "{warnings:?}");
     }
 
     #[test]

@@ -237,8 +237,8 @@ mod tests {
         assert_eq!(
             lines(&settings),
             (
-                vec!["weekday", "bs_date", "tithi"],
-                vec!["ad_date", "time", "holiday"]
+                vec!["weekday", "ad_date", "tithi"],
+                vec!["bs_date", "time", "holiday"]
             )
         );
     }
@@ -257,12 +257,12 @@ mod tests {
     fn a_chip_is_removed_from_its_line() {
         let mut settings = Settings::default();
         assert!(remove(&mut settings, Line::Top, 1));
-        assert_eq!(lines(&settings), (vec!["weekday"], vec!["ad_date"]));
+        assert_eq!(lines(&settings), (vec!["weekday"], vec!["bs_date"]));
         assert!(!remove(&mut settings, Line::Top, 5), "no such chip");
         assert!(
             unused(&settings)
                 .iter()
-                .any(|field| field.id() == "bs_date")
+                .any(|field| field.id() == "ad_date")
         );
     }
 
@@ -292,7 +292,7 @@ mod tests {
                 index: 1
             })
         );
-        assert_eq!(settings.bar_top, ["bs_date", "weekday"]);
+        assert_eq!(settings.bar_top, ["ad_date", "weekday"]);
         assert_eq!(
             move_within(&mut settings, Line::Top, 1, -1),
             Some(At {
@@ -300,7 +300,7 @@ mod tests {
                 index: 0
             })
         );
-        assert_eq!(settings.bar_top, ["weekday", "bs_date"]);
+        assert_eq!(settings.bar_top, ["weekday", "ad_date"]);
         assert_eq!(
             move_within(&mut settings, Line::Top, 0, -1),
             None,
@@ -321,7 +321,7 @@ mod tests {
             None,
             "one place at a time"
         );
-        assert_eq!(settings.bar_top, ["weekday", "bs_date"]);
+        assert_eq!(settings.bar_top, ["weekday", "ad_date"]);
     }
 
     #[test]
@@ -337,7 +337,7 @@ mod tests {
         );
         assert_eq!(
             lines(&settings),
-            (vec!["weekday"], vec!["ad_date", "bs_date"])
+            (vec!["weekday"], vec!["bs_date", "ad_date"])
         );
         // Alt+Up on the bottom line's first chip: it takes the same place above.
         assert_eq!(
@@ -349,7 +349,7 @@ mod tests {
         );
         assert_eq!(
             lines(&settings),
-            (vec!["ad_date", "weekday"], vec!["bs_date"])
+            (vec!["bs_date", "weekday"], vec!["ad_date"])
         );
     }
 

@@ -381,11 +381,14 @@ msgstr "समय क्षेत्रको लामो नाम"
 msgid "Presets"
 msgstr "प्रिसेटहरू"
 
+msgid "Default"
+msgstr "पूर्वनिर्धारित"
+
 msgid "Date and time"
 msgstr "मिति र समय"
 
-msgid "Weekday and date"
-msgstr "बार र मिति"
+msgid "Minimal"
+msgstr "न्यूनतम"
 
-msgid "Full weekday"
-msgstr "पूरा बार"
+msgid "All"
+msgstr "सबै"

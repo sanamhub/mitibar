@@ -213,12 +213,15 @@ Bar
   │ (Weekday ×) (Time ×) (Extra clock time ×) │
   │ Bold                                [──○] │
   ╰────────────────────────────────────╯
+                      (⇅)
   ╭────────────────────────────────────╮
   │ Bottom line                 (+ Add field) │
   │ (BS date ×) (AD date, short ×)             │
   │ Bold                                [●──] │
   ╰────────────────────────────────────╯
   (Reset to default) (Reset position)
+  Presets
+  (Default) (Date and time) (Minimal) (All)
 Shortcut
   Open MitiBar
   [ Win+Shift+N                 ] (Clear) (Reset)

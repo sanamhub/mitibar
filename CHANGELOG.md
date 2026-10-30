@@ -13,6 +13,14 @@ All notable changes to MitiBar are recorded here. The format follows
 - Settings has a swap button between the Top line and Bottom line cards. It exchanges the two
   lines together with their Bold setting.
 
+### Changed
+
+- The bar's default lines are the weekday and AD date on top, regular, and the BS date below,
+  bold. A settings file that still holds the old defaults exactly moves to the new ones; a file
+  with lines you chose keeps them.
+- The presets are Default, Date and time, Minimal and All. A preset sets both lines and both Bold
+  settings. Minimal is one bold line, and All shows every field once.
+
 ### Fixed
 
 - Switching the theme from Light or Dark back to System follows Windows again, and keeps

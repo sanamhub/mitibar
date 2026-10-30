@@ -884,23 +884,29 @@ export component SettingsWindow inherits Window {
                         HorizontalLayout {
                             spacing: 8px;
                             alignment: start;
+                            preset-default := Pill {
+                                text: @tr("Default");
+                                label: @tr("Default");
+                                activated => { root.preset-picked(0); }
+                                focused => { root.focus-on("preset default", self.absolute-position.y, self.height); }
+                            }
                             preset-time := Pill {
                                 text: @tr("Date and time");
                                 label: @tr("Date and time");
-                                activated => { root.preset-picked(0); }
+                                activated => { root.preset-picked(1); }
                                 focused => { root.focus-on("preset time", self.absolute-position.y, self.height); }
                             }
-                            preset-short := Pill {
-                                text: @tr("Weekday and date");
-                                label: @tr("Weekday and date");
-                                activated => { root.preset-picked(1); }
-                                focused => { root.focus-on("preset short", self.absolute-position.y, self.height); }
-                            }
-                            preset-long := Pill {
-                                text: @tr("Full weekday");
-                                label: @tr("Full weekday");
+                            preset-minimal := Pill {
+                                text: @tr("Minimal");
+                                label: @tr("Minimal");
                                 activated => { root.preset-picked(2); }
-                                focused => { root.focus-on("preset long", self.absolute-position.y, self.height); }
+                                focused => { root.focus-on("preset minimal", self.absolute-position.y, self.height); }
+                            }
+                            preset-all := Pill {
+                                text: @tr("All");
+                                label: @tr("All");
+                                activated => { root.preset-picked(3); }
+                                focused => { root.focus-on("preset all", self.absolute-position.y, self.height); }
                             }
                         }
                     }
