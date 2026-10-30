@@ -3,7 +3,7 @@
 //!
 //! The tray icons are 32x32 PNGs under `ui/tray/<lang>/<scheme>/` for each digit set (en, ne) and
 //! taskbar colourway (light, dark), plus the image arrays the tray indexes. They come from
-//! `icons/source/tray-day.svg`, the same today-ring drawing as the app icon with the day as an
+//! `icons/source/today-ring-small.svg`, the app icon's small drawing with the day as an
 //! input. The app icon comes from `icons/source/today-ring.svg` and its small-size drawing, as PNG
 //! sizes 16 to 1024, an `.ico` and an `.icns` under `icons/` for cargo-packager and the
 //! executable's resources.
@@ -28,7 +28,6 @@ const SLINT_OUT: &str = "ui/tray-icons.slint";
 /// The app icon source and the generated files. The fixed day is १५, as in the chosen design.
 const APP_SOURCE: &str = "icons/source/today-ring.svg";
 const APP_SOURCE_SMALL: &str = "icons/source/today-ring-small.svg";
-const TRAY_SOURCE: &str = "icons/source/tray-day.svg";
 const SETTINGS_SOURCE: &str = "ui/icons/settings.svg";
 const SETTINGS_OUT: &str = "ui/icons";
 const APP_OUT: &str = "icons";
@@ -79,10 +78,7 @@ pub(crate) fn run(check: bool) -> Result<()> {
         }
         std::fs::write(&path, bytes).with_context(|| format!("write {}", path.display()))?;
     }
-    println!(
-        "wrote {} files under {OUT_DIR} and {SLINT_OUT}",
-        files.len()
-    );
+    println!("wrote {} icon files", files.len());
     Ok(())
 }
 
@@ -121,8 +117,8 @@ fn settings_icons(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
 
 /// The 32 days in both scripts and both taskbar colourways, from the tray source.
 fn tray_icons(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
-    let template = std::fs::read_to_string(root.join(TRAY_SOURCE))
-        .with_context(|| format!("read {TRAY_SOURCE}"))?;
+    let template = std::fs::read_to_string(root.join(APP_SOURCE_SMALL))
+        .with_context(|| format!("read {APP_SOURCE_SMALL}"))?;
     let mut files = Vec::new();
     for (lang, font_path) in LANGS {
         let font =
@@ -137,7 +133,7 @@ fn tray_icons(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
                 let digit = digit_svg(
                     &font,
                     &day_string(day, lang),
-                    DigitBox::tray(),
+                    DigitBox::small(),
                     colourway.ink,
                 )?;
                 let svg = fill_template(&template, colourway, &digit);
@@ -165,7 +161,7 @@ fn app_icon(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
     let mut files = Vec::new();
     for size in APP_PNG_SIZES {
         let (template, box_) = if size <= 24 {
-            (&small, DigitBox::app_small())
+            (&small, DigitBox::small())
         } else if size == 32 {
             (&full, DigitBox::app_medium())
         } else {
@@ -230,7 +226,8 @@ impl DigitBox {
         }
     }
 
-    const fn app_small() -> Self {
+    /// The small drawing at 16 and 24 px in the app icon and in every tray day.
+    const fn small() -> Self {
         Self {
             centre_x: 512.0,
             centre_y: 610.0,
@@ -245,15 +242,6 @@ impl DigitBox {
             centre_y: 590.0,
             max_width: 400.0,
             max_height: 280.0,
-        }
-    }
-
-    const fn tray() -> Self {
-        Self {
-            centre_x: 512.0,
-            centre_y: 610.0,
-            max_width: 620.0,
-            max_height: 520.0,
         }
     }
 }
@@ -549,7 +537,7 @@ mod tests {
     #[test]
     fn the_icon_sources_hold_no_live_text() {
         let root = root();
-        for path in [APP_SOURCE, APP_SOURCE_SMALL, TRAY_SOURCE] {
+        for path in [APP_SOURCE, APP_SOURCE_SMALL] {
             let svg = std::fs::read_to_string(root.join(path)).expect("read an icon source");
             assert!(!svg.contains("<text"), "{path} still draws live text");
             assert!(svg.contains("{{digit}}"), "{path} has no digit placeholder");

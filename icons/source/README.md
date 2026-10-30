@@ -6,8 +6,7 @@ The app icon and tray images are generated, not drawn in place. Edit these SVGs 
 | File | Use |
 |---|---|
 | `today-ring.svg` | App icon at 32 px and above: the full patro, Dhaka band and today ring. |
-| `today-ring-small.svg` | App icon at 16 and 24 px: paper tile and band, no triangles or ring, large day. |
-| `tray-day.svg` | Tray days at 32 px: tile, band and large day, no ring. |
+| `today-ring-small.svg` | App icon at 16 and 24 px and every tray day: tile and solid band, no triangles or ring, large day. |
 
 Each template takes `{{tile}}`, `{{ink}}`, `{{edge}}` and `{{digit}}`. The generator fills the
 colourway and substitutes the day's glyph outline from the bundled Noto fonts. The digits are paths

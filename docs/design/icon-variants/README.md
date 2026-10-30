@@ -35,7 +35,6 @@ The app icon is the light colourway with the fixed day १५, because an execut
 menu shortcut and bundle can carry one file per size and have no reliable theme to follow. It comes
 from [`icons/source/today-ring.svg`](../../../icons/source/today-ring.svg), with a small drawing for
 16 and 24 px. The light and dark pair ships in the tray, where the taskbar scheme is known: each day
-1 to 32 is drawn from
-[`icons/source/tray-day.svg`](../../../icons/source/tray-day.svg) in Latin digits for English and
-Devanagari for Nepali. Both templates are rendered by `cargo xtask icons`; see
+1 to 32 uses that small drawing, in Latin digits for English and Devanagari for Nepali. Both
+templates are rendered by `cargo xtask icons`; see
 [`icons/source/README.md`](../../../icons/source/README.md).
