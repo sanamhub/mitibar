@@ -19,6 +19,11 @@ creates a **draft**; a second maintainer installs the assets and publishes it.
    (`X.Y.Z-beta.N`) may go out without the quiet rows, as long as its changelog section says the
    performance targets are not yet confirmed.
 5. `cargo xtask ci` passes locally.
+6. The README, `docs/benchmarks-widget.md`, the manual test runbook and the MitiBar pages on
+   the NepDate site describe the new behaviour and do not call the build a preview or name the
+   previous beta. Leave the old versions in `CHANGELOG.md`, the ADRs and the dated benchmark
+   rows. `MITIBAR_VERSION` in `nepdate/site/src/data/ports.ts` still names the published release
+   until the tag exists; it moves in [After releasing](#after-releasing).
 
 ## Build the packages locally (optional)
 
@@ -164,11 +169,29 @@ then publishes the draft. The release notes name any unsigned build warnings.
 
 ## After releasing
 
-1. Read the release page: notes match the changelog, the draft is now published, and the assets
-   include the installers, `SHA256SUMS` and the SBOM.
-2. Check `gh attestation verify` on one asset from a different machine.
-3. Date the released section and add a new empty `## [Unreleased]` to `CHANGELOG.md`.
-4. Record the release in the maintainer notes.
+- [ ] Read the release page: notes match the changelog, the draft is now published, and the assets
+      include the installers, `SHA256SUMS` and the SBOM.
+- [ ] Check the release notes call the build unsigned, not a preview. If they do not, edit the
+      published release and fix `.github/workflows/release-mitibar.yml` before the next tag.
+- [ ] Check `gh attestation verify` on one asset from a different machine.
+- [ ] Date the released section and add a new empty `## [Unreleased]` to `CHANGELOG.md`.
+- [ ] Record the release in the maintainer notes.
+- [ ] In `nepdate`, set `MITIBAR_VERSION` in `site/src/data/ports.ts` to the released version. Do
+      this only after the GitHub release is published, so every download link resolves.
+- [ ] Run `npm ci`, `npm run check` and `npm run build` in `site/`.
+- [ ] Open the site pull request. Check its Cloudflare preview at `/mitibar/` and
+      `/docs/apps/mitibar/`, then merge it.
+- [ ] Confirm the production deployment. If Workers Builds did not run for the merge, run
+      `npx wrangler deploy` from `site/`. Then check:
+  - [ ] `/mitibar/` shows `Version X.Y.Z`.
+  - [ ] `/docs/apps/mitibar/` shows `MitiBar X.Y.Z`.
+  - [ ] Every download link points at `releases/download/vX.Y.Z/`, including the SBOM and
+        `SHA256SUMS`.
+  - [ ] `/llms-full.txt` and `/llms-small.txt` name `MitiBar X.Y.Z`, and no current page names
+        the previous version.
+- [ ] Check that the MitiBar README badge resolves to the new version, not a pre-release.
+- [ ] Search both repositories for the previous version with `git grep -n <previous version>`.
+      Fix current pages. Leave `CHANGELOG.md`, the ADRs and dated benchmark rows as history.
 
 ## Rolling back
 
