@@ -7,6 +7,10 @@ publish = false
 [dependencies]
 anyhow = "1"
 serde_json = "1"
+# Tray icon generation: resvg re-exports usvg and tiny-skia. Both crates are already in the tree
+# through Slint, so this adds no new crate.
+resvg = { version = "=0.48.1", default-features = false, features = ["text"] }
+fontdb = "=0.24.0"
 
 # Process memory, CPU time and thread count for the idle harness. Windows-only and xtask-only,
 # the same `windows` family the app uses (ADR-0005); it never reaches a shipped binary.
