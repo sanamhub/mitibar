@@ -33,14 +33,14 @@ use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CS_DBLCLKS, CS_HREDRAW, CS_VREDRAW, CreatePopupMenu, CreateWindowExW,
     DefWindowProcW, DestroyMenu, DestroyWindow, FindWindowW, GWLP_USERDATA, GetCursorPos,
     GetForegroundWindow, GetSystemMetrics, GetWindowLongPtrW, HCURSOR, HICON, HWND_TOPMOST,
-    IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE, MF_CHECKED, MF_STRING, MF_UNCHECKED,
-    PostMessageW, RegisterClassW, RegisterWindowMessageW, SM_CXDRAG, SM_CYDRAG, SW_HIDE,
-    SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetForegroundWindow,
-    SetWindowLongPtrW, SetWindowPos, ShowWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON, TPM_WORKAREA,
-    TrackPopupMenuEx, ULW_ALPHA, UpdateLayeredWindow, WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED,
-    WM_DISPLAYCHANGE, WM_DPICHANGED, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP,
-    WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_RBUTTONUP, WM_SETTINGCHANGE, WNDCLASSW, WS_EX_LAYERED,
-    WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+    IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE, MENUITEMINFOW, MF_CHECKED, MF_STRING,
+    MF_UNCHECKED, MIIM_BITMAP, PostMessageW, RegisterClassW, RegisterWindowMessageW, SM_CXDRAG,
+    SM_CYDRAG, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER,
+    SetForegroundWindow, SetMenuItemInfoW, SetWindowLongPtrW, SetWindowPos, ShowWindow,
+    TPM_RETURNCMD, TPM_RIGHTBUTTON, TPM_WORKAREA, TrackPopupMenuEx, ULW_ALPHA, UpdateLayeredWindow,
+    WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED, WM_DISPLAYCHANGE, WM_DPICHANGED, WM_LBUTTONDBLCLK,
+    WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_RBUTTONUP, WM_SETTINGCHANGE,
+    WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::{PCWSTR, w};
 
@@ -915,6 +915,61 @@ fn deliver(cell: &RefCell<Controller>, events: Vec<BarEvent>, scheme: Option<boo
     }
 }
 
+/// The gear for the menu's Settings item, at the size of the bar's monitor: 16, 24 or 32 px of
+/// premultiplied BGRA drawn in `ink` for the light menu the system draws.
+const GEAR_16: &[u8] = include_bytes!("../../../ui/icons/settings-menu-16.bgra");
+const GEAR_24: &[u8] = include_bytes!("../../../ui/icons/settings-menu-24.bgra");
+const GEAR_32: &[u8] = include_bytes!("../../../ui/icons/settings-menu-32.bgra");
+
+/// Sets the gear bitmap on `command` and returns it, for the caller to delete after the menu.
+// The struct sizes are a few dozen bytes and the command id is 1..=8.
+#[allow(clippy::cast_possible_truncation)]
+unsafe fn set_gear(
+    menu: windows::Win32::UI::WindowsAndMessaging::HMENU,
+    command: usize,
+    bar: HWND,
+) -> Option<HBITMAP> {
+    // SAFETY: a read-only query on our own window.
+    let dpi = unsafe { windows::Win32::UI::HiDpi::GetDpiForWindow(bar) };
+    let (side, pixels) = match dpi {
+        0..=119 => (16, GEAR_16),
+        120..=167 => (24, GEAR_24),
+        _ => (32, GEAR_32),
+    };
+    let header = BITMAPINFOHEADER {
+        biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+        biWidth: side,
+        biHeight: -side,
+        biPlanes: 1,
+        biBitCount: 32,
+        biCompression: BI_RGB.0,
+        ..Default::default()
+    };
+    let info = BITMAPINFO {
+        bmiHeader: header,
+        bmiColors: [RGBQUAD::default(); 1],
+    };
+    let mut bits: *mut std::ffi::c_void = std::ptr::null_mut();
+    // SAFETY: `info` describes the DIB; `bits` receives the pixel memory.
+    let bitmap =
+        unsafe { CreateDIBSection(None, &info, DIB_RGB_COLORS, &mut bits, None, 0) }.ok()?;
+    // SAFETY: the DIB holds `pixels.len()` bytes, which the embedded image matches.
+    unsafe { std::ptr::copy_nonoverlapping(pixels.as_ptr(), bits.cast::<u8>(), pixels.len()) };
+    let item = MENUITEMINFOW {
+        cbSize: std::mem::size_of::<MENUITEMINFOW>() as u32,
+        fMask: MIIM_BITMAP,
+        hbmpItem: bitmap,
+        ..Default::default()
+    };
+    // SAFETY: the menu, the command id and the bitmap are valid.
+    if unsafe { SetMenuItemInfoW(menu, command as u32, false, &item) }.is_err() {
+        // SAFETY: the bitmap was not taken by the menu.
+        let _ = unsafe { DeleteObject(HGDIOBJ(bitmap.0)) };
+        return None;
+    }
+    Some(bitmap)
+}
+
 /// Builds and runs the right-click menu (WR-08 AC6 items), with no controller borrow held so the
 /// modal loop can dispatch the timer and other windows. Returns the chosen item.
 // The command id is 0..=8, so the BOOL-to-u32 cast never sees a negative value.
@@ -922,6 +977,7 @@ fn deliver(cell: &RefCell<Controller>, events: Vec<BarEvent>, scheme: Option<boo
 unsafe fn run_menu(labels: &MenuLabels, locked: bool, bar: HWND, point: POINT) -> Option<MenuItem> {
     // SAFETY: the popup menu is ours and the labels are UTF-16 buffers we own.
     let menu = unsafe { CreatePopupMenu() }.ok()?;
+    let mut gear = None;
     let items = [
         (MenuItem::Open, &labels.open),
         (MenuItem::CopyBs, &labels.copy_bs),
@@ -941,6 +997,10 @@ unsafe fn run_menu(labels: &MenuLabels, locked: bool, bar: HWND, point: POINT) -
         };
         // SAFETY: the menu and the text buffer are valid for this call.
         let _ = unsafe { AppendMenuW(menu, flags, index + 1, PCWSTR(text.as_ptr())) };
+        if *item == MenuItem::Settings {
+            // SAFETY: the menu is ours and the bitmap is kept until the menu is destroyed.
+            gear = unsafe { set_gear(menu, index + 1, bar) };
+        }
     }
     // The bar never activates, so claim the foreground for the menu to dismiss on a click
     // elsewhere. The window that had it is given back afterwards unless the choice opens the popup.
@@ -965,6 +1025,10 @@ unsafe fn run_menu(labels: &MenuLabels, locked: bool, bar: HWND, point: POINT) -
     MENU_OPEN.store(false, Ordering::Relaxed);
     // SAFETY: the menu is ours.
     let _ = unsafe { DestroyMenu(menu) };
+    if let Some(bitmap) = gear {
+        // SAFETY: the menu that used the bitmap is gone.
+        let _ = unsafe { DeleteObject(HGDIOBJ(bitmap.0)) };
+    }
     let chosen = usize::try_from(command.0)
         .ok()
         .and_then(|command| command.checked_sub(1))

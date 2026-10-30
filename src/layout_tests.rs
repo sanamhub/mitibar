@@ -341,7 +341,7 @@ fn a_five_row_and_a_six_row_month_both_end_at_the_holiday_line() {
 
 // Icons and captions.
 
-/// The boxes of the `LineIcon`s and the texts that sit inside `container`.
+/// The boxes of the icons (`LineIcon` and `GearIcon`) and the texts that sit inside `container`.
 fn parts_in(popup: &PopupWindow, container: Rect) -> (Vec<Rect>, Vec<Rect>) {
     let inside = |type_name: &str| {
         ElementHandle::find_by_element_type_name(popup, type_name)
@@ -349,7 +349,9 @@ fn parts_in(popup: &PopupWindow, container: Rect) -> (Vec<Rect>, Vec<Rect>) {
             .filter(|rect| container.holds(*rect))
             .collect::<Vec<_>>()
     };
-    (inside("LineIcon"), inside("Text"))
+    let mut icons = inside("LineIcon");
+    icons.extend(inside("GearIcon"));
+    (icons, inside("Text"))
 }
 
 fn pill(popup: &PopupWindow, label: &str) -> Rect {

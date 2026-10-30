@@ -152,7 +152,7 @@ Decided after the owner's first run of the beta build, with the numbers each cho
 - Header: left-aligned text, the three pill actions on the right of the first line. The date is
   `display`, 20 px, the largest size that fits "Baishakh 31, 2081" beside the pills; the Convert
   label is 13 px for the same reason. A click on the date opens Go to date (WR-14 AC3); on hover
-  it gets the borderless pill of the month title. Convert has an icon and a label; Settings and Pin are
+  it gets the borderless pill of the month title. Convert has an icon and a label; Settings (a filled eight-tooth gear in the iOS Settings style, `ui/icons/settings.svg`, drawn in `ink` so it follows the theme) and Pin are
   icon-only pills with tooltips and accessible names. A pinned Pin pill is filled with `ink`, its
   icon in `surface`.
 - Pills: 28 px high, `surface-raised` fill, 1 px `hairline` border, `base` text. They are the only

@@ -52,7 +52,13 @@ export component TrayComponent inherits SystemTrayIcon {
             checked: root.bar-shown;
             activated => { root.show-bar(); }
         }
-        MenuItem { title: MenuText.settings; activated => { root.settings(); } }
+        MenuItem {
+            title: MenuText.settings;
+            icon: root.dark-taskbar
+                ? @image-url("icons/settings-dark-16.png")
+                : @image-url("icons/settings-light-16.png");
+            activated => { root.settings(); }
+        }
         MenuItem { title: MenuText.quit; activated => { root.quit(); } }
     }
 
