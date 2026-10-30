@@ -4,7 +4,7 @@
 //! re-asserts `HWND_TOPMOST` and re-runs the full-screen check from its own window procedure,
 //! under its own re-entrancy rules.
 
-use std::sync::atomic::{AtomicIsize, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, Ordering};
 
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::Graphics::Gdi::{
@@ -31,6 +31,13 @@ static NOTIFY_MESSAGE: AtomicU32 = AtomicU32::new(0);
 /// The foreground window whose location changes are being watched, so the callback can drop every
 /// other window's.
 static WATCHED: AtomicIsize = AtomicIsize::new(0);
+/// A location message is already queued. Dragging or resizing the watched window raises dozens of
+/// location events a second; the controller needs only one look per turn of the message loop.
+static LOCATION_PENDING: AtomicBool = AtomicBool::new(false);
+
+/// The `WPARAM` of a posted message that reports the watched window moving or resizing, as opposed
+/// to a new foreground window.
+pub const MOVED: usize = 1;
 
 /// Windows that cover their monitor without being a full-screen app: the desktop and the taskbars.
 const SHELL_CLASSES: [&str; 4] = [
@@ -130,6 +137,11 @@ impl Drop for Hooks {
     }
 }
 
+/// The controller took the queued location message; the next move may post again.
+pub fn location_seen() {
+    LOCATION_PENDING.store(false, Ordering::Relaxed);
+}
+
 /// The hook callback. It filters, posts one message and returns.
 unsafe extern "system" fn on_event(
     _hook: HWINEVENTHOOK,
@@ -140,8 +152,8 @@ unsafe extern "system" fn on_event(
     _thread: u32,
     _time: u32,
 ) {
-    if event == EVENT_OBJECT_LOCATIONCHANGE
-        && (id_object != OBJID_WINDOW.0 || hwnd.0 as isize != WATCHED.load(Ordering::Relaxed))
+    let moved = event == EVENT_OBJECT_LOCATIONCHANGE;
+    if moved && (id_object != OBJID_WINDOW.0 || hwnd.0 as isize != WATCHED.load(Ordering::Relaxed))
     {
         return;
     }
@@ -149,12 +161,15 @@ unsafe extern "system" fn on_event(
     if notify == 0 {
         return;
     }
+    if moved && LOCATION_PENDING.swap(true, Ordering::Relaxed) {
+        return;
+    }
     // SAFETY: posting to a window handle is safe even if the window is gone; the call then fails.
     let _ = unsafe {
         PostMessageW(
             Some(HWND(notify as *mut std::ffi::c_void)),
             NOTIFY_MESSAGE.load(Ordering::Relaxed),
-            WPARAM(0),
+            WPARAM(if moved { MOVED } else { 0 }),
             LPARAM(0),
         )
     };
