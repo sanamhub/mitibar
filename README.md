@@ -30,7 +30,7 @@ More about it, with downloads for each system: **[nepdate.com/mitibar](https://n
   &nbsp;
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/bar-dark.png">
-    <img src="docs/screenshots/bar-light.png" alt="The MitiBar bar with the weekday, BS date and AD date">
+    <img src="docs/screenshots/bar-light.png" alt="The MitiBar bar: the weekday and AD date on top, the BS date in bold below">
   </picture>
 </p>
 
@@ -89,7 +89,7 @@ Settings live in `%APPDATA%\mitibar\settings.toml` on Windows,
 
 ## Status
 
-MitiBar is in beta on the way to 1.0. Windows is the primary target. macOS and Linux packages are built by the
+MitiBar 1.0 is the first stable release. Windows is the primary target. macOS and Linux packages are built by the
 release workflow; the manual test runbook is in
 [`docs/runbooks/widget-manual-test.md`](docs/runbooks/widget-manual-test.md).
 

@@ -6,6 +6,12 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-30
+
+The first stable release. Settings files from the betas carry over, and untouched default lines
+move to the new ones. The Windows and macOS builds are not code-signed yet; every download has a
+SHA-256 sum in `SHA256SUMS` and a build attestation that `gh attestation verify` checks.
+
 ### Added
 
 - The converter has a Copy button next to each result. It reads Copied for a moment, and Ctrl+C
