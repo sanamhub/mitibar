@@ -331,6 +331,7 @@ component CardTitle inherits Text {
 
 export component SettingsWindow inherits Window {
     title: @tr("{0} Settings", AppInfo.app-name);
+    icon: AppInfo.window-icon;
     // A fixed size: the content scrolls when it needs more room (widget-design §8).
     preferred-width: 420px;
     preferred-height: 680px;
@@ -364,6 +365,10 @@ export component SettingsWindow inherits Window {
     in-out property <int> zone-highlight: 0;
     /// The window's title, read by the interaction tests.
     out property <string> shown-title: root.title;
+    out property <int> shown-icon-width: root.icon.width;
+    /// The fixed content size, which `ui_bridge::place_settings` reads to keep the window on screen.
+    out property <length> fixed-width: root.preferred-width;
+    out property <length> fixed-height: root.preferred-height;
     /// Where the scroll view is, and how far it can go: the interaction tests read and set them.
     in-out property <length> scroll-y <=> scroll.content-y;
     out property <length> scroll-max: max(0px, content.preferred-height - scroll.visible-height);
@@ -389,6 +394,7 @@ export component SettingsWindow inherits Window {
     callback chip-moved-line(int, int, bool);
     callback field-added(int, string);
     callback lines-reset();
+    callback lines-swapped();
     callback preset-picked(int);
     callback reset-position();
     /// A key press in the shortcut field: the key's text and Win, Ctrl, Alt and Shift. Returns
@@ -751,6 +757,20 @@ export component SettingsWindow inherits Window {
                             }
                         }
 
+                        HorizontalLayout {
+                            alignment: center;
+                            swap-lines := Pill {
+                                horizontal-stretch: 0;
+                                label: @tr("Swap top and bottom lines");
+                                activated => { root.lines-swapped(); }
+                                focused => { root.focus-on("swap lines", self.absolute-position.y, self.height); }
+                                LineIcon {
+                                    commands: "M 5 13 L 5 3 M 2.5 5.5 L 5 3 L 7.5 5.5 M 11 3 L 11 13 M 8.5 10.5 L 11 13 L 13.5 10.5";
+                                    color: swap-lines.foreground;
+                                }
+                            }
+                        }
+
                         SectionCard {
                             title: @tr("Bottom line");
                             HorizontalLayout {
@@ -864,23 +884,29 @@ export component SettingsWindow inherits Window {
                         HorizontalLayout {
                             spacing: 8px;
                             alignment: start;
+                            preset-default := Pill {
+                                text: @tr("Default");
+                                label: @tr("Default");
+                                activated => { root.preset-picked(0); }
+                                focused => { root.focus-on("preset default", self.absolute-position.y, self.height); }
+                            }
                             preset-time := Pill {
                                 text: @tr("Date and time");
                                 label: @tr("Date and time");
-                                activated => { root.preset-picked(0); }
+                                activated => { root.preset-picked(1); }
                                 focused => { root.focus-on("preset time", self.absolute-position.y, self.height); }
                             }
-                            preset-short := Pill {
-                                text: @tr("Weekday and date");
-                                label: @tr("Weekday and date");
-                                activated => { root.preset-picked(1); }
-                                focused => { root.focus-on("preset short", self.absolute-position.y, self.height); }
-                            }
-                            preset-long := Pill {
-                                text: @tr("Full weekday");
-                                label: @tr("Full weekday");
+                            preset-minimal := Pill {
+                                text: @tr("Minimal");
+                                label: @tr("Minimal");
                                 activated => { root.preset-picked(2); }
-                                focused => { root.focus-on("preset long", self.absolute-position.y, self.height); }
+                                focused => { root.focus-on("preset minimal", self.absolute-position.y, self.height); }
+                            }
+                            preset-all := Pill {
+                                text: @tr("All");
+                                label: @tr("All");
+                                activated => { root.preset-picked(3); }
+                                focused => { root.focus-on("preset all", self.absolute-position.y, self.height); }
                             }
                         }
                     }

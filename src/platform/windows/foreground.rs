@@ -1,10 +1,10 @@
 //! Top-most upkeep and the full-screen check, driven by events and never by a timer (ADR-0019
 //! points 3 and 4, WR-08 AC9). A `SetWinEventHook` callback runs on the UI thread, in the message
 //! loop, and does one thing: post a message to the bar's controller window. The controller then
-//! re-asserts `HWND_TOPMOST` and re-runs `fullscreen_window` from its own window procedure, under
-//! its own re-entrancy rules.
+//! re-asserts `HWND_TOPMOST` and re-runs the full-screen check from its own window procedure,
+//! under its own re-entrancy rules.
 
-use std::sync::atomic::{AtomicIsize, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, Ordering};
 
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::Graphics::Gdi::{
@@ -28,9 +28,16 @@ use crate::app::bar_place::{Rect, covers_monitor};
 /// `WINEVENTPROC` carries no user data; there is one bar per process.
 static NOTIFY: AtomicIsize = AtomicIsize::new(0);
 static NOTIFY_MESSAGE: AtomicU32 = AtomicU32::new(0);
-/// The full-screen window whose location changes are being watched, so the callback can drop every
+/// The foreground window whose location changes are being watched, so the callback can drop every
 /// other window's.
 static WATCHED: AtomicIsize = AtomicIsize::new(0);
+/// A location message is already queued. Dragging or resizing the watched window raises dozens of
+/// location events a second; the controller needs only one look per turn of the message loop.
+static LOCATION_PENDING: AtomicBool = AtomicBool::new(false);
+
+/// The `WPARAM` of a posted message that reports the watched window moving or resizing, as opposed
+/// to a new foreground window.
+pub const MOVED: usize = 1;
 
 /// Windows that cover their monitor without being a full-screen app: the desktop and the taskbars.
 const SHELL_CLASSES: [&str; 4] = [
@@ -43,8 +50,8 @@ const SHELL_CLASSES: [&str; 4] = [
 /// The installed event hooks. Dropping it unhooks them.
 pub struct Hooks {
     foreground: HWINEVENTHOOK,
-    /// Watches the full-screen window while the bar is hidden for it, so leaving full screen in
-    /// place (F11 in a browser changes no foreground window) shows the bar again.
+    /// Watches the foreground app window, so going full screen or leaving it in place (F11 in a
+    /// browser changes no foreground window) hides or shows the bar.
     location: Option<HWINEVENTHOOK>,
 }
 
@@ -104,14 +111,14 @@ impl Hooks {
             )
         };
         if hook.is_invalid() {
-            log::debug!("bar: could not watch the full-screen window");
+            log::debug!("bar: could not watch the foreground window");
             WATCHED.store(0, Ordering::Relaxed);
         } else {
             self.location = Some(hook);
         }
     }
 
-    /// Stops watching the full-screen window.
+    /// Stops watching the foreground window.
     pub fn unwatch(&mut self) {
         WATCHED.store(0, Ordering::Relaxed);
         if let Some(hook) = self.location.take() {
@@ -130,6 +137,11 @@ impl Drop for Hooks {
     }
 }
 
+/// The controller took the queued location message; the next move may post again.
+pub fn location_seen() {
+    LOCATION_PENDING.store(false, Ordering::Relaxed);
+}
+
 /// The hook callback. It filters, posts one message and returns.
 unsafe extern "system" fn on_event(
     _hook: HWINEVENTHOOK,
@@ -140,8 +152,8 @@ unsafe extern "system" fn on_event(
     _thread: u32,
     _time: u32,
 ) {
-    if event == EVENT_OBJECT_LOCATIONCHANGE
-        && (id_object != OBJID_WINDOW.0 || hwnd.0 as isize != WATCHED.load(Ordering::Relaxed))
+    let moved = event == EVENT_OBJECT_LOCATIONCHANGE;
+    if moved && (id_object != OBJID_WINDOW.0 || hwnd.0 as isize != WATCHED.load(Ordering::Relaxed))
     {
         return;
     }
@@ -149,22 +161,25 @@ unsafe extern "system" fn on_event(
     if notify == 0 {
         return;
     }
+    if moved && LOCATION_PENDING.swap(true, Ordering::Relaxed) {
+        return;
+    }
     // SAFETY: posting to a window handle is safe even if the window is gone; the call then fails.
     let _ = unsafe {
         PostMessageW(
             Some(HWND(notify as *mut std::ffi::c_void)),
             NOTIFY_MESSAGE.load(Ordering::Relaxed),
-            WPARAM(0),
+            WPARAM(if moved { MOVED } else { 0 }),
             LPARAM(0),
         )
     };
 }
 
-/// The foreground window if it is a full-screen app that should hide the bar (ADR-0019 point 4):
-/// it covers its whole monitor, that monitor is the bar's (`bar_monitor`), and it is not the
-/// desktop, a taskbar or one of our own windows; or `SHQueryUserNotificationState` reports a
-/// full-screen Direct3D app or presentation mode.
-pub fn fullscreen_window(bar_monitor: Option<HMONITOR>) -> Option<HWND> {
+/// The foreground window if it is somebody else's app window: visible, not minimised, and not the
+/// desktop, a taskbar or one of our own windows. It is the window to watch, because a window
+/// that is already in front can go full screen in place (F11 in a browser, a video's full-screen
+/// button) without any foreground change to announce it.
+pub fn foreground_app() -> Option<HWND> {
     // SAFETY: GetForegroundWindow is a read-only query.
     let front = unsafe { GetForegroundWindow() };
     if front.0.is_null() {
@@ -181,16 +196,19 @@ pub fn fullscreen_window(bar_monitor: Option<HMONITOR>) -> Option<HWND> {
     if !unsafe { IsWindowVisible(front) }.as_bool() || unsafe { IsIconic(front) }.as_bool() {
         return None;
     }
+    Some(front)
+}
+
+/// Whether `front`, from `foreground_app`, is a full-screen app that should hide the bar (ADR-0019
+/// point 4): it covers its whole monitor and that monitor is the bar's (`bar_monitor`), or
+/// `SHQueryUserNotificationState` reports a full-screen Direct3D app or presentation mode.
+pub fn is_fullscreen(front: HWND, bar_monitor: Option<HMONITOR>) -> bool {
     // SAFETY: SHQueryUserNotificationState is a read-only query.
     let exclusive = matches!(
         unsafe { SHQueryUserNotificationState() },
         Ok(QUNS_RUNNING_D3D_FULL_SCREEN | QUNS_PRESENTATION_MODE)
     );
-    if exclusive || covers_its_monitor(front, bar_monitor) {
-        Some(front)
-    } else {
-        None
-    }
+    exclusive || covers_its_monitor(front, bar_monitor)
 }
 
 /// Whether `window` covers the whole of its monitor, and that monitor is the bar's (or the bar's

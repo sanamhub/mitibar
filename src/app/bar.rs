@@ -74,10 +74,14 @@ impl BarField {
     }
 }
 
-/// The top line of a fresh install: the weekday in full and the BS date.
-pub const DEFAULT_TOP: &[BarField] = &[BarField::Weekday, BarField::BsDate];
-/// The bottom line of a fresh install: the AD date, in the bold weight.
-pub const DEFAULT_BOTTOM: &[BarField] = &[BarField::AdDate];
+/// The top line of a fresh install: the weekday and the AD date, in the regular weight.
+pub const DEFAULT_TOP: &[BarField] = &[BarField::Weekday, BarField::AdDate];
+/// The bottom line of a fresh install: the BS date, in the bold weight.
+pub const DEFAULT_BOTTOM: &[BarField] = &[BarField::BsDate];
+/// The lines schema 3 gave a fresh install. A file that still holds exactly these, with their
+/// weights, moves to the current defaults when it is migrated.
+pub const OLD_DEFAULT_TOP: &[BarField] = &[BarField::Weekday, BarField::BsDate];
+pub const OLD_DEFAULT_BOTTOM: &[BarField] = &[BarField::AdDate];
 /// The fixed layout a schema 1 file had: weekday and time on top, BS and AD dates below.
 pub const LEGACY_TOP: &[BarField] = &[BarField::Weekday, BarField::Time, BarField::ZoneTime];
 pub const LEGACY_BOTTOM: &[BarField] = &[BarField::BsDate, BarField::AdShort];
@@ -284,8 +288,8 @@ mod tests {
     fn wr08_ac2_the_defaults_string() {
         let s = settings("en", DEFAULT_TOP, DEFAULT_BOTTOM);
         let lines = bar_lines(&thursday(), &s);
-        assert_eq!(lines.top, "Thu · Kartik 5, 2083");
-        assert_eq!(lines.bottom, "Oct 22, 2026");
+        assert_eq!(lines.top, "Thu · Oct 22, 2026");
+        assert_eq!(lines.bottom, "Kartik 5, 2083");
         assert!(!lines.top_bold);
         assert!(lines.bottom_bold);
         assert_eq!(Settings::default().bar_top, ids(DEFAULT_TOP));
@@ -296,8 +300,8 @@ mod tests {
     fn wr08_ac2_the_defaults_string_in_nepali() {
         let s = settings("ne", DEFAULT_TOP, DEFAULT_BOTTOM);
         let lines = bar_lines(&thursday(), &s);
-        assert_eq!(lines.top, "बिहि · कार्तिक ५, २०८३");
-        assert_eq!(lines.bottom, "Oct २२, २०२६");
+        assert_eq!(lines.top, "बिहि · Oct २२, २०२६");
+        assert_eq!(lines.bottom, "कार्तिक ५, २०८३");
     }
 
     #[test]
@@ -352,7 +356,7 @@ mod tests {
         let s = settings("en", &[], DEFAULT_BOTTOM);
         let lines = bar_lines(&thursday(), &s);
         assert_eq!(lines.top, "");
-        assert_eq!(lines.bottom, "Oct 22, 2026");
+        assert_eq!(lines.bottom, "Kartik 5, 2083");
         assert!(!lines.is_empty());
     }
 
@@ -360,13 +364,13 @@ mod tests {
     fn wr08_the_menu_bar_title_is_the_top_line_or_else_the_bottom_line() {
         let now = thursday();
         let both = bar_lines(&now, &settings("en", DEFAULT_TOP, DEFAULT_BOTTOM));
-        assert_eq!(both.title(), Some("Thu · Kartik 5, 2083"));
+        assert_eq!(both.title(), Some("Thu · Oct 22, 2026"));
 
         let ne = bar_lines(&now, &settings("ne", &[BarField::BsShort], &[]));
         assert_eq!(ne.title(), Some("कार्तिक ५"));
 
         let bottom_only = bar_lines(&now, &settings("en", &[], DEFAULT_BOTTOM));
-        assert_eq!(bottom_only.title(), Some("Oct 22, 2026"));
+        assert_eq!(bottom_only.title(), Some("Kartik 5, 2083"));
 
         assert_eq!(BarLines::default().title(), None);
     }

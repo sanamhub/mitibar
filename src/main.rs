@@ -1177,7 +1177,7 @@ fn update_popup(state: &Rc<RefCell<AppState>>) {
     log::debug!("calendar built in {:?}", started.elapsed());
     ui_bridge::set_calendar(&popup, zoom, view.as_ref(), today, lang);
     let holiday = holidays::next_holiday(today, lang);
-    ui_bridge::set_next_holiday(&popup, holiday.as_ref());
+    ui_bridge::set_next_holiday(&popup, holiday.as_ref(), lang);
     ui_bridge::set_upcoming(&popup, &holidays::upcoming_holidays(today, lang, 5), lang);
     ui_bridge::set_detail(&popup, s.detail.as_ref());
     // A tooltip belongs to the cells it was shown over.
@@ -1532,6 +1532,19 @@ fn wire_converter(
             let outcome = converter::days_between(from.as_str(), to.as_str(), lang);
             if let Some(popup) = popup_weak.upgrade() {
                 ui_bridge::set_converter(&popup, &outcome);
+            }
+        }
+    });
+    popup.on_converter_copy({
+        let state = state.clone();
+        move |text| {
+            let clipboard = state.borrow().clipboard.clone();
+            match clipboard.set_text(text.as_str()) {
+                Ok(()) => true,
+                Err(err) => {
+                    log::warn!("converter: could not copy the result: {err}");
+                    false
+                }
             }
         }
     });

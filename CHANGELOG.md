@@ -6,6 +6,42 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- The converter has a Copy button next to each result. It reads Copied for a moment, and Ctrl+C
+  (Cmd+C on macOS) copies the result whose button has the focus.
+- Settings has a swap button between the Top line and Bottom line cards. It exchanges the two
+  lines together with their Bold setting.
+
+### Changed
+
+- The bundled fonts are subsets, which makes the app about 0.6 MB smaller (the binary 5.1 % and
+  the installer 3.9 % below 0.2.0-beta.3). Nothing drawn changes. A new string with a character
+  outside the kept ranges needs the subset widened (see `ui/fonts/README.md`).
+- Today in the month grid is a tile inset from the cell's edges, with a soft vermillion fill, a
+  vermillion border and a bold vermillion numeral, instead of a disc touching the next cell. The
+  year and decade views use the same tile for this month and this year.
+- The bar's default lines are the weekday and AD date on top, regular, and the BS date below,
+  bold. A settings file that still holds the old defaults exactly moves to the new ones; a file
+  with lines you chose keeps them.
+- The presets are Default, Date and time, Minimal and All. A preset sets both lines and both Bold
+  settings. Minimal is one bold line, and All shows every field once.
+
+### Fixed
+
+- The bar hides when the app in front goes full screen in place, such as F11 in a browser or a
+  video's full-screen button, and comes back when it leaves full screen. Before, it only hid when
+  a window that was already full screen came to the front. Switching "Hide over full-screen apps"
+  on takes effect at once.
+- Switching the theme from Light or Dark back to System follows Windows again, and keeps
+  following it when Windows changes between light and dark mode.
+- The Settings window shows the app icon in its title bar and on the taskbar.
+- Settings opens fully inside the screen's work area when the popup is low on the screen, instead
+  of partly under the taskbar.
+- Reset to default restores both Bold settings as well as the two lines.
+- In Nepali, the number of days to the next holiday uses Devanagari digits, in the popup's footer
+  and in the upcoming holidays list.
+
 ## [0.2.0-beta.3] - 2026-10-30
 
 A second beta with the new app icon and a tidier Settings window, converter and menus. Still

@@ -124,10 +124,20 @@ pub fn move_across(settings: &mut Settings, line: Line, index: usize, up: bool) 
     })
 }
 
-/// "Reset to default": the two lines of WR-08 AC2.
+/// Exchanges the top and bottom lines together with their bold settings.
+pub fn swap_lines(settings: &mut Settings) {
+    std::mem::swap(&mut settings.bar_top, &mut settings.bar_bottom);
+    std::mem::swap(&mut settings.bar_top_bold, &mut settings.bar_bottom_bold);
+}
+
+/// "Reset to default": the two lines of WR-08 AC2 and their weights, the same as the Default
+/// preset, since a weight is now set per line beside it.
 pub fn reset(settings: &mut Settings) {
+    let fresh = Settings::default();
     settings.bar_top = ids(DEFAULT_TOP);
     settings.bar_bottom = ids(DEFAULT_BOTTOM);
+    settings.bar_top_bold = fresh.bar_top_bold;
+    settings.bar_bottom_bold = fresh.bar_bottom_bold;
 }
 
 #[cfg(test)]
@@ -147,6 +157,34 @@ mod tests {
             bar_bottom: bottom.iter().map(|id| (*id).to_owned()).collect(),
             ..Settings::default()
         }
+    }
+
+    #[test]
+    fn swapping_exchanges_the_lines_and_their_bold_settings() {
+        let mut settings = with(&["weekday", "bs_date"], &["ad_date"]);
+        settings.bar_top_bold = false;
+        settings.bar_bottom_bold = true;
+        swap_lines(&mut settings);
+        assert_eq!(
+            lines(&settings),
+            (vec!["ad_date"], vec!["weekday", "bs_date"])
+        );
+        assert!(settings.bar_top_bold);
+        assert!(!settings.bar_bottom_bold);
+        swap_lines(&mut settings);
+        assert_eq!(
+            lines(&settings),
+            (vec!["weekday", "bs_date"], vec!["ad_date"])
+        );
+        assert!(!settings.bar_top_bold);
+        assert!(settings.bar_bottom_bold);
+    }
+
+    #[test]
+    fn swapping_with_an_empty_line_moves_everything_to_the_other_line() {
+        let mut settings = with(&["weekday", "bs_date"], &[]);
+        swap_lines(&mut settings);
+        assert_eq!(lines(&settings), (vec![], vec!["weekday", "bs_date"]));
     }
 
     #[test]
@@ -203,8 +241,8 @@ mod tests {
         assert_eq!(
             lines(&settings),
             (
-                vec!["weekday", "bs_date", "tithi"],
-                vec!["ad_date", "time", "holiday"]
+                vec!["weekday", "ad_date", "tithi"],
+                vec!["bs_date", "time", "holiday"]
             )
         );
     }
@@ -223,12 +261,12 @@ mod tests {
     fn a_chip_is_removed_from_its_line() {
         let mut settings = Settings::default();
         assert!(remove(&mut settings, Line::Top, 1));
-        assert_eq!(lines(&settings), (vec!["weekday"], vec!["ad_date"]));
+        assert_eq!(lines(&settings), (vec!["weekday"], vec!["bs_date"]));
         assert!(!remove(&mut settings, Line::Top, 5), "no such chip");
         assert!(
             unused(&settings)
                 .iter()
-                .any(|field| field.id() == "bs_date")
+                .any(|field| field.id() == "ad_date")
         );
     }
 
@@ -258,7 +296,7 @@ mod tests {
                 index: 1
             })
         );
-        assert_eq!(settings.bar_top, ["bs_date", "weekday"]);
+        assert_eq!(settings.bar_top, ["ad_date", "weekday"]);
         assert_eq!(
             move_within(&mut settings, Line::Top, 1, -1),
             Some(At {
@@ -266,7 +304,7 @@ mod tests {
                 index: 0
             })
         );
-        assert_eq!(settings.bar_top, ["weekday", "bs_date"]);
+        assert_eq!(settings.bar_top, ["weekday", "ad_date"]);
         assert_eq!(
             move_within(&mut settings, Line::Top, 0, -1),
             None,
@@ -287,7 +325,7 @@ mod tests {
             None,
             "one place at a time"
         );
-        assert_eq!(settings.bar_top, ["weekday", "bs_date"]);
+        assert_eq!(settings.bar_top, ["weekday", "ad_date"]);
     }
 
     #[test]
@@ -303,7 +341,7 @@ mod tests {
         );
         assert_eq!(
             lines(&settings),
-            (vec!["weekday"], vec!["ad_date", "bs_date"])
+            (vec!["weekday"], vec!["bs_date", "ad_date"])
         );
         // Alt+Up on the bottom line's first chip: it takes the same place above.
         assert_eq!(
@@ -315,7 +353,7 @@ mod tests {
         );
         assert_eq!(
             lines(&settings),
-            (vec!["ad_date", "weekday"], vec!["bs_date"])
+            (vec!["bs_date", "weekday"], vec!["ad_date"])
         );
     }
 
@@ -338,8 +376,13 @@ mod tests {
     #[test]
     fn reset_restores_the_wr08_ac2_defaults() {
         let mut settings = with(&["tithi"], &["holiday", "ad_date"]);
+        settings.bar_top_bold = true;
+        settings.bar_bottom_bold = false;
         reset(&mut settings);
-        assert_eq!(settings.bar_top, Settings::default().bar_top);
-        assert_eq!(settings.bar_bottom, Settings::default().bar_bottom);
+        let fresh = Settings::default();
+        assert_eq!(settings.bar_top, fresh.bar_top);
+        assert_eq!(settings.bar_bottom, fresh.bar_bottom);
+        assert_eq!(settings.bar_top_bold, fresh.bar_top_bold);
+        assert_eq!(settings.bar_bottom_bold, fresh.bar_bottom_bold);
     }
 }

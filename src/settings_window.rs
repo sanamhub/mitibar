@@ -13,6 +13,7 @@ use slint::{CloseRequestResponse, ComponentHandle};
 
 use crate::app::bar::BarField;
 use crate::app::line_editor::{self, At, Line};
+use crate::app::presets;
 use crate::app::shortcut::{self, Combo, Modifiers, Recorded, Refusal};
 use crate::ui_bridge::{self, SettingsHint};
 use crate::{AppState, SettingsWindow, theme};
@@ -651,36 +652,20 @@ fn wire_lines(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
             applied(&state);
         }
     });
+    window.on_lines_swapped({
+        let state = state.clone();
+        move || {
+            line_editor::swap_lines(&mut state.borrow_mut().settings);
+            applied(&state);
+        }
+    });
     window.on_preset_picked({
         let state = state.clone();
         move |index| {
-            {
-                let mut state = state.borrow_mut();
-                let lines = match index {
-                    // The beta's weekday and time, with the BS and AD dates below.
-                    0 => (
-                        vec![
-                            "weekday".to_owned(),
-                            "time".to_owned(),
-                            "zone_time".to_owned(),
-                        ],
-                        vec!["bs_date".to_owned(), "ad_short".to_owned()],
-                    ),
-                    // The short weekday and BS date, then the AD date.
-                    1 => (
-                        vec!["weekday".to_owned(), "bs_date".to_owned()],
-                        vec!["ad_date".to_owned()],
-                    ),
-                    // The full weekday and BS date, then the AD date.
-                    2 => (
-                        vec!["weekday_long".to_owned(), "bs_date".to_owned()],
-                        vec!["ad_date".to_owned()],
-                    ),
-                    _ => return,
-                };
-                state.settings.bar_top = lines.0;
-                state.settings.bar_bottom = lines.1;
-            }
+            let Some(preset) = presets::by_index(index) else {
+                return;
+            };
+            presets::apply(&mut state.borrow_mut().settings, preset);
             applied(&state);
         }
     });

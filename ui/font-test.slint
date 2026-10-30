@@ -3,10 +3,12 @@
 // Snapshot mode: `--font-test --snapshot <path.png> [--theme light|dark|system]`.
 import "fonts/NotoSans-Variable.ttf";
 import "fonts/NotoSansDevanagari-Variable.ttf";
+import { AppInfo } from "app-info.slint";
 import { Theme } from "theme.slint";
 
 export component FontTestWindow inherits Window {
     title: "Devanagari font test";
+    icon: AppInfo.window-icon;
     preferred-width: 720px;
     preferred-height: 820px;
     background: Theme.surface;

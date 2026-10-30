@@ -125,7 +125,7 @@ Stored per user at `dirs::config_dir()/mitibar/settings.toml`: Windows
 
 | Key | Type | Default |
 |---|---|---|
-| `schema` | int | 3 |
+| `schema` | int | 4 |
 | `language` | `"en" \| "ne"` | `"en"` |
 | `theme` | `"system" \| "light" \| "dark"` | `"system"` |
 | `clock_24h` | bool | false |
@@ -137,15 +137,17 @@ Stored per user at `dirs::config_dir()/mitibar/settings.toml`: Windows
 | `bar_top_bold`, `bar_bottom_bold` | bool | false, true |
 | `bar_hide_fullscreen` | bool | true |
 | `bar_zone_long` | bool | false |
-| `bar_top` | array of field ids (WR-08 AC2) | `["weekday", "bs_date"]` |
-| `bar_bottom` | array of field ids | `["ad_date"]` |
+| `bar_top` | array of field ids (WR-08 AC2) | `["weekday", "ad_date"]` |
+| `bar_bottom` | array of field ids | `["bs_date"]` |
 | `bar_monitor` | string, monitor device name, `""` = default position | `""` |
 | `bar_x`, `bar_y` | int, logical px from that monitor's top-left | 0, 0 |
 | `shortcut` | string like `"Win+Shift+N"`, `""` = none (WR-13) | `"Win+Shift+N"` (`"Cmd+Shift+N"` on macOS, `"Super+Shift+N"` on Linux) |
 
-Schema 1 files are read and rewritten as schema 3: `taskbar_text = false` becomes `bar = false`,
-the two lines take the old fixed layout, and the other new keys take their defaults. Schema 2 files
-keep the lines the owner chose and gain the schema 3 keys.
+Schema 1 files are read and rewritten as schema 4: `taskbar_text = false` becomes `bar = false`,
+the two lines take the old fixed layout, and the other new keys take their defaults. Schema 2 and 3
+files keep the lines the owner chose and gain the newer keys. The one exception: a file whose lines
+and bold flags are exactly the old defaults (top `weekday`, `bs_date`, regular; bottom `ad_date`,
+bold) moves to the current defaults, since the owner never changed them.
 
 - AC1: Settings opens in its own window, never on top of the popup. It sits beside the popup
   on the side with more room, top edges aligned, 8 px apart. When neither side has room, or the
@@ -213,15 +215,18 @@ Linux has the tray icon only.
   | `tithi` | `Ekadashi` | `एकादशी` | empty outside the patro coverage |
   | `holiday` | today's public holiday | same, in Nepali | empty when today isn't one |
 
-  Defaults: top `weekday, bs_date`; bottom `ad_date`, bold. Example (en):
-  `Thu · Kartik 5, 2083` / **`Oct 22, 2026`**. The weekday and BS date come from the same local
+  Defaults: top `weekday, ad_date`, regular; bottom `bs_date`, bold. Example (en):
+  `Thu · Oct 22, 2026` / **`Kartik 5, 2083`**. The weekday and BS date come from the same local
   date (WR-05 AC4). Names and digits come from `nepdate` and follow the language setting.
 - AC3: The line editor in Settings (WR-06 AC6) shows a Top line row and a Bottom line row of
   field chips. Each chip has a remove button. "Add field" lists the fields not used on either
   line; a field appears at most once. A focused chip moves left or right with its arrow buttons
   or Alt+Left and Alt+Right, and to the other line with Alt+Up and Alt+Down. At least one field
   stays: the last chip's remove button is disabled. "Reset to default" restores the AC2
-  defaults. The bar updates on every change.
+  defaults. A swap button between the two cards exchanges the lines with their bold settings.
+  Four presets set both lines and both bold flags: Default; Date and time (`weekday, time,
+  zone_time` over `bs_date, ad_short`, bottom bold); Minimal (`weekday, bs_date` bold, no bottom
+  line); All (every field once, over the two lines). The bar updates on every change.
 - AC4: Dragging follows ADR-0008 §5: past the system drag distance it moves with the pointer,
   stays fully on one monitor, and snaps to the taskbar's centre line within 8 logical px.
   Release saves the position (`bar_monitor`, `bar_x`, `bar_y`). With `bar_locked = true` a

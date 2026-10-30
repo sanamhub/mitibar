@@ -4,7 +4,7 @@
 // `ui_bridge::set_converter` fills `data`.
 
 import { FocusFrame } from "focus-frame.slint";
-import { Segmented } from "controls.slint";
+import { Pill, Segmented } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Button, LineEdit } from "std-widgets.slint";
 
@@ -52,6 +52,24 @@ export component Converter inherits Rectangle {
     callback days-edited(string, string);
     callback closed();
     callback control-focused(string);
+    /// Writes the text to the clipboard; false when the clipboard refused it.
+    callback copy-result(string) -> bool;
+
+    /// Which result was just copied: 0 none, 1 the short form, 2 the long form. It clears after a
+    /// moment, and when the result changes.
+    in-out property <int> copied: 0;
+    changed data => { root.copied = 0; }
+    Timer {
+        interval: 1500ms;
+        running: root.copied != 0;
+        triggered => { root.copied = 0; }
+    }
+
+    function copy(which: int, text: string) {
+        if (root.copy-result(text)) {
+            root.copied = which;
+        }
+    }
 
     /// The focused control's stable name.
     out property <string> focused-control: root.active-control;
@@ -196,16 +214,64 @@ export component Converter inherits Rectangle {
                         font-size: 13px;
                         wrap: word-wrap;
                     }
-                    if root.data.error == "" && root.data.short != "": Text {
-                        text: root.data.short;
-                        color: Theme.ink;
-                        font-size: 16px;
+                    // Ctrl+C (Cmd+C on macOS) copies the result whose button has the focus.
+                    if root.data.error == "" && root.data.short != "": FocusScope {
+                        focus-on-tab-navigation: false;
+                        key-pressed(event) => {
+                            if (event.modifiers.control && (event.text == "c" || event.text == "C")) {
+                                root.copy(1, root.data.short);
+                                return accept;
+                            }
+                            reject
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Text {
+                                text: root.data.short;
+                                color: Theme.ink;
+                                font-size: 16px;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                                overflow: elide;
+                            }
+                            Pill {
+                                text: root.copied == 1 ? @tr("Copied") : @tr("Copy");
+                                label: @tr("Copy result");
+                                pill-size: 24px;
+                                font-size: 12px;
+                                activated => { root.copy(1, root.data.short); }
+                                focused => { root.active-control = "converter copy result"; }
+                            }
+                        }
                     }
-                    if root.data.error == "" && root.data.long != "": Text {
-                        text: root.data.long;
-                        color: Theme.ink-muted;
-                        font-size: 13px;
-                        wrap: word-wrap;
+                    if root.data.error == "" && root.data.long != "": FocusScope {
+                        focus-on-tab-navigation: false;
+                        key-pressed(event) => {
+                            if (event.modifiers.control && (event.text == "c" || event.text == "C")) {
+                                root.copy(2, root.data.long);
+                                return accept;
+                            }
+                            reject
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Text {
+                                text: root.data.long;
+                                color: Theme.ink-muted;
+                                font-size: 13px;
+                                wrap: word-wrap;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                            }
+                            Pill {
+                                text: root.copied == 2 ? @tr("Copied") : @tr("Copy");
+                                label: @tr("Copy long form");
+                                pill-size: 24px;
+                                font-size: 12px;
+                                activated => { root.copy(2, root.data.long); }
+                                focused => { root.active-control = "converter copy long"; }
+                            }
+                        }
                     }
                 }
             }

@@ -15,6 +15,7 @@ pub mod goto;
 pub mod holidays;
 pub mod line_editor;
 pub mod month_view;
+pub mod presets;
 pub mod settings;
 pub mod settings_place;
 pub mod shortcut;

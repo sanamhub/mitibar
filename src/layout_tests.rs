@@ -174,7 +174,7 @@ fn the_numeral_is_centred_and_the_ad_day_ends_at_the_same_inset_in_every_cell() 
 }
 
 #[test]
-fn todays_cell_keeps_the_ad_day_where_the_month_would_overlap_the_disc() {
+fn todays_cell_keeps_the_ad_day_and_the_header_gives_the_date() {
     // Kartik 15, 2083 is Nov 1, 2026: an AD 1st, so a cell shows "Nov" for the day, but not today's.
     let (popup, state, _) = app(date(2083, 7, 15));
     let first = |popup: &PopupWindow| {
@@ -234,19 +234,20 @@ fn the_event_dot_is_the_same_distance_from_one_and_two_digit_days() {
 }
 
 #[test]
-fn todays_dot_clears_the_disc() {
+fn todays_dot_stays_inside_the_tile_and_keeps_its_place() {
     let (popup, _state, _) = app(date(2083, 7, 5));
     let today = days(&popup)
         .into_iter()
         .find(|day| day.is_today)
         .expect("today is in the shown month");
     let dot = today.dot.expect("2083-07-05 has an event");
-    let disc_right = today.cell.x + 14.0 + 14.0;
     assert!(
-        dot.x >= disc_right - 0.01,
-        "the dot at {} is over the disc",
-        dot.x
+        (dot.x - today.numeral.right() - 1.0).abs() < 0.01,
+        "the dot is where every other day has it"
     );
+    // The tile is inset 2 px, with a 1.5 px border.
+    let inner = today.cell.x + 2.0 + 1.5;
+    assert!(dot.x >= inner, "the dot at {} is on the border", dot.x);
 }
 
 // WR-03 AC4: the tithi.

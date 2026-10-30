@@ -482,6 +482,68 @@ fn converter_converts_typed_input_both_ways() {
     assert_eq!(popup.get_converter_data().short.as_str(), "31 days");
 }
 
+#[test]
+fn the_converter_copies_each_result_and_confirms() {
+    let (popup, _state, clipboard) = app(date(2081, 1, 1));
+    click(&popup, "Convert");
+    element(&popup, "Date to convert").set_accessible_value("2081/02/32");
+    assert_eq!(popup.get_converter_copied(), 0);
+
+    click(&popup, "Copy result");
+    assert_eq!(clipboard.texts.borrow().as_slice(), ["2024-06-14"]);
+    assert_eq!(
+        popup.get_converter_copied(),
+        1,
+        "the short form says Copied"
+    );
+
+    click(&popup, "Copy long form");
+    let long = popup.get_converter_data().long.to_string();
+    assert_eq!(clipboard.texts.borrow().last(), Some(&long));
+    assert_eq!(popup.get_converter_copied(), 2, "the long form says Copied");
+
+    elapse(2000);
+    assert_eq!(popup.get_converter_copied(), 0, "the note goes away");
+
+    click(&popup, "Copy result");
+    element(&popup, "Date to convert").set_accessible_value("2081/02/31");
+    slint::platform::update_timers_and_animations();
+    assert_eq!(
+        popup.get_converter_copied(),
+        0,
+        "a new result starts unconfirmed"
+    );
+}
+
+#[test]
+fn ctrl_c_copies_the_focused_converter_result() {
+    let (popup, _state, clipboard) = app(date(2081, 1, 1));
+    click(&popup, "Convert");
+    element(&popup, "Date to convert").set_accessible_value("2081/02/32");
+
+    tab_to(&popup, "converter copy result");
+    press_ctrl(&popup, "c");
+    assert_eq!(clipboard.texts.borrow().as_slice(), ["2024-06-14"]);
+    assert_eq!(popup.get_converter_copied(), 1);
+
+    tab_to(&popup, "converter copy long");
+    press_ctrl(&popup, "c");
+    assert_eq!(popup.get_converter_copied(), 2);
+    assert_eq!(clipboard.texts.borrow().len(), 2);
+}
+
+#[test]
+fn the_converter_shows_no_copy_button_without_a_result() {
+    let (popup, _state, _) = app(date(2081, 1, 1));
+    click(&popup, "Convert");
+    assert!(!exists(&popup, "Copy result"));
+    element(&popup, "Date to convert").set_accessible_value("2081/02/33");
+    assert!(
+        !exists(&popup, "Copy result"),
+        "an error has nothing to copy"
+    );
+}
+
 // WR-03 AC6: the three zoom levels.
 
 #[test]

@@ -110,8 +110,13 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 ## Floating bar (WR-08, Windows)
 
 - [ ] First run: the bar sits at its default position on the primary monitor, fully on-screen.
-- [ ] A fresh profile shows the weekday and BS date on the top line and the AD date on the bottom
+- [ ] A fresh profile shows the weekday and AD date on the top line and the BS date on the bottom
       line, with no time and no time zone. The bottom line is bold and the top line is regular.
+- [ ] A settings file from before 0.2.0 with the old default lines moves to these; one with lines
+      the owner chose keeps them.
+- [ ] The swap button between the Top line and Bottom line cards exchanges the lines with their
+      bold settings. Each preset (Default, Date and time, Minimal, All) sets both lines and both
+      bold settings, and Minimal leaves the bar with one bold line.
 - [ ] Switch bold on the top line and off the bottom line: each line follows.
 - [ ] Set the extra clock to Asia/Singapore: it shows `SGT` and the time; "Long time zone name"
       switches it to `Singapore`. A zone with no common name, such as Asia/Tashkent, shows `+05`.

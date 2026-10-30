@@ -672,6 +672,103 @@ fn wr06_ac5_the_theme_applies_to_the_popup_and_the_settings_window() {
 }
 
 #[test]
+fn the_settings_window_and_the_popup_carry_the_app_icon() {
+    let (f, window) = opened();
+    assert!(window.get_shown_icon_width() > 0, "Settings has no icon");
+    assert!(f.popup.get_shown_icon_width() > 0, "the popup has no icon");
+}
+
+#[test]
+fn every_window_in_the_markup_takes_the_app_icon_and_paints_the_theme() {
+    for (file, markup) in [
+        ("popup", include_str!("../ui/popup.slint")),
+        ("settings", include_str!("../ui/settings.slint")),
+        ("font-test", include_str!("../ui/font-test.slint")),
+    ] {
+        let windows = markup.matches("inherits Window").count();
+        assert!(windows > 0, "{file} declares no window");
+        assert_eq!(
+            markup.matches("icon: AppInfo.window-icon;").count(),
+            windows,
+            "{file}: every window needs the app icon"
+        );
+        assert!(
+            markup.contains("Theme.surface"),
+            "{file}: the window must paint the theme's surface"
+        );
+    }
+    // A window declared in any other file would escape this check.
+    for (file, markup) in [
+        ("app", include_str!("../ui/app.slint")),
+        ("converter", include_str!("../ui/converter.slint")),
+        ("day-detail", include_str!("../ui/day-detail.slint")),
+        ("month-grid", include_str!("../ui/month-grid.slint")),
+        ("tray", include_str!("../ui/tray.slint")),
+    ] {
+        assert!(
+            !markup.contains("inherits Window"),
+            "{file} declares a window; add it to the list above"
+        );
+    }
+}
+
+/// Both windows' resolved scheme, as the markup paints it.
+fn dark_now(f: &Fixture, window: &SettingsWindow) -> (bool, bool) {
+    (
+        f.popup.global::<crate::Theme>().get_is_dark(),
+        window.global::<crate::Theme>().get_is_dark(),
+    )
+}
+
+#[test]
+fn every_switch_between_light_dark_and_system_follows_the_os_in_both_modes() {
+    // theme_picked: 0 System, 1 Light, 2 Dark.
+    for os_dark in [true, false] {
+        for path in [[1, 0], [2, 0], [0, 1], [0, 2], [1, 2], [2, 1], [1, 1]] {
+            let (f, window) = opened();
+            crate::test_support::set_os_dark(f.popup.window(), os_dark);
+            for pick in path {
+                window.invoke_theme_picked(pick);
+                slint::platform::update_timers_and_animations();
+                let expect = match pick {
+                    1 => false,
+                    2 => true,
+                    _ => os_dark,
+                };
+                assert_eq!(
+                    dark_now(&f, &window),
+                    (expect, expect),
+                    "os dark {os_dark}, picks {path:?}, after {pick}"
+                );
+            }
+            // System keeps following the OS afterwards, not the last explicit pick.
+            window.invoke_theme_picked(0);
+            slint::platform::update_timers_and_animations();
+            crate::test_support::set_os_dark(f.popup.window(), !os_dark);
+            assert_eq!(
+                dark_now(&f, &window),
+                (!os_dark, !os_dark),
+                "os dark {os_dark}, picks {path:?}, then the OS flips"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_standard_widgets_follow_the_scheme_the_app_resolves() {
+    let (f, window) = opened();
+    crate::test_support::set_os_dark(f.popup.window(), true);
+    window.invoke_theme_picked(1);
+    slint::platform::update_timers_and_animations();
+    window.invoke_theme_picked(0);
+    slint::platform::update_timers_and_animations();
+    assert!(
+        window.global::<crate::Theme>().get_widgets_dark(),
+        "Button and ComboBox read Palette, which must be dark again"
+    );
+}
+
+#[test]
 fn wr06_ac5_the_24_hour_clock_applies_to_the_popup_and_the_bar() {
     let (f, window) = opened();
     let clock = |f: &Fixture| {
@@ -1155,7 +1252,7 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
     click(&window, "Tithi");
     assert_eq!(
         top(&f),
-        ids(&["weekday", "bs_date", "tithi"]),
+        ids(&["weekday", "ad_date", "tithi"]),
         "at the end of the top line"
     );
 
@@ -1170,7 +1267,7 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
         "a field appears at most once"
     );
     click(&window, "Holiday");
-    assert_eq!(bottom(&f), ids(&["ad_date", "holiday"]));
+    assert_eq!(bottom(&f), ids(&["bs_date", "holiday"]));
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
     assert!(!last.top.is_empty(), "the bar updated on each change");
 }
@@ -1221,9 +1318,9 @@ fn wr08_ac3_a_chip_is_removed_with_its_button_and_focus_moves_to_its_neighbour()
     settings_window::refresh(&f.state);
     crate::update_bar(&f.state);
     let before = parts(&f);
-    click(&window, "Remove BS date");
+    click(&window, "Remove AD date");
     assert_eq!(top(&f), ids(&["weekday"]));
-    assert!(!exists(&window, "BS date"));
+    assert!(!exists(&window, "AD date"));
     settle(&window);
     assert_eq!(
         focused(&window),
@@ -1287,20 +1384,20 @@ fn wr08_ac3_a_focused_chip_moves_left_and_right_with_its_buttons_and_with_alt_ar
     );
     click(&window, "Move Weekday right");
     settle(&window);
-    assert_eq!(top(&f), ids(&["bs_date", "weekday"]));
+    assert_eq!(top(&f), ids(&["ad_date", "weekday"]));
     assert_eq!(focused(&window), "chip top 2", "the focus follows the chip");
 
     press_with(&window, &[Key::Alt], Key::RightArrow);
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["bs_date", "weekday"]),
+        ids(&["ad_date", "weekday"]),
         "it stops at the right end"
     );
 
     press_with(&window, &[Key::Alt], Key::LeftArrow);
     settle(&window);
-    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert_eq!(top(&f), ids(&["weekday", "ad_date"]));
     assert_eq!(focused(&window), "chip top 1");
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
     // The bar reads the real clock, so the expected weekday is today's.
@@ -1328,7 +1425,7 @@ fn wr08_ac3_a_refresh_does_not_take_the_focus_from_a_chip() {
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["bs_date", "weekday"]),
+        ids(&["ad_date", "weekday"]),
         "the key reached the chip"
     );
 
@@ -1341,7 +1438,7 @@ fn wr08_ac3_a_refresh_does_not_take_the_focus_from_a_chip() {
     settle(&window);
     assert_eq!(
         top(&f),
-        ids(&["weekday", "bs_date"]),
+        ids(&["weekday", "ad_date"]),
         "and still does after the note"
     );
     press(&window, Key::Escape);
@@ -1357,7 +1454,7 @@ fn wr08_ac3_alt_up_and_alt_down_move_a_chip_to_the_other_line() {
     tab_to(&window, "chip top 2");
     press_with(&window, &[Key::Alt], Key::DownArrow);
     settle(&window);
-    assert_eq!(chips(&f), (ids(&["weekday"]), ids(&["ad_date", "bs_date"])));
+    assert_eq!(chips(&f), (ids(&["weekday"]), ids(&["bs_date", "ad_date"])));
     assert_eq!(
         focused(&window),
         "chip bottom 2",
@@ -1370,7 +1467,7 @@ fn wr08_ac3_alt_up_and_alt_down_move_a_chip_to_the_other_line() {
 
     press_with(&window, &[Key::Alt], Key::UpArrow);
     settle(&window);
-    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert_eq!(top(&f), ids(&["weekday", "ad_date"]));
     assert_eq!(focused(&window), "chip top 2");
     press_with(&window, &[Key::Alt], Key::UpArrow);
     settle(&window);
@@ -1428,18 +1525,34 @@ fn wr08_ac3_reset_to_default_restores_the_two_lines() {
 }
 
 #[test]
-fn wr08_ac3_a_preset_replaces_the_lines() {
+fn wr08_ac3_a_preset_replaces_the_lines_and_both_weights() {
     let (f, window) = opened();
-    window.invoke_preset_picked(0);
+    window.invoke_preset_picked(1);
     assert_eq!(top(&f), ids(&["weekday", "time", "zone_time"]));
     assert_eq!(bottom(&f), ids(&["bs_date", "ad_short"]));
+    assert!(!settings(&f).bar_top_bold && settings(&f).bar_bottom_bold);
 
     window.invoke_preset_picked(2);
-    assert_eq!(top(&f), ids(&["weekday_long", "bs_date"]));
-    assert_eq!(bottom(&f), ids(&["ad_date"]));
+    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert!(bottom(&f).is_empty(), "Minimal leaves one line");
+    assert!(settings(&f).bar_top_bold && !settings(&f).bar_bottom_bold);
     let lines = f.bar.lines.borrow().last().cloned().expect("lines");
-    let today = jiff::Zoned::now().strftime("%A").to_string();
-    assert!(lines.top.starts_with(&today), "{}", lines.top);
+    assert!(lines.bottom.is_empty() && lines.top_bold, "the bar follows");
+
+    window.invoke_preset_picked(3);
+    assert_eq!(top(&f).len() + bottom(&f).len(), 14, "All has every field");
+
+    window.invoke_preset_picked(0);
+    assert_eq!(top(&f), Settings::default().bar_top);
+    assert_eq!(bottom(&f), Settings::default().bar_bottom);
+    assert!(!settings(&f).bar_top_bold && settings(&f).bar_bottom_bold);
+
+    window.invoke_preset_picked(4);
+    assert_eq!(
+        top(&f),
+        Settings::default().bar_top,
+        "an unknown preset does nothing"
+    );
 }
 
 #[test]
@@ -1450,7 +1563,7 @@ fn wr08_ac3_every_line_edit_updates_the_bar_and_is_saved() {
     assert!(f.bar.lines.borrow().len() > before, "the bar was told");
     let_the_save_happen();
     let saved = f.store.saved.borrow().last().cloned().expect("a write");
-    assert_eq!(saved.bar_top, ids(&["bs_date"]));
+    assert_eq!(saved.bar_top, ids(&["ad_date"]));
 }
 
 #[test]
@@ -1787,14 +1900,16 @@ fn full_order() -> Vec<&'static str> {
         "chip top 1",
         "chip top 2",
         "bar top bold",
+        "swap lines",
         "add bottom",
         "chip bottom 1",
         "bar bottom bold",
         "reset lines",
         "reset position",
+        "preset default",
         "preset time",
-        "preset short",
-        "preset long",
+        "preset minimal",
+        "preset all",
         "shortcut",
         "shortcut clear",
         "shortcut reset",
@@ -1833,6 +1948,41 @@ fn the_top_and_bottom_lines_are_two_cards_that_each_hold_their_own_controls() {
         assert!(inside(bottom, label), "{label} is in the bottom card");
         assert!(!inside(top, label), "{label} is not in the top card");
     }
+}
+
+#[test]
+fn the_swap_button_sits_between_the_cards_and_exchanges_the_lines_with_their_bold() {
+    let (f, window) = opened();
+    {
+        let mut s = f.state.borrow_mut();
+        s.settings.bar_top = ids(&["weekday", "bs_date"]);
+        s.settings.bar_bottom = ids(&["ad_date"]);
+        s.settings.bar_top_bold = false;
+        s.settings.bar_bottom_bold = true;
+    }
+    settings_window::refresh(&f.state);
+
+    tab_to(&window, "swap lines");
+    let top_card = card_box(&window, "Top line");
+    let bottom_card = card_box(&window, "Bottom line");
+    let swap = element(&window, "Swap top and bottom lines");
+    let at = swap.absolute_position();
+    assert!(
+        at.y >= top_card.3 && at.y + swap.size().height <= bottom_card.1,
+        "the button is between the two cards"
+    );
+
+    press(&window, Key::Return);
+    assert_eq!(top(&f), ids(&["ad_date"]));
+    assert_eq!(bottom(&f), ids(&["weekday", "bs_date"]));
+    assert!(settings(&f).bar_top_bold && !settings(&f).bar_bottom_bold);
+    assert_eq!(focused(&window), "swap lines", "focus stays on the button");
+    let last = f.bar.lines.borrow().last().cloned().expect("lines");
+    assert!(last.top_bold && !last.bottom_bold, "the bar follows");
+
+    press(&window, Key::Return);
+    assert_eq!(top(&f), ids(&["weekday", "bs_date"]));
+    assert!(!settings(&f).bar_top_bold && settings(&f).bar_bottom_bold);
 }
 
 #[test]
@@ -1962,11 +2112,17 @@ fn wr10_ac2_every_control_has_a_name_and_the_right_role() {
             "Add field to the bottom line",
             AccessibleRole::Button,
         ),
+        (
+            "swap lines",
+            "Swap top and bottom lines",
+            AccessibleRole::Button,
+        ),
         ("reset lines", "Reset to default", AccessibleRole::Button),
         ("reset position", "Reset position", AccessibleRole::Button),
+        ("preset default", "Default", AccessibleRole::Button),
         ("preset time", "Date and time", AccessibleRole::Button),
-        ("preset short", "Weekday and date", AccessibleRole::Button),
-        ("preset long", "Full weekday", AccessibleRole::Button),
+        ("preset minimal", "Minimal", AccessibleRole::Button),
+        ("preset all", "All", AccessibleRole::Button),
         ("shortcut", "Shortcut", AccessibleRole::TextInput),
         ("shortcut clear", "Clear shortcut", AccessibleRole::Button),
         ("shortcut reset", "Reset shortcut", AccessibleRole::Button),
@@ -2181,7 +2337,8 @@ fn the_saved_note_icon_is_level_with_its_text() {
 #[test]
 fn the_add_field_pill_has_the_same_air_on_both_sides_of_the_ink() {
     let (_f, window) = opened();
-    scroll_to_end(&window);
+    tab_to(&window, "add top");
+    walk(&window);
     let pill = element(&window, "Add field to the top line");
     let icons = inside(&window, &pill, "LineIcon");
     let texts = inside(&window, &pill, "Text");

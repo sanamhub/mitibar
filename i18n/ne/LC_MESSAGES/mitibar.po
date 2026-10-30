@@ -108,6 +108,21 @@ msgstr "अन्त्य"
 msgid "Result"
 msgstr "नतिजा"
 
+msgid "Swap top and bottom lines"
+msgstr "माथिल्लो र तल्लो पङ्क्ति साट्नुहोस्"
+
+msgid "Copy"
+msgstr "प्रतिलिपि"
+
+msgid "Copied"
+msgstr "प्रतिलिपि भयो"
+
+msgid "Copy result"
+msgstr "नतिजा प्रतिलिपि गर्नुहोस्"
+
+msgid "Copy long form"
+msgstr "लामो रूप प्रतिलिपि गर्नुहोस्"
+
 msgid "Days"
 msgstr "दिन"
 
@@ -366,11 +381,14 @@ msgstr "समय क्षेत्रको लामो नाम"
 msgid "Presets"
 msgstr "प्रिसेटहरू"
 
+msgid "Default"
+msgstr "पूर्वनिर्धारित"
+
 msgid "Date and time"
 msgstr "मिति र समय"
 
-msgid "Weekday and date"
-msgstr "बार र मिति"
+msgid "Minimal"
+msgstr "न्यूनतम"
 
-msgid "Full weekday"
-msgstr "पूरा बार"
+msgid "All"
+msgstr "सबै"
