@@ -6,6 +6,11 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- The app icon is the chosen today-ring patro in the light colourway. The tray shows the same
+  drawing for each day in the light or dark colourway, with Devanagari digits in Nepali.
+
 ## [0.2.0-beta.2] - 2026-10-30
 
 The first release from this repository, unsigned on Windows and macOS. Settings and behaviour may
