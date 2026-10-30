@@ -230,7 +230,7 @@ Shortcut
   Open MitiBar
   [ Win+Shift+N                 ] (Clear) (Reset)
 About
-  MitiBar 0.1.0 · MIT license
+  MitiBar <version> · MIT license
   Third-party notices: Slint, the fonts, NepDate
 ```
 
