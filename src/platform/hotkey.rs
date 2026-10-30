@@ -150,7 +150,7 @@ impl Hotkeys for SystemHotkeys {
 pub fn to_hotkey(combo: Combo) -> HotKey {
     let mut mods = Modifiers::empty();
     for (held, flag) in [
-        (combo.mods.meta, Modifiers::SUPER),
+        (combo.mods.meta, Modifiers::META),
         (combo.mods.ctrl, Modifiers::CONTROL),
         (combo.mods.alt, Modifiers::ALT),
         (combo.mods.shift, Modifiers::SHIFT),
@@ -219,7 +219,7 @@ mod tests {
     fn a_combination_maps_to_the_hotkey_it_names() {
         assert_eq!(
             to_hotkey(combo("Win+Shift+N")),
-            HotKey::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyN)
+            HotKey::new(Some(Modifiers::META | Modifiers::SHIFT), Code::KeyN)
         );
         assert_eq!(
             to_hotkey(combo("Ctrl+Shift+7")),
