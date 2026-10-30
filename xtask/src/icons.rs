@@ -29,6 +29,8 @@ const SLINT_OUT: &str = "ui/tray-icons.slint";
 const APP_SOURCE: &str = "icons/source/today-ring.svg";
 const APP_SOURCE_SMALL: &str = "icons/source/today-ring-small.svg";
 const TRAY_SOURCE: &str = "icons/source/tray-day.svg";
+const SETTINGS_SOURCE: &str = "ui/icons/settings.svg";
+const SETTINGS_OUT: &str = "ui/icons";
 const APP_OUT: &str = "icons";
 const APP_DAY: u32 = 15;
 const APP_PNG_SIZES: [u32; 9] = [16, 24, 32, 48, 64, 128, 256, 512, 1024];
@@ -90,6 +92,30 @@ fn generated(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
     let mut files = tray_icons(root)?;
     files.push((SLINT_OUT.to_owned(), slint_arrays().into_bytes()));
     files.extend(app_icon(root)?);
+    files.extend(settings_icons(root)?);
+    Ok(files)
+}
+
+/// The Settings gear: the two 16 px menu images Slint picks by taskbar scheme, and the native
+/// Windows menu bitmap at each DPI size. The native menu is always the light one, so its pixels
+/// use the light ink; the system draws a light menu there.
+fn settings_icons(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
+    let source = std::fs::read_to_string(root.join(SETTINGS_SOURCE))
+        .with_context(|| format!("read {SETTINGS_SOURCE}"))?;
+    let mut files = Vec::new();
+    for (name, ink) in [("light", "#211C17"), ("dark", "#F1ECE4")] {
+        let svg = source.replace("#211C17", ink);
+        let png = render(&svg, 16).with_context(|| format!("render settings {name} 16"))?;
+        files.push((format!("{SETTINGS_OUT}/settings-{name}-16.png"), png));
+    }
+    for size in [16, 24, 32] {
+        let pixmap =
+            render_pixmap(&source, size).with_context(|| format!("render settings menu {size}"))?;
+        files.push((
+            format!("{SETTINGS_OUT}/settings-menu-{size}.bgra"),
+            bgra(&pixmap),
+        ));
+    }
     Ok(files)
 }
 
@@ -462,6 +488,12 @@ fn slint_arrays() -> String {
 
 /// Rasterises `svg` at `size` x `size` and returns the PNG bytes.
 fn render(svg: &str, size: u32) -> Result<Vec<u8>> {
+    let pixmap = render_pixmap(svg, size)?;
+    pixmap.encode_png().context("encode PNG")
+}
+
+/// Rasterises `svg` to a premultiplied RGBA pixmap.
+fn render_pixmap(svg: &str, size: u32) -> Result<resvg::tiny_skia::Pixmap> {
     let tree =
         resvg::usvg::Tree::from_str(svg, &resvg::usvg::Options::default()).context("parse SVG")?;
     let mut pixmap = resvg::tiny_skia::Pixmap::new(size, size).context("allocate pixmap")?;
@@ -476,7 +508,16 @@ fn render(svg: &str, size: u32) -> Result<Vec<u8>> {
         resvg::tiny_skia::Transform::from_scale(scale, scale),
         &mut pixmap.as_mut(),
     );
-    pixmap.encode_png().context("encode PNG")
+    Ok(pixmap)
+}
+
+/// Converts tiny-skia's premultiplied RGBA to the premultiplied BGRA a 32-bit Windows DIB needs.
+fn bgra(pixmap: &resvg::tiny_skia::Pixmap) -> Vec<u8> {
+    let mut out = Vec::with_capacity(pixmap.data().len());
+    for pixel in pixmap.data().as_chunks::<4>().0 {
+        out.extend_from_slice(&[pixel[2], pixel[1], pixel[0], pixel[3]]);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -512,6 +553,31 @@ mod tests {
             let svg = std::fs::read_to_string(root.join(path)).expect("read an icon source");
             assert!(!svg.contains("<text"), "{path} still draws live text");
             assert!(svg.contains("{{digit}}"), "{path} has no digit placeholder");
+        }
+    }
+
+    #[test]
+    fn the_settings_gear_is_rendered_for_both_menus_and_every_dpi() {
+        let files = settings_icons(&root()).expect("render the settings gear");
+        assert_eq!(files.len(), 5);
+        for (path, bytes) in files {
+            if std::path::Path::new(&path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("bgra"))
+            {
+                let size: usize = path
+                    .trim_start_matches("ui/icons/settings-menu-")
+                    .trim_end_matches(".bgra")
+                    .parse()
+                    .expect("menu size");
+                assert_eq!(bytes.len(), size * size * 4, "{path}");
+                assert!(
+                    bytes.as_chunks::<4>().0.iter().any(|pixel| pixel[3] == 255),
+                    "{path}"
+                );
+            } else {
+                assert!(bytes.starts_with(b"\x89PNG"), "{path}");
+            }
         }
     }
 
