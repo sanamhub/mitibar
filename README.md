@@ -56,7 +56,9 @@ Download the latest release from
 | Linux x86_64 | `.AppImage` or `.deb` |
 
 Each release has a `SHA256SUMS` file. Check a download against it before you run it, for example
-`certutil -hashfile mitibar_<version>_x64-setup.exe SHA256` on Windows.
+`certutil -hashfile mitibar_<version>_x64-setup.exe SHA256` on Windows. Every file also has a
+build provenance attestation: `gh attestation verify <file> -R sanamhub/mitibar` shows that this
+repository's release workflow built it.
 
 On Linux, MitiBar needs a tray (StatusNotifier/AppIndicator), fontconfig, xkbcommon and D-Bus. It
 uses a software renderer, so no OpenGL driver is needed.
