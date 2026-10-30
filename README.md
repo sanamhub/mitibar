@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/sanamhub/mitibar/actions/workflows/ci.yml"><img src="https://github.com/sanamhub/mitibar/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/sanamhub/mitibar/releases"><img src="https://img.shields.io/github/v/release/sanamhub/mitibar?include_prereleases&sort=semver&label=release" alt="Latest release"></a>
+  <a href="https://github.com/sanamhub/mitibar/releases"><img src="https://img.shields.io/github/v/release/sanamhub/mitibar?sort=semver&label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
 </p>
 

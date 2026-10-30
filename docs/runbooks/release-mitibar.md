@@ -14,10 +14,10 @@ creates a **draft**; a second maintainer installs the assets and publishes it.
    has no `[patch.crates-io]` section. **A patch is a release blocker:** remove it, wait for the
    SDK release, or publish the SDK change first. A release never ships a git dependency.
 4. `docs/benchmarks-widget.md` has current numbers from a quiet machine (ADR-0001 §C), and no
-   row is LOADED. Idle memory is judged on private bytes (ADR-0007). The 1.0.0 build has not had
-   a quiet five-minute row yet; run one before the tag. A pre-release (`X.Y.Z-beta.N`) may go out
-   without the quiet rows, as long as its changelog section says the performance targets are not
-   yet confirmed.
+   row is LOADED. Idle memory is judged on private bytes (ADR-0007). The 1.0.0 build shipped
+   without a quiet five-minute row; take one for the next release. A pre-release
+   (`X.Y.Z-beta.N`) may go out without the quiet rows, as long as its changelog section says the
+   performance targets are not yet confirmed.
 5. `cargo xtask ci` passes locally.
 
 ## Build the packages locally (optional)
@@ -131,19 +131,19 @@ Do this on each OS on a clean user account, with the network disconnected or a f
    telemetry and no update check (ADR-0001 B.8).
 7. Uninstall and repeat the cleanup check in the OS section above.
 
-## Known gaps before 1.0
+## Known gaps after 1.0.0
 
-These are accepted for 0.x previews and recorded here so a 1.0 release cannot skip them.
+These remain open after 1.0.0 and are the first work for a patch or 1.1.
 
-| Gap | Today | Needed before 1.0 |
+| Gap | Today | Needed next |
 |---|---|---|
 | Signing credentials | The Windows and macOS signing steps exist and are gated on `WINDOWS_SIGNING_ENABLED` / `MACOS_SIGNING_ENABLED`, but no certificate, Developer ID or notarization secrets are configured here. Until then releases ship unsigned and say so. | Provision Azure Artifact Signing and the Apple Developer ID plus notarization secrets, set both variables, and verify a signed asset. |
 | Signing not exercised | The release workflow runs the signing steps only when the repository variable is true, but no workflow run has exercised the tools. | A `workflow_dispatch` dry run with both variables on, on all 3 OSes. |
-| Windows ARM64 package | The matrix builds `aarch64-pc-windows-msvc` and names the installer and portable zip arm64, but this was not built or installed locally. | The first workflow run on `windows-latest`; optionally a real ARM64 machine. |
+| Windows ARM64 package | The 1.0.0 release built the arm64 installer and portable zip; neither has been installed on ARM64 hardware. | Install the 1.0.0 arm64 package on a real ARM64 machine. |
 | Quiet performance | The current software build: the 5-minute row is 34.35 MB private, 73.59 MB working set and 1.217 % of one core, but LOADED (47.9 % before, 31.2 % during). Cold starts are 62.4 to 80.4 ms, also LOADED (19.4 to 32.4 % during startup). The last quiet software row was 34.68 MB and 0.335 %. | A quiet 5-minute row that passes private bytes and CPU on the shipped build, and quiet cold starts. |
 | Text quality at 100 % and 200 % | Windows x64 was checked with 55 software/femtovg sheets: every conjunct, reph and matra is the same, none is wrong. macOS and Linux were not checked. | Check text quality on macOS and Linux and tick the checklist line. |
 | Keyboard and focus rings | Interaction tests and eight focus snapshots cover Windows x64. The settings zone rows stay pointer-only, and macOS and Linux were not run. | Tick the keyboard line on all 3 OSes and decide whether the zone list needs keyboard navigation. |
-| macOS and Linux packages | Built only in the release workflow; not built or installed locally on this Windows machine. | The first workflow run and the 3-OS manual checklist. |
+| macOS and Linux packages | Built in the 1.0.0 release; not installed locally on this Windows machine. | Install both on a clean VM and complete the 3-OS manual checklist. |
 
 ## Releasing
 
@@ -160,7 +160,7 @@ publishes.
 
 A second maintainer downloads each artifact, checks it against `SHA256SUMS` and the
 attestation, runs the ticked manual test and the smoke test above on a clean VM or user account,
-then publishes the draft. The release notes name any unsigned-preview warnings.
+then publishes the draft. The release notes name any unsigned build warnings.
 
 ## After releasing
 

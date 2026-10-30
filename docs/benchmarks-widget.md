@@ -60,9 +60,9 @@ MitiBar meets the 15 MB binary target and misses the 8 MB stretch goal. The idle
 below 40 MB, and the idle CPU is above the 0.5 % edge, but the machine was too busy for either
 number to count. Cold start is below 500 ms on every run, also on a busy machine.
 
-0.1.0 is not releasable until a quiet 5-minute row passes private bytes and CPU, and the cold
-starts have quiet samples. The macOS and Linux binaries are built in the release workflow and are
-not measured here.
+1.0.0 shipped before a quiet 5-minute row passed private bytes and CPU, and before the cold starts
+had quiet samples. The macOS and Linux binaries are built in the release workflow and are not
+measured here.
 
 ## Size and speed work for 1.0 (2026-10-30)
 
@@ -126,7 +126,7 @@ The private bytes stay at about 33 MiB with the 40 MiB target, and the idle CPU 
 with the font subsets. The working set swings from run to run (59.7 and 51.1 MiB for the same
 build before the change, 49.7 MiB in both quiet rounds after), so no figure is claimed for it.
 The working set is recorded, not judged (ADR-0007). Each quiet row is 90 s, not the 5 minutes ADR-0007
-asks for, so the 1.0 row is still to be taken.
+asks for. The 1.0.0 release went out before that row was taken.
 
 Cold start was not measured again.
 
