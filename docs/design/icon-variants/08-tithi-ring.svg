@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>Tithi ring</title>
+<rect width="1024" height="1024" rx="224" fill="#16120E"/>
+<line x1="512.0" y1="162.0" x2="512.0" y2="82.0" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="584.8" y1="169.6" x2="601.4" y2="91.4" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="654.4" y1="192.3" x2="686.9" y2="119.2" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="717.7" y1="228.8" x2="764.7" y2="164.1" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="772.1" y1="277.8" x2="831.6" y2="224.3" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="815.1" y1="337.0" x2="884.4" y2="297.0" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="844.9" y1="403.8" x2="921.0" y2="379.1" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="860.1" y1="475.4" x2="939.6" y2="467.1" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="860.1" y1="548.6" x2="939.6" y2="556.9" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="844.9" y1="620.2" x2="921.0" y2="644.9" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="815.1" y1="687.0" x2="884.4" y2="727.0" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="772.1" y1="746.2" x2="831.6" y2="799.7" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="700.1" y1="770.9" x2="776.5" y2="876.1" stroke="#C12B2B" stroke-width="40" stroke-linecap="round"/>
+<line x1="654.4" y1="831.7" x2="686.9" y2="904.8" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="584.8" y1="854.4" x2="601.4" y2="932.6" stroke="#F1ECE4" stroke-width="30" stroke-linecap="round"/>
+<line x1="512.0" y1="862.0" x2="512.0" y2="942.0" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="439.2" y1="854.4" x2="422.6" y2="932.6" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="369.6" y1="831.7" x2="337.1" y2="904.8" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="306.3" y1="795.2" x2="259.3" y2="859.9" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="251.9" y1="746.2" x2="192.4" y2="799.7" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="208.9" y1="687.0" x2="139.6" y2="727.0" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="179.1" y1="620.2" x2="103.0" y2="644.9" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="163.9" y1="548.6" x2="84.4" y2="556.9" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="163.9" y1="475.4" x2="84.4" y2="467.1" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="179.1" y1="403.8" x2="103.0" y2="379.1" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="208.9" y1="337.0" x2="139.6" y2="297.0" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="251.9" y1="277.8" x2="192.4" y2="224.3" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="306.3" y1="228.8" x2="259.3" y2="164.1" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="369.6" y1="192.3" x2="337.1" y2="119.2" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<line x1="439.2" y1="169.6" x2="422.6" y2="91.4" stroke="#9B9288" stroke-width="30" stroke-linecap="round"/>
+<path transform="translate(337.0 590.8) scale(0.3067)" fill="#F1ECE4" d="M278.0 -632.0Q343.0 -632.0 386.5 -610.0Q430.0 -588.0 451.0 -550.0Q472.0 -512.0 472.0 -462.0Q472.0 -407.0 438.5 -362.0Q405.0 -317.0 346.0 -279.0L233.0 -205.0L240.0 -268.0Q308.0 -233.0 348.5 -204.0Q389.0 -175.0 409.5 -149.0Q430.0 -123.0 437.5 -98.5Q445.0 -74.0 445.0 -50.0Q445.0 -25.0 437.5 -4.0Q430.0 17.0 411.0 44.0L281.0 -8.0Q290.0 -18.0 295.0 -33.0Q300.0 -48.0 300.0 -61.0Q300.0 -74.0 294.5 -87.0Q289.0 -100.0 270.0 -117.5Q251.0 -135.0 209.5 -160.5Q168.0 -186.0 97.0 -224.0V-270.0L240.0 -352.0Q274.0 -372.0 296.0 -389.5Q318.0 -407.0 329.0 -425.0Q340.0 -443.0 340.0 -465.0Q340.0 -496.0 323.5 -511.5Q307.0 -527.0 278.0 -527.0Q248.0 -527.0 232.0 -511.5Q216.0 -496.0 216.0 -469.0Q216.0 -445.0 236.5 -420.5Q257.0 -396.0 311.0 -376.0L235.0 -317.0Q159.0 -342.0 125.0 -382.0Q91.0 -422.0 91.0 -478.0Q91.0 -522.0 112.5 -556.5Q134.0 -591.0 176.0 -611.5Q218.0 -632.0 278.0 -632.0ZM647.0 -596.0Q684.0 -613.0 733.5 -622.5Q783.0 -632.0 836.0 -632.0Q905.0 -632.0 947.5 -611.0Q990.0 -590.0 1010.0 -554.5Q1030.0 -519.0 1030.0 -475.0Q1030.0 -428.0 1006.0 -393.0Q982.0 -358.0 939.0 -335.0Q896.0 -312.0 839.5 -301.0Q783.0 -290.0 717.0 -289.0L698.0 -396.0Q777.0 -400.0 820.0 -409.0Q863.0 -418.0 880.0 -433.5Q897.0 -449.0 897.0 -470.0Q897.0 -492.0 880.5 -506.5Q864.0 -521.0 824.0 -521.0Q787.0 -521.0 748.0 -512.0Q709.0 -503.0 677.0 -488.0ZM740.0 -153.0Q823.0 -145.0 866.5 -166.0Q910.0 -187.0 910.0 -231.0Q910.0 -259.0 893.0 -281.5Q876.0 -304.0 833.0 -317.0L935.0 -377.0Q994.0 -347.0 1022.0 -306.5Q1050.0 -266.0 1050.0 -213.0Q1050.0 -158.0 1016.5 -118.5Q983.0 -79.0 922.5 -57.5Q862.0 -36.0 779.0 -36.0Q707.0 -36.0 663.5 -63.5Q620.0 -91.0 620.0 -143.0Q620.0 -178.0 643.0 -198.5Q666.0 -219.0 703.0 -219.0Q740.0 -219.0 765.0 -198.5Q790.0 -178.0 808.0 -137.0L810.0 -119.0Q855.0 -78.0 889.0 -34.5Q923.0 9.0 954.0 59.0L836.0 118.0Q808.0 63.0 776.0 10.0Q744.0 -43.0 707.0 -94.0Z"/>
+</svg>

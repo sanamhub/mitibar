@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>Patro grid with today</title>
+<rect x="8" y="8" width="1008" height="1008" rx="216" fill="#FDFBF8" stroke="#E7E0D6" stroke-width="16"/>
+<circle cx="200" cy="304" r="34" fill="#6E655C"/>
+<circle cx="304" cy="304" r="34" fill="#6E655C"/>
+<circle cx="408" cy="304" r="34" fill="#6E655C"/>
+<circle cx="512" cy="304" r="34" fill="#6E655C"/>
+<circle cx="616" cy="304" r="34" fill="#6E655C"/>
+<circle cx="720" cy="304" r="34" fill="#6E655C"/>
+<circle cx="824" cy="304" r="34" fill="#6E655C"/>
+<circle cx="200" cy="408" r="34" fill="#6E655C"/>
+<circle cx="304" cy="408" r="34" fill="#6E655C"/>
+<circle cx="408" cy="408" r="34" fill="#6E655C"/>
+<circle cx="512" cy="408" r="34" fill="#6E655C"/>
+<circle cx="616" cy="408" r="34" fill="#6E655C"/>
+<circle cx="720" cy="408" r="34" fill="#6E655C"/>
+<circle cx="824" cy="408" r="34" fill="#6E655C"/>
+<circle cx="200" cy="512" r="34" fill="#6E655C"/>
+<circle cx="304" cy="512" r="34" fill="#6E655C"/>
+<circle cx="408" cy="512" r="34" fill="#6E655C"/>
+<circle cx="512" cy="512" r="34" fill="#6E655C"/>
+<circle cx="616" cy="512" r="54" fill="#C12B2B"/>
+<circle cx="720" cy="512" r="34" fill="#6E655C"/>
+<circle cx="824" cy="512" r="34" fill="#6E655C"/>
+<circle cx="200" cy="616" r="34" fill="#6E655C"/>
+<circle cx="304" cy="616" r="34" fill="#6E655C"/>
+<circle cx="408" cy="616" r="34" fill="#6E655C"/>
+<circle cx="512" cy="616" r="34" fill="#6E655C"/>
+<circle cx="616" cy="616" r="34" fill="#6E655C"/>
+<circle cx="720" cy="616" r="34" fill="#6E655C"/>
+<circle cx="824" cy="616" r="34" fill="#6E655C"/>
+<circle cx="200" cy="720" r="34" fill="#6E655C"/>
+<circle cx="304" cy="720" r="34" fill="#6E655C"/>
+<circle cx="408" cy="720" r="34" fill="#6E655C"/>
+<circle cx="512" cy="720" r="34" fill="#6E655C"/>
+<circle cx="616" cy="720" r="34" fill="#6E655C"/>
+<circle cx="720" cy="720" r="34" fill="#6E655C"/>
+<circle cx="824" cy="720" r="34" fill="#6E655C"/>
+</svg>
