@@ -606,9 +606,15 @@ pub struct SettingsHint {
     pub bar_monitor: Option<(Rect, u32)>,
 }
 
-/// The Settings window's logical size (WR-06, widget-design §8).
-const SETTINGS_W: i32 = 420;
-const SETTINGS_H: i32 = 560;
+/// The Settings window's logical size, as `ui/settings.slint` fixes it (WR-06, widget-design §8).
+fn settings_size(window: &SettingsWindow) -> (i32, i32) {
+    #[allow(clippy::cast_possible_truncation)]
+    let logical = |length: f32| length.round() as i32;
+    (
+        logical(window.get_fixed_width()),
+        logical(window.get_fixed_height()),
+    )
+}
 
 /// Positions the Settings window beside the popup, or centred when the popup is closed or neither
 /// side has room (WR-06 AC1). Leaves it to the OS when no monitor can be read.
@@ -646,9 +652,10 @@ pub fn place_settings(window: &SettingsWindow, popup: Option<&PopupWindow>, hint
     let Some(work) = work else {
         return;
     };
+    let (logical_width, logical_height) = settings_size(window);
     let client = Size {
-        width: to_physical(SETTINGS_W, dpi),
-        height: to_physical(SETTINGS_H, dpi),
+        width: to_physical(logical_width, dpi),
+        height: to_physical(logical_height, dpi),
     };
     // The window has a frame of its own, with an invisible resize border on Windows; place what is
     // drawn.

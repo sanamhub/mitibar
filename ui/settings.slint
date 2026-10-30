@@ -366,6 +366,9 @@ export component SettingsWindow inherits Window {
     /// The window's title, read by the interaction tests.
     out property <string> shown-title: root.title;
     out property <int> shown-icon-width: root.icon.width;
+    /// The fixed content size, which `ui_bridge::place_settings` reads to keep the window on screen.
+    out property <length> fixed-width: root.preferred-width;
+    out property <length> fixed-height: root.preferred-height;
     /// Where the scroll view is, and how far it can go: the interaction tests read and set them.
     in-out property <length> scroll-y <=> scroll.content-y;
     out property <length> scroll-max: max(0px, content.preferred-height - scroll.visible-height);

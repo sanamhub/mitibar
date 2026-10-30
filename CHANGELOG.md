@@ -11,6 +11,8 @@ All notable changes to MitiBar are recorded here. The format follows
 - Switching the theme from Light or Dark back to System follows Windows again, and keeps
   following it when Windows changes between light and dark mode.
 - The Settings window shows the app icon in its title bar and on the taskbar.
+- Settings opens fully inside the screen's work area when the popup is low on the screen, instead
+  of partly under the taskbar.
 
 ## [0.2.0-beta.3] - 2026-10-30
 

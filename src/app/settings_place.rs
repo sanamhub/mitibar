@@ -281,6 +281,57 @@ mod tests {
         );
     }
 
+    /// The popup at the tray corner, 8 logical px above the taskbar, opens Settings (420 by 680
+    /// logical px, framed) fully inside the work area at 100 %, 150 % and 200 %. The metrics are
+    /// Windows 11's caption height and sizing frame at each DPI.
+    #[test]
+    fn settings_opened_from_a_popup_near_the_taskbar_is_drawn_inside_the_work_area() {
+        // (dpi, screen width, screen height, taskbar height, caption, frame), all physical px.
+        let cases = [
+            (96, 1920, 1080, 48, 23, 8),
+            (144, 2880, 1620, 72, 34, 12),
+            (192, 3840, 2160, 96, 46, 16),
+        ];
+        for (dpi, width, height, taskbar, caption, frame) in cases {
+            let work = Rect::new(0, 0, width, height - taskbar);
+            let client = Size {
+                width: to_physical(420, dpi),
+                height: to_physical(680, dpi),
+            };
+            let (visible, insets) = framed(client, caption, frame);
+            let popup_size = Size {
+                width: to_physical(360, dpi),
+                height: to_physical(520, dpi),
+            };
+            let popup = Rect::at(
+                Point {
+                    x: work.right - to_physical(12, dpi) - popup_size.width,
+                    y: work.bottom - to_physical(8, dpi) - popup_size.height,
+                },
+                popup_size,
+            );
+            let at = position(Some(popup), visible, insets, work, dpi);
+            let drawn = Rect::at(
+                Point {
+                    x: at.x + insets.left,
+                    y: at.y + insets.top,
+                },
+                visible,
+            );
+            assert!(
+                drawn.left >= work.left
+                    && drawn.top >= work.top
+                    && drawn.right <= work.right
+                    && drawn.bottom <= work.bottom,
+                "{dpi} dpi: drawn {drawn:?} leaves the work area {work:?}"
+            );
+            assert!(
+                drawn.right <= popup.left || drawn.left >= popup.right,
+                "{dpi} dpi: Settings overlaps the popup"
+            );
+        }
+    }
+
     #[test]
     fn a_framed_window_is_centred_by_what_is_drawn() {
         let (visible, insets) = framed(SIZE, 23, 8);

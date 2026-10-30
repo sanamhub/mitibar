@@ -189,7 +189,7 @@ Decided after the owner's first run of the beta build, with the numbers each cho
 
 ## 8. Settings window (WR-06)
 
-420 × 560 logical px of content in the system's window frame (title `MitiBar Settings`, the close
+420 × 680 logical px of content in the system's window frame (title `MitiBar Settings`, the close
 button), one left-aligned column that scrolls when it needs more room.
 
 ```
