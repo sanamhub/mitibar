@@ -1,0 +1,3 @@
+# `cargo xtask icons --check` compares bytes, so generated files keep one form on every checkout.
+ui/tray-icons.slint text eol=lf
+*.bgra binary

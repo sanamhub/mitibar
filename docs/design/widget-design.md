@@ -260,4 +260,19 @@ About
 - Controls are monochrome (`ink` on `surface`), so colour in the window always means calendar
   data.
 
+## 10. App icon
+
+The icon is today's ring on the patro: a lokta paper tile, a Dhaka cloth band as its crown, and the
+BS day in Devanagari inside a sindoor ring. The light colourway uses a paper tile with ink digits;
+the dark one uses a warm ink tile with lokta digits and cloth.
+
+The executable, installer, Start menu shortcut, Linux desktop entry and macOS bundle carry one
+fixed light icon showing १५, because those surfaces cannot follow the taskbar theme. The tray
+carries the same drawing for days 1 to 32 in both colourways: light on a light taskbar, dark on a
+dark one, with Devanagari digits for `ne` and Latin digits for `en`. macOS keeps its text title.
+
+At 16 and 24 px the band becomes a solid strip, the ring is dropped and the day takes the tile.
+The tray image is 32 px because Windows draws it at 16 px at 100 %, so it follows the same rule.
+A two-digit day must stay readable at 16 px in both scripts.
+
 

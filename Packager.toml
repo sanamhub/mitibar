@@ -42,6 +42,7 @@ icons = [
 [nsis]
 installMode = "currentUser"
 template = "packaging/installer.nsi"
+installerIcon = "icons/icon.ico"
 
 # A menu-bar app: no Dock icon (ADR-0003).
 [macos]

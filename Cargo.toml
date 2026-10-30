@@ -69,6 +69,11 @@ slint-build = "1.18"
 # UTF-8 active code page. Layered windows need the `supportedOS` entry.
 embed-manifest = "1.5"
 
+# The executable's icon resource. Windows takes the icon from the PE, not from a file next to
+# it, so Explorer, Start and the taskbar need it linked into the binary.
+[target."cfg(windows)".build-dependencies]
+winres = "=0.1.12"
+
 # Per-user launch at login on macOS and Linux (ADR-0004). Windows writes its `Run` value
 # with `windows-registry` instead, so the path is quoted and Task Manager can disable it.
 [target."cfg(not(windows))".dependencies]

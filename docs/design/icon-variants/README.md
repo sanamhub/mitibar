@@ -1,8 +1,9 @@
 # App icon variants
 
-Ten candidates for the MitiBar app icon, drawn on a 1024 unit grid with the palette of
+Twelve candidates for the MitiBar app icon, drawn on a 1024 unit grid with the palette of
 [`widget-design.md`](../widget-design.md). Devanagari is drawn as paths from the bundled Noto Sans
-Devanagari Bold, never as live text. None is wired into the app yet.
+Devanagari Bold, never as live text. The chosen pair is built into the app; the rest stay as design
+history.
 
 Variants 03, 05 and 08 also have a `-16.svg` file: a simplified drawing of the same idea for 16
 and 24 px, where the full detail would turn to noise.
@@ -30,7 +31,10 @@ in this folder with their digits drawn as paths.
 | `11-today-ring-light.svg` | Light system theme: a patro page on lokta paper, a Dhaka-cloth crown and today's BS day inside a sindoor ring. |
 | `12-today-ring-dark.svg` | Dark system theme: the same drawing on warm ink, with the cloth and the digits in lokta white. |
 
-The day shown is a placeholder (१५). Building them into `icons/`, the tray, `Packager.toml` and the
-installer comes next. A package has one icon file per size, so the dark variant needs a decision for
-the installer and the executable: they can only carry one, and the theme-following pair applies to
-the tray and the in-app surfaces.
+The app icon is the light colourway with the fixed day १५, because an executable, installer, Start
+menu shortcut and bundle can carry one file per size and have no reliable theme to follow. It comes
+from [`icons/source/today-ring.svg`](../../../icons/source/today-ring.svg), with a small drawing for
+16 and 24 px. The light and dark pair ships in the tray, where the taskbar scheme is known: each day
+1 to 32 uses that small drawing, in Latin digits for English and Devanagari for Nepali. Both
+templates are rendered by `cargo xtask icons`; see
+[`icons/source/README.md`](../../../icons/source/README.md).
