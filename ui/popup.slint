@@ -156,6 +156,9 @@ export component PopupWindow inherits Window {
     callback converter-closed();
     callback converter-edited(string, int);
     callback converter-days-edited(string, string);
+    callback converter-copy(string) -> bool;
+    /// Which converter result was just copied: 0 none, 1 the short form, 2 the long form.
+    in-out property <int> converter-copied: 0;
 
     /// False while an overlay is open, so the base controls leave the Tab cycle.
     out property <bool> base-interactive: !(root.detail-visible || root.converter-visible);
@@ -824,8 +827,10 @@ export component PopupWindow inherits Window {
                 to <=> root.converter-to;
                 tab <=> root.converter-tab;
                 direction <=> root.converter-direction;
+                copied <=> root.converter-copied;
                 edited(input, direction) => { root.converter-edited(input, direction); }
                 days-edited(from, to) => { root.converter-days-edited(from, to); }
+                copy-result(text) => { return root.converter-copy(text); }
                 control-focused(name) => { root.converter-focused = name; }
                 closed => {
                     root.converter-visible = false;

@@ -108,6 +108,18 @@ msgstr "अन्त्य"
 msgid "Result"
 msgstr "नतिजा"
 
+msgid "Copy"
+msgstr "प्रतिलिपि"
+
+msgid "Copied"
+msgstr "प्रतिलिपि भयो"
+
+msgid "Copy result"
+msgstr "नतिजा प्रतिलिपि गर्नुहोस्"
+
+msgid "Copy long form"
+msgstr "लामो रूप प्रतिलिपि गर्नुहोस्"
+
 msgid "Days"
 msgstr "दिन"
 

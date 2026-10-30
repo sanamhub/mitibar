@@ -6,6 +6,11 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- The converter has a Copy button next to each result. It reads Copied for a moment, and Ctrl+C
+  (Cmd+C on macOS) copies the result whose button has the focus.
+
 ### Fixed
 
 - Switching the theme from Light or Dark back to System follows Windows again, and keeps

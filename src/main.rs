@@ -1535,6 +1535,19 @@ fn wire_converter(
             }
         }
     });
+    popup.on_converter_copy({
+        let state = state.clone();
+        move |text| {
+            let clipboard = state.borrow().clipboard.clone();
+            match clipboard.set_text(text.as_str()) {
+                Ok(()) => true,
+                Err(err) => {
+                    log::warn!("converter: could not copy the result: {err}");
+                    false
+                }
+            }
+        }
+    });
 }
 
 /// Opens the detail for a grid cell, if it is a real day.
