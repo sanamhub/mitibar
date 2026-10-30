@@ -130,10 +130,14 @@ pub fn swap_lines(settings: &mut Settings) {
     std::mem::swap(&mut settings.bar_top_bold, &mut settings.bar_bottom_bold);
 }
 
-/// "Reset to default": the two lines of WR-08 AC2.
+/// "Reset to default": the two lines of WR-08 AC2 and their weights, the same as the Default
+/// preset, since a weight is now set per line beside it.
 pub fn reset(settings: &mut Settings) {
+    let fresh = Settings::default();
     settings.bar_top = ids(DEFAULT_TOP);
     settings.bar_bottom = ids(DEFAULT_BOTTOM);
+    settings.bar_top_bold = fresh.bar_top_bold;
+    settings.bar_bottom_bold = fresh.bar_bottom_bold;
 }
 
 #[cfg(test)]
@@ -372,8 +376,13 @@ mod tests {
     #[test]
     fn reset_restores_the_wr08_ac2_defaults() {
         let mut settings = with(&["tithi"], &["holiday", "ad_date"]);
+        settings.bar_top_bold = true;
+        settings.bar_bottom_bold = false;
         reset(&mut settings);
-        assert_eq!(settings.bar_top, Settings::default().bar_top);
-        assert_eq!(settings.bar_bottom, Settings::default().bar_bottom);
+        let fresh = Settings::default();
+        assert_eq!(settings.bar_top, fresh.bar_top);
+        assert_eq!(settings.bar_bottom, fresh.bar_bottom);
+        assert_eq!(settings.bar_top_bold, fresh.bar_top_bold);
+        assert_eq!(settings.bar_bottom_bold, fresh.bar_bottom_bold);
     }
 }
