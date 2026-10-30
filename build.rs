@@ -34,9 +34,14 @@ fn main() {
         let manifest = new_manifest("mitibar").supported_os(Windows8..=Windows10);
         embed_manifest(manifest).expect("embed manifest");
 
-        let mut resources = winres::WindowsResource::new();
-        resources.set_icon("icons/icon.ico");
-        resources.compile().expect("embed icon");
+        // winres runs the Windows resource compiler, so it is a build dependency of Windows
+        // hosts only; release builds for Windows run on Windows.
+        #[cfg(windows)]
+        {
+            let mut resources = winres::WindowsResource::new();
+            resources.set_icon("icons/icon.ico");
+            resources.compile().expect("embed icon");
+        }
     }
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=icons/icon.ico");
