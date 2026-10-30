@@ -2,9 +2,11 @@
 //! `ui/tray-icons.slint`.
 //!
 //! The tray icons are 32x32 PNGs under `ui/tray/<lang>/<scheme>/` for each digit set (en, ne) and
-//! taskbar scheme (light, dark), plus the image arrays the tray indexes. The app icon comes from
-//! `icons/source/today-ring.svg` and its small-size drawing, as PNG sizes 16 to 1024, an `.ico`
-//! and an `.icns` under `icons/` for cargo-packager and the executable's resources.
+//! taskbar colourway (light, dark), plus the image arrays the tray indexes. They come from
+//! `icons/source/tray-day.svg`, the same today-ring drawing as the app icon with the day as an
+//! input. The app icon comes from `icons/source/today-ring.svg` and its small-size drawing, as PNG
+//! sizes 16 to 1024, an `.ico` and an `.icns` under `icons/` for cargo-packager and the
+//! executable's resources.
 //!
 //! The templates hold paths for the digits, outlined from the bundled Noto fonts by this file; no
 //! shipped image depends on live text. `--check` renders everything in memory and fails if a
@@ -26,6 +28,7 @@ const SLINT_OUT: &str = "ui/tray-icons.slint";
 /// The app icon source and the generated files. The fixed day is १५, as in the chosen design.
 const APP_SOURCE: &str = "icons/source/today-ring.svg";
 const APP_SOURCE_SMALL: &str = "icons/source/today-ring-small.svg";
+const TRAY_SOURCE: &str = "icons/source/tray-day.svg";
 const APP_OUT: &str = "icons";
 const APP_DAY: u32 = 15;
 const APP_PNG_SIZES: [u32; 9] = [16, 24, 32, 48, 64, 128, 256, 512, 1024];
@@ -42,11 +45,9 @@ const ICNS_SIZES: [(u32, &[u8; 4]); 7] = [
     (1024, b"ic10"),
 ];
 
-/// Ink per taskbar scheme: the `ink` token of docs/design/widget-design.md for that scheme, so the
-/// digits contrast with a light or a dark taskbar the way the popup text contrasts with its
-/// surface.
-const SCHEMES: [(&str, &str); 2] = [("light", "#211C17"), ("dark", "#F1ECE4")];
-const LANGS: [(&str, &str); 2] = [("en", "Noto Sans"), ("ne", "Noto Sans Devanagari")];
+/// The taskbar colourway each tray set is drawn for.
+const SCHEMES: [&str; 2] = ["light", "dark"];
+const LANGS: [(&str, &str); 2] = [("en", FONT_EN), ("ne", FONT_NE)];
 
 pub(crate) fn run(check: bool) -> Result<()> {
     let root = root();
@@ -86,27 +87,40 @@ pub(crate) fn run(check: bool) -> Result<()> {
 /// Every generated icon file, relative to `root`. Pure apart from reading the bundled fonts, so
 /// `--check` and `cargo xtask icons` compare the same bytes.
 fn generated(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
-    let mut fontdb = fontdb::Database::new();
-    fontdb
-        .load_font_file(root.join(FONT_EN))
-        .context("load Noto Sans")?;
-    fontdb
-        .load_font_file(root.join(FONT_NE))
-        .context("load Noto Sans Devanagari")?;
+    let mut files = tray_icons(root)?;
+    files.push((SLINT_OUT.to_owned(), slint_arrays().into_bytes()));
+    files.extend(app_icon(root)?);
+    Ok(files)
+}
 
-    let mut files: Vec<(String, Vec<u8>)> = Vec::new();
-    for (lang, family) in LANGS {
-        for (scheme, ink) in SCHEMES {
+/// The 32 days in both scripts and both taskbar colourways, from the tray source.
+fn tray_icons(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
+    let template = std::fs::read_to_string(root.join(TRAY_SOURCE))
+        .with_context(|| format!("read {TRAY_SOURCE}"))?;
+    let mut files = Vec::new();
+    for (lang, font_path) in LANGS {
+        let font =
+            std::fs::read(root.join(font_path)).with_context(|| format!("read {font_path}"))?;
+        for scheme in SCHEMES {
+            let colourway = match scheme {
+                "light" => Colourway::light(),
+                "dark" => Colourway::dark(),
+                _ => bail!("unknown colourway {scheme}"),
+            };
             for day in 1..=DAYS {
-                let svg = template(family, ink, &day_string(day, lang));
-                let png = render(&svg, SIZE, &fontdb)
+                let digit = digit_svg(
+                    &font,
+                    &day_string(day, lang),
+                    DigitBox::tray(),
+                    colourway.ink,
+                )?;
+                let svg = fill_template(&template, colourway, &digit);
+                let png = render(&svg, SIZE)
                     .with_context(|| format!("render {lang} {scheme} day {day}"))?;
                 files.push((format!("{OUT_DIR}/{lang}/{scheme}/{day}.png"), png));
             }
         }
     }
-    files.push((SLINT_OUT.to_owned(), slint_arrays().into_bytes()));
-    files.extend(app_icon(root)?);
     Ok(files)
 }
 
@@ -133,8 +147,7 @@ fn app_icon(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
         };
         let digit = digit_svg(&font, &day, box_, colourway.ink)?;
         let svg = fill_template(template, colourway, &digit);
-        let png = render(&svg, size, &fontdb::Database::new())
-            .with_context(|| format!("render app icon {size}"))?;
+        let png = render(&svg, size).with_context(|| format!("render app icon {size}"))?;
         files.push((format!("{APP_OUT}/{size}x{size}.png"), png.clone()));
         pngs.push((size, png));
     }
@@ -159,6 +172,15 @@ impl Colourway {
             ink: "#211C17",
             edge: "<rect x=\"64\" y=\"64\" width=\"896\" height=\"896\" rx=\"200\" fill=\"none\" \
                    stroke=\"#211C17\" stroke-opacity=\".12\" stroke-width=\"12\"/>",
+        }
+    }
+
+    const fn dark() -> Self {
+        Self {
+            tile: "#211C17",
+            ink: "#FDFBF8",
+            edge: "<rect x=\"64\" y=\"64\" width=\"896\" height=\"896\" rx=\"200\" fill=\"none\" \
+                   stroke=\"#FDFBF8\" stroke-opacity=\".22\" stroke-width=\"12\"/>",
         }
     }
 }
@@ -197,6 +219,15 @@ impl DigitBox {
             centre_y: 590.0,
             max_width: 400.0,
             max_height: 280.0,
+        }
+    }
+
+    const fn tray() -> Self {
+        Self {
+            centre_x: 512.0,
+            centre_y: 610.0,
+            max_width: 620.0,
+            max_height: 520.0,
         }
     }
 }
@@ -404,18 +435,6 @@ fn day_string(day: u32, lang: &str) -> String {
         .collect()
 }
 
-/// The one tray SVG template. The digits fill most of the 32 px square, because Windows shows the
-/// icon at 16 px at 100 % scale; a stroke in the fill colour thickens the regular weight (resvg
-/// uses the variable fonts' default instance) so the strokes survive that downscale.
-fn template(font_family: &str, ink: &str, day: &str) -> String {
-    format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{SIZE}\" height=\"{SIZE}\" viewBox=\"0 0 {SIZE} {SIZE}\">\
-         <text x=\"16\" y=\"25\" font-family=\"{font_family}\" font-size=\"24\" text-anchor=\"middle\" \
-         fill=\"{ink}\" stroke=\"{ink}\" stroke-width=\"1.4\" stroke-linejoin=\"round\">{day}</text>\
-         </svg>"
-    )
-}
-
 /// `ui/tray-icons.slint`: one global with an image array per language and taskbar scheme.
 fn slint_arrays() -> String {
     use std::fmt::Write as _;
@@ -425,7 +444,7 @@ fn slint_arrays() -> String {
          export global TrayIcons {\n",
     );
     for (lang, _) in LANGS {
-        for (scheme, _) in SCHEMES {
+        for scheme in SCHEMES {
             let _ = writeln!(out, "    out property <[image]> {lang}-{scheme}: [");
             for day in 1..=DAYS {
                 let comma = if day == DAYS { "" } else { "," };
@@ -442,12 +461,9 @@ fn slint_arrays() -> String {
 }
 
 /// Rasterises `svg` at `size` x `size` and returns the PNG bytes.
-fn render(svg: &str, size: u32, fontdb: &fontdb::Database) -> Result<Vec<u8>> {
-    let options = resvg::usvg::Options {
-        fontdb: std::sync::Arc::new(fontdb.clone()),
-        ..resvg::usvg::Options::default()
-    };
-    let tree = resvg::usvg::Tree::from_str(svg, &options).context("parse SVG")?;
+fn render(svg: &str, size: u32) -> Result<Vec<u8>> {
+    let tree =
+        resvg::usvg::Tree::from_str(svg, &resvg::usvg::Options::default()).context("parse SVG")?;
     let mut pixmap = resvg::tiny_skia::Pixmap::new(size, size).context("allocate pixmap")?;
     let source = tree.size().width();
     let scale = if source > 0.0 {
@@ -492,7 +508,7 @@ mod tests {
     #[test]
     fn the_icon_sources_hold_no_live_text() {
         let root = root();
-        for path in [APP_SOURCE, APP_SOURCE_SMALL] {
+        for path in [APP_SOURCE, APP_SOURCE_SMALL, TRAY_SOURCE] {
             let svg = std::fs::read_to_string(root.join(path)).expect("read an icon source");
             assert!(!svg.contains("<text"), "{path} still draws live text");
             assert!(svg.contains("{{digit}}"), "{path} has no digit placeholder");
@@ -520,7 +536,7 @@ mod tests {
     fn the_slint_arrays_cover_every_day_once() {
         let text = slint_arrays();
         for (lang, _) in LANGS {
-            for (scheme, _) in SCHEMES {
+            for scheme in SCHEMES {
                 assert!(text.contains(&format!("out property <[image]> {lang}-{scheme}")));
             }
         }
