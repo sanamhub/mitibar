@@ -18,8 +18,8 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] macOS shows the bar's top line as the title and follows a line edit in Settings at once.
 - [ ] Tooltip shows `MitiBar` and the BS and AD dates.
 - [ ] Left click opens the popup; a second click closes it. On macOS, Open is the first menu item.
-- [ ] Menu order is Open, Copy today (BS), Copy today (AD), Show bar (Windows), Settings, Quit, in the current language,
-      with a rule between the groups and the gear on Settings.
+- [ ] Menu order is Open, Copy today (BS), Copy today (AD), Show bar (Windows), Settings, Quit, in
+      the current language, with a rule between the groups and the gear on Settings.
 - [ ] Copy BS and Copy AD put the exact strings on the clipboard.
 - [ ] Linux without a tray (GNOME without the AppIndicator extension): the popup opens at start
       and the app keeps running.

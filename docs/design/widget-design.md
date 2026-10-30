@@ -86,7 +86,8 @@ desktop, so it carries its own quiet surface instead of relying on the taskbar's
   Open, then Copy today (BS) and (AD), then the bar's own items (Customize bar, Lock position, Hide
   bar; Show bar in the tray), then Settings with the gear, then Quit alone. The system draws the
   menu, so its colours, spacing and radius follow Windows; the design sets the order, the rules and
-  the icon. The order lives in one list, MENU_LAYOUT, which a test checks.
+  the icon. The bar's order lives in one list, `MENU_LAYOUT`, which a test checks; the tray menu in
+  `ui/tray.slint` follows it by hand.
 
 ## 6. Shapes
 
@@ -157,8 +158,9 @@ Decided after the owner's first run of the beta build, with the numbers each cho
 - Header: left-aligned text, the three pill actions on the right of the first line. The date is
   `display`, 20 px, the largest size that fits "Baishakh 31, 2081" beside the pills; the Convert
   label is 13 px for the same reason. A click on the date opens Go to date (WR-14 AC3); on hover
-  it gets the borderless pill of the month title. Convert has an icon and a label; Settings (a filled eight-tooth gear in the iOS Settings style, `ui/icons/settings.svg`, drawn in `ink` so it follows the theme) and Pin are
-  icon-only pills with tooltips and accessible names. A pinned Pin pill is filled with `ink`, its
+  it gets the borderless pill of the month title. Convert has an icon and a label; Settings (a
+  filled eight-tooth gear in the iOS Settings style, `ui/icons/settings.svg`, drawn in `ink` so it
+  follows the theme) and Pin are icon-only pills with tooltips and accessible names. A pinned Pin pill is filled with `ink`, its
   icon in `surface`.
 - Pills: 28 px high, `surface-raised` fill, 1 px `hairline` border, `base` text. They are the only
   button style in the popup, so actions are easy to spot. Text pills pad 10 px each side. With an
