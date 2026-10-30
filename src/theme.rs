@@ -22,6 +22,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    /// 12 % of 255, rounded, as the renderer takes the tint's alpha.
+    const TINT_ALPHA: u32 = 31;
+
     /// Every `-light` / `-dark` token in `ui/theme.slint` equals its cell in the design table, and
     /// every table row is in the markup, so the two can't drift apart.
     #[test]
@@ -59,8 +62,8 @@ mod tests {
         let declared = markup.matches("property <color> ").count();
         assert_eq!(
             declared,
-            8 * 3,
-            "8 light + 8 dark + 8 resolved colour properties"
+            8 * 3 + 1,
+            "8 light + 8 dark + 8 resolved colour properties, and today's tint"
         );
     }
 
@@ -136,10 +139,15 @@ mod tests {
         }
     }
 
-    /// Today's numeral is `surface-raised` on the filled `sindoor` disc (WR-03 AC3, widget-design
-    /// §7). WCAG 2.1 wants 4.5:1 for text this size, in both themes.
+    /// Today's numeral is bold `sindoor` on the tile's tint, `sindoor` at 12 % over the surface
+    /// (WR-03 AC3, widget-design §7). WCAG 2.1 wants 4.5:1 for text this size, in both themes.
     #[test]
-    fn wr03_ac3_todays_numeral_on_the_sindoor_disc_has_at_least_4_5_to_1_contrast() {
+    fn wr03_ac3_todays_numeral_on_the_tint_has_at_least_4_5_to_1_contrast() {
+        let markup = include_str!("../ui/theme.slint");
+        assert!(
+            markup.contains("today-tint: sindoor.with-alpha(0.12);"),
+            "theme.slint changed the tint; update this test with it"
+        );
         let design = include_str!("../docs/design/widget-design.md");
         let mut values = std::collections::HashMap::new();
         for line in design.lines() {
@@ -166,22 +174,22 @@ mod tests {
                     .unwrap_or_else(|| panic!("design table lacks {token}"));
                 if pick == 0 { light } else { dark }
             };
-            let numeral = luminance(colour("surface-raised"));
-            let disc = luminance(colour("sindoor"));
-            let (lighter, darker) = if numeral > disc {
-                (numeral, disc)
+            let tint = composite_over(colour("sindoor"), TINT_ALPHA, colour("surface"));
+            let numeral = luminance(colour("sindoor"));
+            let fill = luminance(&tint);
+            let (lighter, darker) = if numeral > fill {
+                (numeral, fill)
             } else {
-                (disc, numeral)
+                (fill, numeral)
             };
             let ratio = (lighter + 0.05) / (darker + 0.05);
             println!(
-                "{side}: {} numeral on the {} disc is {ratio:.2}:1",
-                colour("surface-raised"),
+                "{side}: {} numeral on the {tint} tint is {ratio:.2}:1",
                 colour("sindoor")
             );
             assert!(
                 ratio >= 4.5,
-                "{side}: today's numeral on the sindoor disc is {ratio:.2}:1, below 4.5:1"
+                "{side}: today's numeral on the tint is {ratio:.2}:1, below 4.5:1"
             );
         }
     }

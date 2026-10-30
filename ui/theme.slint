@@ -61,4 +61,6 @@ export global Theme {
     out property <color> marigold: is-dark ? marigold-dark : marigold-light;
     out property <color> saturday: is-dark ? saturday-dark : saturday-light;
     out property <color> hairline: is-dark ? hairline-dark : hairline-light;
+    // Today's tile fill: `sindoor` at 12 % over the surface. `theme.rs` measures the numeral on it.
+    out property <color> today-tint: sindoor.with-alpha(0.12);
 }

@@ -58,18 +58,19 @@ component DayCell inherits Rectangle {
     // middle of the cell: a five-row month stretches the cells to about 63 px, a six-row one to
     // about 53 px (widget-design §6).
     property <length> top: max(0px, (root.height - 54px) / 2);
-    // Where the numeral and the AD day stand: the disc is 28 px, so its middle is 14 px down, and
-    // the digits' baseline is 20 px down (cap height 11 px centred on that middle).
+    // Where the numeral and the AD day stand: the numeral row is 28 px, so its middle is 14 px
+    // down, and the digits' baseline is 20 px down (cap height 11 px centred on that middle).
     property <length> baseline: root.top + 20px;
-    // The numeral's middle, and the disc's: the disc is flush with the cell's edge, which leaves
-    // the AD month the room it needs after a two-digit numeral.
+    // The numeral's middle, 14 px from the cell's left edge, which leaves the AD month the room it
+    // needs after a two-digit numeral.
     property <length> numeral-centre: 14px;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
     min-height: 52px;
     border-radius: 6px;
-    background: touch.has-hover && !data.is-padding ? Theme.surface-raised : transparent;
+    // Today's tile has its own fill, so the hover fill would show as a band round it.
+    background: touch.has-hover && !data.is-padding && !data.is-today ? Theme.surface-raised : transparent;
     accessible-role: button;
     accessible-label: data.accessible-label;
     // The same action a screen reader invokes.
@@ -86,15 +87,18 @@ component DayCell inherits Rectangle {
         }
     }
 
-    // Today's numeral sits on a filled disc (WR-03 AC3). The numeral is `surface-raised` on
-    // `sindoor`, which reaches 4.5:1 in both themes (checked by `theme.rs`).
+    // Today is a tile inset 2 px on every side (WR-03 AC3): a soft `sindoor` fill and a 1.5 px
+    // `sindoor` border. The numeral is bold `sindoor` on the fill, which reaches 4.5:1 in both
+    // themes (checked by `theme.rs`).
     Rectangle {
-        x: root.numeral-centre - 14px;
-        y: root.top;
-        width: 28px;
-        height: 28px;
-        border-radius: 14px;
-        background: data.is-today ? Theme.sindoor : transparent;
+        x: 2px;
+        y: 2px;
+        width: root.width - 4px;
+        height: root.height - 4px;
+        border-radius: 8px;
+        background: data.is-today ? Theme.today-tint : transparent;
+        border-width: data.is-today ? 1.5px : 0px;
+        border-color: Theme.sindoor;
     }
 
     // The BS day. The box is as wide as the digits, centred on `numeral-centre`, so the event dot
@@ -106,19 +110,18 @@ component DayCell inherits Rectangle {
         width: self.preferred-width;
         height: self.preferred-height;
         text: data.bs-day;
-        color: data.is-today
-            ? Theme.surface-raised
-            : data.is-holiday ? Theme.sindoor : data.is-saturday ? Theme.saturday : Theme.ink;
+        color: data.is-today || data.is-holiday
+            ? Theme.sindoor
+            : data.is-saturday ? Theme.saturday : Theme.ink;
+        font-weight: data.is-today ? 700 : 400;
         font-size: 16px;
         accessible-role: none;
     }
 
     // Event dot (WR-03 AC4): a fixed 1 px after the numeral's last digit and level with its top,
-    // so it stays the same distance from the number whether the day has one digit or two. Today's
-    // disc is wider than the digits, so there the dot clears the disc's edge instead.
+    // so it stays the same distance from the number whether the day has one digit or two.
     event-dot := Rectangle {
-        x: max(numeral.x + numeral.width + 1px,
-            data.is-today ? root.numeral-centre + 14px : 0px);
+        x: numeral.x + numeral.width + 1px;
         y: root.baseline - 17px;
         width: 4px;
         height: 4px;
@@ -129,8 +132,8 @@ component DayCell inherits Rectangle {
 
     // The AD day, right-aligned 1.5 px in from the edge, on the numeral's baseline. On an AD 1st
     // the short AD month replaces the day (WR-03 AC2). It is a little tighter so "May", the widest
-    // one, keeps a gap after a two-digit numeral. Today's cell keeps the day: the disc is as wide
-    // as the month would need, and the header already gives today's AD date.
+    // one, keeps a gap after a two-digit numeral. Today's cell keeps the day: the header already
+    // gives today's AD date.
     ad-text := Text {
         x: parent.width - 1.5px - self.preferred-width;
         y: root.baseline - self.font-metrics.ascent;
@@ -190,11 +193,9 @@ component ZoomCell inherits Rectangle {
     horizontal-stretch: 1;
     height: 64px;
     border-radius: 6px;
-    // Today's month or year takes the `sindoor` treatment; the viewed one gets a `hairline` ring
-    // (widget-design §7).
-    background: data.is-today
-        ? Theme.sindoor
-        : touch.has-hover && data.enabled ? Theme.surface-raised : transparent;
+    // Today's month or year is the same tile as today's day, drawn below; the viewed one gets a
+    // `hairline` ring (widget-design §7).
+    background: touch.has-hover && data.enabled && !data.is-today ? Theme.surface-raised : transparent;
     border-width: data.is-viewed && !data.is-today ? 1px : 0px;
     border-color: Theme.hairline;
     accessible-role: button;
@@ -206,9 +207,21 @@ component ZoomCell inherits Rectangle {
         clicked => { root.clicked(root.index); }
     }
 
+    Rectangle {
+        x: 2px;
+        y: 2px;
+        width: root.width - 4px;
+        height: root.height - 4px;
+        border-radius: 8px;
+        background: data.is-today ? Theme.today-tint : transparent;
+        border-width: data.is-today ? 1.5px : 0px;
+        border-color: Theme.sindoor;
+    }
+
     Text {
         text: data.label;
-        color: data.is-today ? Theme.surface-raised : Theme.ink;
+        color: data.is-today ? Theme.sindoor : Theme.ink;
+        font-weight: data.is-today ? 700 : 400;
         font-size: 16px;
         horizontal-alignment: center;
         vertical-alignment: center;

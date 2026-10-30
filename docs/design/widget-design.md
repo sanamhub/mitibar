@@ -22,7 +22,7 @@ red. Marigold marks events. Saturday gets a cool slate so weekend and holiday ne
 | `surface-raised` | `#FFFFFF` | `#201B16` | cards, day cells, input fields |
 | `ink` | `#211C17` | `#F1ECE4` | primary text |
 | `ink-muted` | `#6E655C` | `#9B9288` | secondary text, AD dates, labels |
-| `sindoor` | `#C12B2B` | `#E05B5B` | today's outline, public holiday text |
+| `sindoor` | `#C12B2B` | `#E05B5B` | today's tile border and numeral, public holiday text |
 | `marigold` | `#E8A33D` | `#E8A33D` | event dot, holiday badge |
 | `saturday` | `#5B7C99` | `#7FA3C4` | Saturday day numbers |
 | `hairline` | `#E7E0D6` | `#2C2620` | borders, dividers |
@@ -111,19 +111,23 @@ Decided after the owner's first run of the beta build, with the numbers each cho
   The rows share the height the grid is given, 64 px in a five-row month and 53 px in a six-row
   one, and the content block (28 px for the numeral row, up to 26 px for the tithi) sits in the
   middle of the cell. Nothing is left over above the holiday line.
-- **The numeral row.** The BS numeral is 16 px, its middle 14 px from the cell's left edge, and
-  today's 28 px disc is flush with the edge. The AD day (13 px, 12 px in Devanagari) is
+- **The numeral row.** The BS numeral is 16 px, its middle 14 px from the cell's left edge. The
+  AD day (13 px, 12 px in Devanagari) is
   right-aligned 1.5 px from the right edge. Both stand on one baseline: each text starts one font
   ascent above a line 20 px down, read from the font's own metrics, so the baseline holds in both
   scripts. The gap between the numeral's box and the AD day's box is at least 4 px, and at least
   2 px where an AD month stands in for the day.
 - **The AD month** (WR-03 AC2) is 11 px with -0.5 px tracking, so `May`, the widest at 22 px, still
-  clears a two-digit numeral by 2 px. **Today's cell keeps the AD day:** the disc's right edge is
-  at 28 px and the month would start at 24 px, so it would be drawn half on the disc, and the
-  header already gives today's AD date. This is the one place AC2 is not followed to the letter.
+  clears a two-digit numeral by 2 px. **Today's cell keeps the AD day**, because the header
+  already gives today's AD date. This is the one place AC2 is not followed to the letter.
+- **Today's tile.** Today's cell is a tile inset 2 px on every side with an 8 px radius, filled
+  with `sindoor` at 12 % over the surface and edged with a 1.5 px `sindoor` border. The BS numeral
+  is bold `sindoor` on that tint, with no disc. The AD day, the event dot and the tithi keep their
+  places. The earlier 28 px disc was flush with the cell's left edge, so it touched the cell
+  beside it and read as unfinished. The numeral on the tint is 4.62:1 in light and 4.51:1 in
+  dark; `theme.rs` fails below 4.5:1.
 - **The event dot** is 4 px, 1 px after the numeral's last digit and level with the numeral's top,
-  so it is the same distance from a one-digit and a two-digit day. On today's cell it clears the
-  disc instead.
+  so it is the same distance from a one-digit and a two-digit day, today's included.
 - **The tithi.** The longest Latin names do not fit a cell on one line at the 11 px caption step
   (`Chaturdashi` is 63 px, `Chaturdashi*` 69 px; the room is about 44 px between the focus ring's
   2 px on each side), and they cannot shrink: 11 px is the Latin floor, 12 px the Devanagari one.
@@ -148,7 +152,7 @@ Decided after the owner's first run of the beta build, with the numbers each cho
 │───────────────────────────────────────────────│
 │ ‹  Kartik 2083  ›                  (Today)     │  title is the zoom button
 │ Sun  Mon  Tue  Wed  Thu  Fri  Sat              │
-│  1    2    3    4   (5)   6    7               │  (5) = sindoor disc
+│  1    2    3    4   [5]   6    7               │  [5] = today's sindoor tile
 │ ...                                            │
 │───────────────────────────────────────────────│
 │ Next holiday: Dhanteras in 14 days         ⌄  │  expands to five
@@ -171,13 +175,13 @@ Decided after the owner's first run of the beta build, with the numbers each cho
   336 px row. The previous and next arrows are borderless icon buttons. The Today pill shows only
   away from today's month in the month view, and always in the year and decade views.
 - Grid: the BS number is the largest text in each cell, the AD day sits top-right in `caption`
-  `ink-muted`, the tithi under the number in `caption`. Today's number sits on a filled 28 px
-  `sindoor` disc with the numeral in `surface-raised`; the pair must reach 4.5:1 in both themes.
+  `ink-muted`, the tithi under the number in `caption`. Today's cell is the tile of
+  §6, with the numeral in bold `sindoor`; the numeral on the tint must reach 4.5:1 in both themes.
   Holidays are `sindoor` numerals. The event dot is `marigold`. The cells share the height the
   grid is given (§6, Day cells), so a five-row month has no empty band above the holiday line. The
   grid is one Tab stop: its cursor, drawn with the 2 px `ink` ring, moves with the arrow keys.
-- Year and decade views use the same cell radius and a 4×3 grid. Today's month or year gets the
-  `sindoor` treatment; the viewed one gets a `hairline` ring.
+- Year and decade views use the same cell radius and a 4×3 grid. Today's month or year is the
+  same tile as today's day; the viewed one gets a `hairline` ring.
 - Day tooltip: a `surface-raised` card, 6 px radius, `hairline` border, `body` text, placed so
   it never covers the hovered day.
 - Converter: a 320 px `surface-raised` card, padded 12 px, rows 8 px apart. One three-way segmented

@@ -15,6 +15,9 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ### Changed
 
+- Today in the month grid is a tile inset from the cell's edges, with a soft vermillion fill, a
+  vermillion border and a bold vermillion numeral, instead of a disc touching the next cell. The
+  year and decade views use the same tile for this month and this year.
 - The bar's default lines are the weekday and AD date on top, regular, and the BS date below,
   bold. A settings file that still holds the old defaults exactly moves to the new ones; a file
   with lines you chose keeps them.
