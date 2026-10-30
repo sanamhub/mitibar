@@ -1,7 +1,7 @@
 # One tag `vX.Y.Z` builds MitiBar on all three OSes and creates a DRAFT GitHub Release.
 # Preflight is seconds; the build matrix packages NSIS on Windows, a universal .app/.dmg on
 # macOS and .AppImage/.deb on Linux; checksums, a CycloneDX SBOM and build provenance
-# attestations are attached. Signing is optional for 0.x and runs only when its repository
+# attestations are attached. Signing runs only when its repository
 # variable is true (ADR-0003). Nothing here publishes: the maintainer installs the draft
 # assets, ticks docs/runbooks/release-mitibar.md and publishes the draft.
 
@@ -331,7 +331,7 @@ jobs:
           set -euo pipefail
           cargo xtask changelog "$VERSION" > notes.md
           if [[ "$WINDOWS_SIGNING_ENABLED" != "true" || "$MACOS_SIGNING_ENABLED" != "true" ]]; then
-            printf '\n> This preview is unsigned. Windows SmartScreen and macOS Gatekeeper will warn.\n' >> notes.md
+            printf '\n> This build is not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will warn. Check it against SHA256SUMS and with gh attestation verify.\n' >> notes.md
           fi
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
