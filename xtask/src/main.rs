@@ -1,9 +1,11 @@
-//! Repository tasks: `cargo xtask ci` runs the local gates, `cargo xtask renderer-check`
-//! enforces the software-renderer dependency, `cargo xtask package` builds the installers,
+//! Repository tasks: `cargo xtask ci` runs the local gates, `cargo xtask icons` renders the
+//! committed images, `cargo xtask renderer-check` enforces the software-renderer dependency,
+//! `cargo xtask package` builds the installers,
 //! `cargo xtask release-check` and `cargo xtask changelog` prepare a release, and
 //! `cargo xtask widget-idle` measures the idle footprint on Windows. Arguments are read from
 //! `std::env::args()` to keep this small.
 
+mod icons;
 mod idle;
 mod package;
 mod release;
@@ -19,6 +21,8 @@ fn main() -> ExitCode {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     let result = match args.as_slice() {
         ["ci"] => ci(),
+        ["icons"] => icons::run(false),
+        ["icons", "--check"] => icons::run(true),
         ["renderer-check"] => renderer::run(),
         ["package"] => package::run(),
         ["release-check", version] => release::run_check(version),
@@ -27,8 +31,8 @@ fn main() -> ExitCode {
         ["widget-idle", "--minutes", minutes] => idle::run(Some(minutes)),
         _ => {
             eprintln!(
-                "usage: cargo xtask <ci | renderer-check | package | release-check <version> | \
-                 changelog <version> | widget-idle [--minutes N]>"
+                "usage: cargo xtask <ci | icons [--check] | renderer-check | package | \
+                 release-check <version> | changelog <version> | widget-idle [--minutes N]>"
             );
             return ExitCode::from(2);
         }
@@ -75,6 +79,7 @@ const STEPS: &[Step] = &[
     step("cargo", &["nextest", "run", "--all-features"]),
     // The snapshot feature stays off by default; this build keeps its code compiling.
     step("cargo", &["build", "--features", "snapshot"]),
+    step("cargo", &["xtask", "icons", "--check"]),
     step("cargo", &["xtask", "renderer-check"]),
     step("cargo", &["deny", "check"]),
 ];

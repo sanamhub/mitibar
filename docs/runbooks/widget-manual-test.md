@@ -14,7 +14,12 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 ## Tray (WR-01)
 
 - [ ] Icon or menu-bar title appears after start.
-- [ ] Windows and Linux show today's BS day; Nepali uses Devanagari digits.
+- [ ] Windows and Linux show today's BS day on the patro, not a plain numeral; Nepali uses
+      Devanagari digits.
+- [ ] On a light taskbar the tray icon is the light colourway; on a dark taskbar it is the dark one.
+      Both stay legible at 100 % and 200 %.
+- [ ] A two-digit day still reads at 16 px in English and Nepali. On a single-digit date, use the
+      generated contact sheet for the other days.
 - [ ] macOS shows the bar's top line as the title and follows a line edit in Settings at once.
 - [ ] Tooltip shows `MitiBar` and the BS and AD dates.
 - [ ] Left click opens the popup; a second click closes it. On macOS, Open is the first menu item.
@@ -23,6 +28,17 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] Copy BS and Copy AD put the exact strings on the clipboard.
 - [ ] Linux without a tray (GNOME without the AppIndicator extension): the popup opens at start
       and the app keeps running.
+
+## Icon and packaging
+
+- [ ] The installed `MitiBar.exe` shows the light १५ patro in Explorer and on its Start menu
+      shortcut. The 16 and 24 px views keep the day readable.
+- [ ] The installer shows the same icon in its window, its taskbar button and Apps & features.
+- [ ] The Linux desktop entry or application menu shows the icon from the installed `.deb` or
+      AppImage.
+- [ ] The macOS `.app` and `.dmg` show the icon (checked on a Mac).
+- [ ] The Settings gear in the tray menu and the bar's native menu is the filled gear, in light and
+      dark at 100 %, 150 % and 200 %.
 
 ## Popup (WR-02)
 
