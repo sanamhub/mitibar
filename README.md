@@ -29,8 +29,13 @@ More about it, with downloads for each system: **[nepdate.com/mitibar](https://n
   </picture>
   &nbsp;
   <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+    <img src="docs/screenshots/settings-light.png" width="321" alt="MitiBar settings: the top and bottom line cards with a swap button between them, and the presets">
+  </picture>
+  <br>
+  <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/bar-dark.png">
-    <img src="docs/screenshots/bar-light.png" alt="The MitiBar bar: the weekday and AD date on top, the BS date in bold below">
+    <img src="docs/screenshots/bar-light.png" width="697" alt="The MitiBar bar above the taskbar: the weekday and AD date on top, the BS date in bold below">
   </picture>
 </p>
 
