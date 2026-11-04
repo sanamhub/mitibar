@@ -102,8 +102,8 @@ release workflow; the manual test runbook is in
 
 MitiBar is built on the [`nepdate`](https://crates.io/crates/nepdate) and
 [`nepdate-patro`](https://crates.io/crates/nepdate-patro) crates. The calendar data and the
-conversion rules come from [NepDate](https://nepdate.com), maintained by Raju Prasai and Sanam
-Pakuwal. The MIT licence and the data notice apply.
+conversion rules come from [NepDate](https://nepdate.com), which follows the C#
+[NepDate](https://github.com/RajuPrasai/NepDate) library. The MIT licence and the data notice apply.
 
 ## Code signing policy
 
