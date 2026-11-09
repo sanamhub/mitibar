@@ -32,3 +32,4 @@ body names an ADR that is not in this repository.
 | [0008](0008-floating-mini-bar.md) | A floating mini bar replaces the taskbar text, plus one global shortcut | Accepted |
 | [0009](0009-slint-attribution-on-the-web.md) | Slint attribution on the download pages, not inside the app | Accepted |
 | [0010](0010-own-repository-and-versioning.md) | Own repository and versioning | Accepted |
+| [0011](0011-check-for-updates-on-request.md) | Check for updates on request | Accepted |
