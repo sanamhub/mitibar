@@ -6,6 +6,8 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-09
+
 ### Added
 
 - Settings, About can download and install a newer version in one click on Windows, macOS and
