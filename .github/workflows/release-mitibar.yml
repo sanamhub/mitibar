@@ -1,7 +1,7 @@
 # One tag `vX.Y.Z` builds MitiBar on all three OSes and creates a DRAFT GitHub Release.
 # Preflight is seconds; the build matrix packages NSIS on Windows, a universal .app/.dmg on
-# macOS and .AppImage/.deb on Linux; checksums, a CycloneDX SBOM and build provenance
-# attestations are attached. Signing runs only when its repository
+# macOS and .AppImage/.deb on Linux; checksums, update signatures, a CycloneDX SBOM and build
+# provenance attestations are attached. Signing runs only when its repository
 # variable is true (ADR-0003). Nothing here publishes: the maintainer installs the draft
 # assets, ticks docs/runbooks/release-mitibar.md and publishes the draft.
 
@@ -256,7 +256,7 @@ jobs:
           if-no-files-found: error
 
   checksums:
-    needs: [build, sbom]
+    needs: [preflight, build, sbom]
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -266,6 +266,35 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+      # One-click update (ADR-0012): every asset the app can install is signed with a key only
+      # this workflow holds. Without the secret the release still ships; About then falls back to
+      # the release page.
+      - name: Sign the update assets
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+          MINISIGN_SECRET_KEY: ${{ secrets.MITIBAR_UPDATE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${MINISIGN_SECRET_KEY:-}" ]]; then
+            echo "::warning::MITIBAR_UPDATE_SIGNING_KEY is not set; this release has no update signatures, so the app falls back to the release page."
+            exit 0
+          fi
+          sudo apt-get update
+          sudo apt-get install -y minisign
+          key="$RUNNER_TEMP/mitibar-update.key"
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$key"
+          chmod 600 "$key"
+          cd artifacts
+          shopt -s nullglob
+          assets=( *-setup.exe *-portable.zip *.dmg *.AppImage )
+          if (( ${#assets[@]} == 0 )); then
+            echo "::warning::no installable update assets were built"
+            exit 0
+          fi
+          for asset in "${assets[@]}"; do
+            minisign -S -s "$key" -m "$asset" -t "mitibar $VERSION $asset"
+          done
       - name: SHA256SUMS
         run: |
           set -euo pipefail
@@ -282,7 +311,11 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: checksums
-          path: artifacts/SHA256SUMS
+          # The signatures are release assets too; the release job merges this artifact with the
+          # package artifacts.
+          path: |
+            artifacts/SHA256SUMS
+            artifacts/*.minisig
           if-no-files-found: error
 
   # Least privilege: id-token and attestations only on this job, never on build or release.
