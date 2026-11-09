@@ -353,10 +353,22 @@ export component SettingsWindow inherits Window {
     /// The shortcut field's note (WR-13): 0 none, 1 Ctrl+Alt, 2 too few modifiers, 3 in use by
     /// another app, 4 no global shortcuts here, 5 a key the field can't record.
     in property <int> shortcut-note: 0;
-    /// Check for updates (ADR-0011): 0 not asked, 1 checking, 2 up to date, 3 a newer version
-    /// (`update-version`) exists, 4 the check failed.
+    /// Check for updates (ADR-0011, ADR-0012): 0 not asked, 1 checking, 2 up to date, 3 a newer
+    /// version (`update-version`) exists, 4 the check failed, 5 downloading (`update-progress`),
+    /// 6 verifying, 7 installing, 8 the signature failed, 9 the download failed.
     in property <int> update-status: 0;
     in property <string> update-version: "";
+    /// What a newer version offers (ADR-0012): 0 the plain Download (no embedded public key),
+    /// 1 the app installs it, 2 the package manager does.
+    in property <int> update-action: 0;
+    /// The download's whole percent while `update-status` is 5.
+    in property <int> update-progress: 0;
+    /// The check pill's caption (ADR-0012): it shows the download progress while one runs. The
+    /// interaction tests read it, because a pill's caption is not in the accessibility tree.
+    out property <string> update-check-text:
+        root.update-status == 1 || root.update-status == 6 ? @tr("Checking…")
+        : root.update-status == 5 ? @tr("Downloading… {0}%", root.update-progress)
+        : @tr("Check for updates");
     /// After a chip moves or goes, Rust names the one to focus; a timer applies it.
     in-out property <int> focus-line: 0;
     in-out property <int> focus-index: -1;
@@ -408,6 +420,7 @@ export component SettingsWindow inherits Window {
     callback shortcut-reset();
     callback update-check();
     callback update-download();
+    callback update-install();
     callback closed();
 
     /// Scrolls the Bar section to the top ("Customize bar", WR-08 AC6).
@@ -1015,28 +1028,67 @@ export component SettingsWindow inherits Window {
                     HorizontalLayout {
                         spacing: 8px;
                         alignment: start;
-                        update-check-pill := Pill {
+                        if root.update-status != 7 && root.update-status != 8
+                            && root.update-status != 9: update-check-pill := Pill {
                             horizontal-stretch: 0;
-                            text: root.update-status == 1 ? @tr("Checking…") : @tr("Check for updates");
+                            text: root.update-check-text;
                             label: @tr("Check for updates");
-                            enabled: root.update-status != 1;
+                            enabled: root.update-status != 1 && root.update-status != 5
+                                && root.update-status != 6;
                             activated => { root.update-check(); }
                             focused => { root.focus-on("update check", self.absolute-position.y, self.height); }
                         }
-                        if root.update-status == 3: update-download-pill := Pill {
+                        if root.update-status == 3 && root.update-action == 1: update-install-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Download and install");
+                            label: @tr("Download and install version {0}", root.update-version);
+                            activated => { root.update-install(); }
+                            focused => { root.focus-on("update install", self.absolute-position.y, self.height); }
+                        }
+                        if root.update-status == 9: try-again-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Try again");
+                            label: @tr("Try again");
+                            activated => { root.update-install(); }
+                            focused => { root.focus-on("update retry", self.absolute-position.y, self.height); }
+                        }
+                        if root.update-status == 3 && root.update-action == 0: download-pill := Pill {
                             horizontal-stretch: 0;
                             text: @tr("Download");
                             label: @tr("Download version {0}", root.update-version);
                             activated => { root.update-download(); }
                             focused => { root.focus-on("update download", self.absolute-position.y, self.height); }
                         }
+                        if (root.update-status == 3 && root.update-action != 0)
+                            || root.update-status == 8 || root.update-status == 9: release-notes-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Release notes");
+                            label: @tr("Release notes");
+                            activated => { root.update-download(); }
+                            focused => { root.focus-on("update notes", self.absolute-position.y, self.height); }
+                        }
                     }
                     Text {
                         text: root.update-status == 2 ? @tr("You have the latest version")
-                            : root.update-status == 3 ? @tr("Version {0} is available", root.update-version)
-                            : root.update-status == 4 ? @tr("Couldn't reach GitHub. Check the connection and try again.")
+                            : root.update-status == 3 && root.update-action == 2
+                                ? @tr("Version {0} is available. Update it with your package manager.", root.update-version)
+                            : root.update-status == 3
+                                ? @tr("Version {0} is available", root.update-version)
+                            : root.update-status == 4
+                                ? @tr("Couldn't reach GitHub. Check the connection and try again.")
+                            : root.update-status == 5
+                                ? @tr("Downloading version {0}", root.update-version)
+                            : root.update-status == 6
+                                ? @tr("Checking the download")
+                            : root.update-status == 7
+                                ? @tr("Installing. MitiBar starts again by itself.")
+                            : root.update-status == 8
+                                ? @tr("The download couldn't be verified, so nothing was installed.")
+                            : root.update-status == 9
+                                ? @tr("The download didn't finish. Check the connection and try again.")
                             : @tr("Asks GitHub for the latest version number. Nothing else is sent.");
-                        color: root.update-status == 4 ? Theme.sindoor : Theme.ink-muted;
+                        color: root.update-status == 4 || root.update-status == 8 || root.update-status == 9
+                            ? Theme.sindoor : Theme.ink-muted;
                         font-size: 13px;
                         wrap: word-wrap;
                     }

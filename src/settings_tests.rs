@@ -2588,11 +2588,13 @@ fn about_offers_the_update_check_and_download_only_for_a_newer_version() {
     scroll_to_end(&window);
     assert!(exists(&window, "Check for updates"));
     assert!(!exists(&window, "Download version 1.1.0"));
+    assert!(!exists(&window, "Release notes"));
 
     window.set_update_status(3);
     window.set_update_version("1.1.0".into());
     walk(&window);
     assert!(exists(&window, "Download version 1.1.0"));
+    assert!(!exists(&window, "Release notes"), "no key is embedded here");
 
     window.set_update_status(2);
     walk(&window);
@@ -2600,4 +2602,109 @@ fn about_offers_the_update_check_and_download_only_for_a_newer_version() {
         !exists(&window, "Download version 1.1.0"),
         "no Download when up to date"
     );
+}
+
+/// Sets the status the way the install thread would, then lays the About section out again.
+fn show_update_status(window: &SettingsWindow, status: i32) {
+    window.set_update_status(status);
+    walk(window);
+    scroll_to_end(window);
+    walk(window);
+}
+
+#[test]
+fn about_offers_one_click_and_release_notes_for_a_newer_version() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    window.set_update_action(1);
+    show_update_status(&window, 3);
+    assert!(exists(&window, "Download and install version 1.1.0"));
+    assert!(exists(&window, "Release notes"));
+    assert!(
+        !exists(&window, "Download version 1.1.0"),
+        "the plain Download is replaced by the one-click button"
+    );
+    assert!(exists_text(&window, "Version 1.1.0 is available"));
+}
+
+#[test]
+fn about_sends_a_copy_one_click_cannot_replace_to_the_package_manager() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    window.set_update_action(2);
+    show_update_status(&window, 3);
+    assert!(exists(&window, "Release notes"));
+    assert!(!exists(&window, "Download and install version 1.1.0"));
+    assert!(!exists(&window, "Download version 1.1.0"));
+    assert!(exists_text(
+        &window,
+        "Version 1.1.0 is available. Update it with your package manager."
+    ));
+    assert!(
+        !exists_text(&window, "Version 1.1.0 is available"),
+        "the package manager sentence replaces the plain one"
+    );
+}
+
+#[test]
+fn about_shows_the_download_progress_then_the_check() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    window.set_update_action(1);
+    show_update_status(&window, 3);
+    window.set_update_progress(42);
+    show_update_status(&window, 5);
+    assert_eq!(window.get_update_check_text().as_str(), "Downloading… 42%");
+    assert_eq!(window.get_update_progress(), 42);
+    assert!(exists_text(&window, "Downloading version 1.1.0"));
+    assert_eq!(
+        element(&window, "Check for updates").accessible_enabled(),
+        Some(false),
+        "the check is disabled while it downloads"
+    );
+    assert!(
+        !exists(&window, "Download and install version 1.1.0"),
+        "no second download while one runs"
+    );
+
+    show_update_status(&window, 6);
+    assert_eq!(window.get_update_check_text().as_str(), "Checking…");
+    assert!(exists_text(&window, "Checking the download"));
+    assert_eq!(
+        element(&window, "Check for updates").accessible_enabled(),
+        Some(false)
+    );
+}
+
+#[test]
+fn about_shows_installing_and_both_failures_without_the_check_button() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    window.set_update_action(1);
+
+    show_update_status(&window, 7);
+    assert!(exists_text(
+        &window,
+        "Installing. MitiBar starts again by itself."
+    ));
+    assert!(!exists(&window, "Check for updates"));
+    assert!(!exists(&window, "Release notes"));
+
+    show_update_status(&window, 8);
+    assert!(exists_text(
+        &window,
+        "The download couldn't be verified, so nothing was installed."
+    ));
+    assert!(exists(&window, "Release notes"));
+    assert!(!exists(&window, "Try again"));
+    assert!(!exists(&window, "Check for updates"));
+
+    show_update_status(&window, 9);
+    assert!(exists_text(
+        &window,
+        "The download didn't finish. Check the connection and try again."
+    ));
+    assert!(exists(&window, "Try again"));
+    assert!(exists(&window, "Release notes"));
+    assert!(!exists(&window, "Check for updates"));
 }
