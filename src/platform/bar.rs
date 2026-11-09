@@ -96,6 +96,11 @@ pub enum BarEvent {
     Moved(Saved),
     /// A right-click menu pick.
     Menu { item: MenuItem, anchor: Anchor },
+    /// Explorer restarted and the notification area is new: the tray icon must be added again.
+    TrayLost,
+    /// The PC resumed, the display came back on or the time was set: refresh the date now
+    /// instead of at the next minute tick.
+    ClockChanged,
 }
 
 /// The bar the app updates (WR-08). `set_lines` is called once per tick; the window redraws only

@@ -3,9 +3,11 @@
 //! `SMAppService` on macOS and an `XDG` autostart file on Linux. No admin rights.
 //!
 //! Two entry points, because the rules differ. `apply_on_start` runs when the app starts with the
-//! setting on: it writes the item only when it is missing or points at a file that no longer
-//! exists, so a portable copy never takes over from an installed one. `apply` runs when the user
-//! flips the switch: turning it on always points the item at the running copy.
+//! setting on: it writes the item only when it is missing, points at a file that no longer exists
+//! or points at an older version of the app, so a portable copy of the same version never takes
+//! over from an installed one and an old copy left on disk never starts instead of a new one.
+//! `apply` runs when the user flips the switch: turning it on always points the item at the
+//! running copy.
 //!
 //! The tests use a fake `LoginItem`; they never create a registry value, `LaunchAgent` or desktop
 //! file. The real registration is behind the same trait.
@@ -60,26 +62,60 @@ pub fn sync(enabled: bool, item: &dyn LoginItem) -> anyhow::Result<()> {
     if enabled { item.enable() } else { remove(item) }
 }
 
+/// What `sync_on_start` needs to know about the file a login item points at. Tests provide a fake.
+pub trait Files {
+    /// Whether the file exists.
+    fn exists(&self, path: &Path) -> bool;
+    /// Whether the file is an older version of the app than the running copy. `false` when that
+    /// can't be told.
+    fn older(&self, path: &Path) -> bool;
+}
+
+/// The real file system.
+struct Disk;
+
+impl Files for Disk {
+    fn exists(&self, path: &Path) -> bool {
+        path.exists()
+    }
+
+    /// Read from the Windows file version. Other platforms can't name the file a login item
+    /// runs, so they never get here with a path.
+    fn older(&self, path: &Path) -> bool {
+        #[cfg(target_os = "windows")]
+        {
+            crate::platform::windows::file_version(path)
+                .is_some_and(|theirs| theirs < crate::app::version::current().release())
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let _ = path;
+            false
+        }
+    }
+}
+
 /// Makes the login item match the setting when the app starts (WR-09 AC2). With the setting on,
-/// the item is written only when it is missing or points at a file that no longer exists
-/// (`exists`). One that points at an existing file is left alone, whichever copy that is, so a
-/// portable copy never replaces an item that points at an installed copy. Where the platform can't
-/// say what the item runs (`Target::Unknown`), it is written, as before.
+/// the item is written when it is missing, points at a file that no longer exists, or points at an
+/// older version of the app (a copy left behind by an update or a test build). One that points at
+/// an existing copy of the same or a newer version is left alone, so a portable copy never
+/// replaces an item that points at an installed copy. Where the platform can't say what the item
+/// runs (`Target::Unknown`), it is written, as before.
 ///
 /// # Errors
 ///
 /// Returns the first platform error.
-pub fn sync_on_start(
-    enabled: bool,
-    item: &dyn LoginItem,
-    exists: &dyn Fn(&Path) -> bool,
-) -> anyhow::Result<()> {
+pub fn sync_on_start(enabled: bool, item: &dyn LoginItem, files: &dyn Files) -> anyhow::Result<()> {
     if !enabled {
         return remove(item);
     }
     match item.target()? {
-        Target::Path(path) if exists(&path) => Ok(()),
-        Target::Missing | Target::Path(_) | Target::Unknown => item.enable(),
+        Target::Path(path) if files.exists(&path) && !files.older(&path) => Ok(()),
+        Target::Path(path) => {
+            log::info!("autostart: replacing the item for {}", path.display());
+            item.enable()
+        }
+        Target::Missing | Target::Unknown => item.enable(),
     }
 }
 
@@ -97,9 +133,7 @@ pub fn apply(enabled: bool) {
 
 /// Applies the setting at startup (see `sync_on_start`). Never fails the app: the error is logged.
 pub fn apply_on_start(enabled: bool) {
-    run(enabled, |item| {
-        sync_on_start(enabled, item, &|path| path.exists())
-    });
+    run(enabled, |item| sync_on_start(enabled, item, &Disk));
 }
 
 fn run(enabled: bool, action: impl FnOnce(&dyn LoginItem) -> anyhow::Result<()>) {
@@ -314,9 +348,43 @@ mod tests {
         Target::Path(PathBuf::from(text))
     }
 
-    /// Every path in `present` exists; nothing else does.
-    fn files(present: &'static [&'static str]) -> impl Fn(&Path) -> bool {
-        move |path| present.iter().any(|file| Path::new(file) == path)
+    /// A fake disk: every path in `present` exists; those in `old` are older versions.
+    struct FakeFiles {
+        present: &'static [&'static str],
+        old: &'static [&'static str],
+    }
+
+    impl Files for FakeFiles {
+        fn exists(&self, path: &Path) -> bool {
+            self.present.iter().any(|file| Path::new(file) == path)
+        }
+
+        fn older(&self, path: &Path) -> bool {
+            self.old.iter().any(|file| Path::new(file) == path)
+        }
+    }
+
+    /// Every path in `present` exists, and none is older than the running copy.
+    fn files(present: &'static [&'static str]) -> FakeFiles {
+        FakeFiles { present, old: &[] }
+    }
+
+    #[test]
+    fn wr09_ac2_an_item_pointing_at_an_older_copy_is_moved_to_the_running_copy_on_start() {
+        // A test build or an old portable copy wrote the item and is still on disk; the newer
+        // installed copy starts. At the next login the newer copy must start, not the old one.
+        let item = FakeItem::holding(INSTALLED, path(PORTABLE));
+        sync_on_start(
+            true,
+            &item,
+            &FakeFiles {
+                present: &[INSTALLED, PORTABLE],
+                old: &[PORTABLE],
+            },
+        )
+        .expect("start");
+        assert_eq!(item.enables.get(), 1);
+        assert_eq!(item.target_now(), path(INSTALLED));
     }
 
     #[test]

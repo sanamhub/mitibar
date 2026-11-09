@@ -4,6 +4,7 @@
 #![deny(clippy::undocumented_unsafe_blocks)]
 
 mod bar;
+mod file_version;
 mod foreground;
 pub(crate) mod frame;
 pub(crate) mod monitors;
@@ -11,3 +12,4 @@ pub mod render;
 pub(crate) mod theme;
 
 pub use bar::WindowsBar;
+pub use file_version::file_version;

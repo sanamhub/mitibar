@@ -6,6 +6,18 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Starting a newer MitiBar while an older one runs now ends the older one and keeps the newer,
+  instead of leaving the older one running.
+- Launch at login no longer keeps starting an older copy left on disk. At start, a login entry
+  that points at an older version of MitiBar is moved to the running copy.
+- The tray icon comes back after Explorer restarts, which can happen after sleep, hibernation or
+  a display change. Before, the icon was gone or stuck on an old day until MitiBar restarted.
+- The date in the tray and the bar updates as soon as the PC wakes or the screen turns back on,
+  and after the system time changes, instead of up to a minute later.
+- In the month grid, the AD day in today's tile no longer touches the tile's border.
+
 ## [1.0.0] - 2026-10-30
 
 The first stable release. Settings files from the betas carry over, and untouched default lines

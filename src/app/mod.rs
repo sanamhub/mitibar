@@ -20,4 +20,5 @@ pub mod settings;
 pub mod settings_place;
 pub mod shortcut;
 pub mod tithi_label;
+pub mod version;
 pub mod zoom;

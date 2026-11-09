@@ -70,6 +70,7 @@ struct FakeTray {
     titles: RefCell<Vec<String>>,
     languages: RefCell<Vec<Lang>>,
     bar_shown: RefCell<Vec<bool>>,
+    re_adds: std::cell::Cell<u32>,
 }
 
 impl Tray for FakeTray {
@@ -88,6 +89,9 @@ impl Tray for FakeTray {
     }
     fn menu_labels(&self) -> crate::platform::bar::MenuLabels {
         crate::platform::bar::MenuLabels::default()
+    }
+    fn re_add(&self) {
+        self.re_adds.set(self.re_adds.get() + 1);
     }
 }
 
@@ -2526,5 +2530,43 @@ fn the_wheel_over_a_chip_line_that_fits_scrolls_the_page() {
     assert!(
         (window.get_scroll_y() - page_before).abs() > 1.0,
         "a line that fits leaves the wheel to the page"
+    );
+}
+
+#[test]
+fn tray_is_added_again_and_refreshed_after_explorer_restarts() {
+    let f = fixture();
+    let titles = f.tray.titles.borrow().len();
+    crate::handle_bar_event(BarEvent::TrayLost, &f.state, &f.slot);
+    assert_eq!(
+        f.tray.re_adds.get(),
+        1,
+        "the icon is added to the new notification area"
+    );
+    assert!(
+        f.tray.titles.borrow().len() > titles,
+        "the new icon gets today's date at once"
+    );
+}
+
+#[test]
+fn a_resume_refreshes_now_and_restarts_the_minute_timer() {
+    let f = fixture();
+    let titles = f.tray.titles.borrow().len();
+    let generation = f.state.borrow().timer_generation;
+    crate::handle_bar_event(BarEvent::ClockChanged, &f.state, &f.slot);
+    assert!(
+        f.tray.titles.borrow().len() > titles,
+        "the tray shows the date of the moment it woke"
+    );
+    assert_eq!(
+        f.state.borrow().timer_generation,
+        generation + 1,
+        "the next tick is measured from now, not from before the sleep"
+    );
+    assert_eq!(
+        f.tray.re_adds.get(),
+        0,
+        "a resume alone does not rebuild the icon"
     );
 }
