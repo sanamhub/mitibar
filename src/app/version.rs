@@ -47,7 +47,9 @@ impl Version {
         Some(version)
     }
 
-    /// The version without its pre-release part, which is all a Windows file version holds.
+    /// The version without its pre-release part, which is all a Windows file version holds. Only
+    /// Windows has a file version to compare, so the method exists only in Windows builds.
+    #[cfg(windows)]
     pub fn release(&self) -> Version {
         Version {
             pre: Vec::new(),
@@ -142,6 +144,8 @@ mod tests {
         assert_eq!(v("1.0.0").cmp(&v("v1.0.0")), Ordering::Equal);
     }
 
+    /// `release` only exists in Windows builds, where the file-version reader uses it.
+    #[cfg(windows)]
     #[test]
     fn release_drops_the_pre_release() {
         assert_eq!(v("1.1.0-beta.1").release(), v("1.1.0"));
