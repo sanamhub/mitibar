@@ -8,6 +8,10 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ### Added
 
+- Settings, About can download and install a newer version in one click on Windows, macOS and
+  Linux. The download is checked against a minisign signature made by the release workflow, and
+  the running copy is replaced only after the signature matches. Without the signing key, or for
+  a `.deb` install, About keeps the release page as before.
 - Settings, About has a Check for updates button. Only that button connects to the internet: it
   asks GitHub for the latest version number and, when a newer one exists, a Download button
   opens its release page.

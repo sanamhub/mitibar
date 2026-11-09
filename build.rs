@@ -43,6 +43,20 @@ fn main() {
             resources.compile().expect("embed icon");
         }
     }
+    // The update signing public key, when the owner has committed it (ADR-0012). Without the file
+    // the build still succeeds; one click is then off everywhere and About keeps the release-page
+    // Download. Only the base64 line is passed on, because a rustc env value is one line.
+    println!("cargo:rerun-if-changed=packaging/update-key.pub");
+    if let Ok(text) = std::fs::read_to_string("packaging/update-key.pub") {
+        let key = text
+            .lines()
+            .map(str::trim)
+            .find(|line| !line.is_empty() && !line.starts_with("untrusted comment:"));
+        if let Some(key) = key {
+            println!("cargo:rustc-env=MITIBAR_UPDATE_KEY={key}");
+        }
+    }
+
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=icons/icon.ico");
     println!("cargo:rerun-if-env-changed=PROFILE");

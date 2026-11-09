@@ -357,6 +357,42 @@ msgstr "डाउनलोड"
 msgid "Download version {0}"
 msgstr "संस्करण {0} डाउनलोड गर्नुहोस्"
 
+msgid "Download and install"
+msgstr "डाउनलोड गरी इन्स्टल गर्नुहोस्"
+
+msgid "Download and install version {0}"
+msgstr "संस्करण {0} डाउनलोड गरी इन्स्टल गर्नुहोस्"
+
+msgid "Release notes"
+msgstr "रिलिज नोट"
+
+msgid "Downloading… {0}%"
+msgstr "डाउनलोड हुँदैछ… {0}%"
+
+msgid "Downloading version {0}"
+msgstr "संस्करण {0} डाउनलोड हुँदैछ"
+
+msgid "Checking the download"
+msgstr "डाउनलोड जाँच्दै"
+
+msgid "Installing. MitiBar starts again by itself."
+msgstr "इन्स्टल हुँदैछ। MitiBar आफैँ फेरि खुल्छ।"
+
+msgid "The download couldn't be verified, so nothing was installed."
+msgstr "डाउनलोड प्रमाणित हुन सकेन, त्यसैले केही इन्स्टल गरिएन।"
+
+msgid "The download didn't finish. Check the connection and try again."
+msgstr "डाउनलोड पूरा भएन। इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।"
+
+msgid "Try again"
+msgstr "फेरि प्रयास गर्नुहोस्"
+
+msgid "MitiBar couldn't be replaced, so nothing changed. Get it from the release notes."
+msgstr "MitiBar बदल्न सकिएन, त्यसैले केही परिवर्तन भएन। रिलिज नोटबाट लिनुहोस्।"
+
+msgid "Version {0} is available. Update it with your package manager."
+msgstr "संस्करण {0} उपलब्ध छ। आफ्नो प्याकेज म्यानेजरबाट अपडेट गर्नुहोस्।"
+
 msgid "You have the latest version"
 msgstr "तपाईंसँग नयाँ संस्करण नै छ"
 

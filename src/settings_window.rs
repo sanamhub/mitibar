@@ -675,20 +675,19 @@ fn wire_lines(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
     });
 }
 
-/// The shortcut field, Clear and Reset (WR-13 AC2).
-/// Check for updates and Download (ADR-0011). The check runs on its own thread and writes its
-/// result back through a weak handle, so a window closed meanwhile is simply not updated.
+/// Check for updates, the release page and the one-click install (ADR-0011, ADR-0012). The check
+/// and the install run on their own threads and write their results back through a weak handle, so
+/// a window closed meanwhile is simply not updated.
 fn wire_update(window: &SettingsWindow) {
     window.on_update_check({
         let weak = window.as_weak();
         move || {
-            show_update(&weak, &UpdateStatus::Checking);
+            if let Some(window) = weak.upgrade() {
+                show_update(&window, &UpdateStatus::Checking);
+            }
             let weak = weak.clone();
             platform::update_check::spawn(move |status| {
-                let _ = weak.upgrade_in_event_loop(move |window| {
-                    window.set_update_status(status.code());
-                    window.set_update_version(status.version_text().into());
-                });
+                let _ = weak.upgrade_in_event_loop(move |window| show_update(&window, &status));
             });
         }
     });
@@ -703,15 +702,44 @@ fn wire_update(window: &SettingsWindow) {
             }
         }
     });
+    window.on_update_install({
+        let weak = window.as_weak();
+        move || {
+            let Some(window) = weak.upgrade() else {
+                return;
+            };
+            let Some(version) = Version::parse(window.get_update_version().as_str()) else {
+                return;
+            };
+            let weak = weak.clone();
+            platform::update_install::spawn(
+                version,
+                move |status| {
+                    let _ = weak.upgrade_in_event_loop(move |window| {
+                        show_update(&window, &status);
+                    });
+                },
+                move || {
+                    // The installer starts the new copy itself, so this one ends normally.
+                    let _ = slint::invoke_from_event_loop(|| {
+                        let _ = slint::quit_event_loop();
+                    });
+                },
+            );
+        }
+    });
 }
 
-fn show_update(weak: &slint::Weak<SettingsWindow>, status: &UpdateStatus) {
-    if let Some(window) = weak.upgrade() {
-        window.set_update_status(status.code());
-        window.set_update_version(status.version_text().into());
+fn show_update(window: &SettingsWindow, status: &UpdateStatus) {
+    if matches!(status, UpdateStatus::Newer(_)) {
+        window.set_update_action(platform::update_install::action().code());
     }
+    window.set_update_status(status.code());
+    window.set_update_version(status.version_text().into());
+    window.set_update_progress(i32::from(status.progress()));
 }
 
+/// The shortcut field, Clear and Reset (WR-13 AC2).
 fn wire_shortcut(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
     window.on_shortcut_key({
         let state = state.clone();

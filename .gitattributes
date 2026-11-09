@@ -1,3 +1,7 @@
 # `cargo xtask icons --check` compares bytes, so generated files keep one form on every checkout.
 ui/tray-icons.slint text eol=lf
 *.bgra binary
+
+# The update signature fixture is signed over its exact bytes, so keep them unchanged on every
+# checkout; a CRLF conversion would break the signature test.
+src/platform/testdata/** binary

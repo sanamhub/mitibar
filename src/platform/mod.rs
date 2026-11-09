@@ -14,5 +14,7 @@ pub mod single_instance;
 pub mod taskbar_scheme;
 pub mod tray;
 pub mod update_check;
+pub mod update_download;
+pub mod update_install;
 #[cfg(windows)]
 mod windows;

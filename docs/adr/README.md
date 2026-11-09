@@ -33,3 +33,4 @@ body names an ADR that is not in this repository.
 | [0009](0009-slint-attribution-on-the-web.md) | Slint attribution on the download pages, not inside the app | Accepted |
 | [0010](0010-own-repository-and-versioning.md) | Own repository and versioning | Accepted |
 | [0011](0011-check-for-updates-on-request.md) | Check for updates on request | Accepted |
+| [0012](0012-one-click-update.md) | One-click update | Accepted |
