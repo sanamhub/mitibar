@@ -355,7 +355,8 @@ export component SettingsWindow inherits Window {
     in property <int> shortcut-note: 0;
     /// Check for updates (ADR-0011, ADR-0012): 0 not asked, 1 checking, 2 up to date, 3 a newer
     /// version (`update-version`) exists, 4 the check failed, 5 downloading (`update-progress`),
-    /// 6 verifying, 7 installing, 8 the signature failed, 9 the download failed.
+    /// 6 verifying, 7 installing, 8 the signature failed, 9 the download failed, 10 the install
+    /// step failed.
     in property <int> update-status: 0;
     in property <string> update-version: "";
     /// What a newer version offers (ADR-0012): 0 the plain Download (no embedded public key),
@@ -363,6 +364,10 @@ export component SettingsWindow inherits Window {
     in property <int> update-action: 0;
     /// The download's whole percent while `update-status` is 5.
     in property <int> update-progress: 0;
+    /// Whether the update row shows an error in sindoor: codes 4, 8, 9 and 10.
+    out property <bool> update-error:
+        root.update-status == 4 || root.update-status == 8 || root.update-status == 9
+        || root.update-status == 10;
     /// The check pill's caption (ADR-0012): it shows the download progress while one runs. The
     /// interaction tests read it, because a pill's caption is not in the accessibility tree.
     out property <string> update-check-text:
@@ -1029,10 +1034,14 @@ export component SettingsWindow inherits Window {
                         spacing: 8px;
                         alignment: start;
                         if root.update-status != 7 && root.update-status != 8
-                            && root.update-status != 9: update-check-pill := Pill {
+                            && root.update-status != 9 && root.update-status != 10: update-check-pill := Pill {
                             horizontal-stretch: 0;
                             text: root.update-check-text;
-                            label: @tr("Check for updates");
+                            label: root.update-status == 5
+                                ? @tr("Downloading version {0}", root.update-version)
+                                : root.update-status == 6
+                                    ? @tr("Checking the download")
+                                    : @tr("Check for updates");
                             enabled: root.update-status != 1 && root.update-status != 5
                                 && root.update-status != 6;
                             activated => { root.update-check(); }
@@ -1060,7 +1069,8 @@ export component SettingsWindow inherits Window {
                             focused => { root.focus-on("update download", self.absolute-position.y, self.height); }
                         }
                         if (root.update-status == 3 && root.update-action != 0)
-                            || root.update-status == 8 || root.update-status == 9: release-notes-pill := Pill {
+                            || root.update-status == 8 || root.update-status == 9
+                            || root.update-status == 10: release-notes-pill := Pill {
                             horizontal-stretch: 0;
                             text: @tr("Release notes");
                             label: @tr("Release notes");
@@ -1086,9 +1096,10 @@ export component SettingsWindow inherits Window {
                                 ? @tr("The download couldn't be verified, so nothing was installed.")
                             : root.update-status == 9
                                 ? @tr("The download didn't finish. Check the connection and try again.")
+                            : root.update-status == 10
+                                ? @tr("MitiBar couldn't be replaced, so nothing changed. Get it from the release notes.")
                             : @tr("Asks GitHub for the latest version number. Nothing else is sent.");
-                        color: root.update-status == 4 || root.update-status == 8 || root.update-status == 9
-                            ? Theme.sindoor : Theme.ink-muted;
+                        color: root.update-error ? Theme.sindoor : Theme.ink-muted;
                         font-size: 13px;
                         wrap: word-wrap;
                     }

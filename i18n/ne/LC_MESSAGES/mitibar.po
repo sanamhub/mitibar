@@ -387,6 +387,9 @@ msgstr "डाउनलोड पूरा भएन। इन्टरनेट
 msgid "Try again"
 msgstr "फेरि प्रयास गर्नुहोस्"
 
+msgid "MitiBar couldn't be replaced, so nothing changed. Get it from the release notes."
+msgstr "MitiBar बदल्न सकिएन, त्यसैले केही परिवर्तन भएन। रिलिज नोटबाट लिनुहोस्।"
+
 msgid "Version {0} is available. Update it with your package manager."
 msgstr "संस्करण {0} उपलब्ध छ। आफ्नो प्याकेज म्यानेजरबाट अपडेट गर्नुहोस्।"
 

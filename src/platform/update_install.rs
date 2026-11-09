@@ -83,16 +83,35 @@ pub fn spawn(
             }
         };
         report(UpdateStatus::Installing(version.clone()));
-        match plan.installer.install(&downloaded) {
-            Ok(AfterInstall::HandOver) => {}
-            Ok(AfterInstall::End) => end(),
-            Err(err) => {
-                // The old copy is back; the user can try again.
-                log::warn!("update: could not install {version}: {err:#}");
-                report(UpdateStatus::Newer(version));
-            }
+        if install_and_report(
+            plan.installer.as_ref(),
+            &downloaded,
+            &version,
+            &mut |status| report(status),
+        ) {
+            end();
         }
     });
+}
+
+/// Runs the install step and reports status 10 when it fails, after the installer has put the old
+/// copy back. Returns whether this process should end because the installer starts the new copy
+/// itself.
+fn install_and_report(
+    installer: &dyn Installer,
+    downloaded: &Downloaded,
+    version: &Version,
+    report: &mut dyn FnMut(UpdateStatus),
+) -> bool {
+    match installer.install(downloaded) {
+        Ok(AfterInstall::HandOver) => false,
+        Ok(AfterInstall::End) => true,
+        Err(err) => {
+            log::warn!("update: could not install {version}: {err:#}");
+            report(UpdateStatus::InstallFailed(version.clone()));
+            false
+        }
+    }
 }
 
 /// The install plan for the running copy, or `None` when one click cannot replace it.
@@ -518,5 +537,41 @@ mod tests {
             workflow.contains("artifacts/*.minisig"),
             "the signatures must be published with the release"
         );
+    }
+
+    /// An installer whose swap fails, as when the folder became read-only between detection and
+    /// the install.
+    struct FailingSwap;
+
+    impl Installer for FailingSwap {
+        fn install(&self, downloaded: &Downloaded) -> anyhow::Result<AfterInstall> {
+            replace(&downloaded.dir.join("mitibar.exe"), &downloaded.asset)?;
+            Ok(AfterInstall::HandOver)
+        }
+    }
+
+    #[test]
+    fn a_failed_swap_reports_status_10_and_keeps_the_old_copy() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let target = dir.path().join("mitibar.exe");
+        std::fs::write(&target, b"old").expect("old");
+        // The staged file does not exist, so the swap fails after the old copy moved aside.
+        let downloaded = Downloaded {
+            asset: dir.path().join("mitibar.exe.new"),
+            dir: dir.path().to_path_buf(),
+        };
+        let version = Version::parse("1.1.0").expect("version");
+        let mut statuses = Vec::new();
+        let end = install_and_report(&FailingSwap, &downloaded, &version, &mut |status| {
+            statuses.push(status);
+        });
+        assert!(!end, "a failed install does not end the app");
+        assert_eq!(statuses, [UpdateStatus::InstallFailed(version)]);
+        assert_eq!(
+            std::fs::read(&target).expect("target"),
+            b"old",
+            "the old copy is back in place"
+        );
+        assert!(!dir.path().join("mitibar.exe.old").exists());
     }
 }

@@ -276,6 +276,22 @@ fn element(window: &SettingsWindow, label: &str) -> ElementHandle {
     found.into_iter().next().expect("one element")
 }
 
+/// The pill labelled `label`. A status can use the same words for the pill and for the text under
+/// it, so the role picks the button.
+fn pill(window: &SettingsWindow, label: &str) -> ElementHandle {
+    let found: Vec<ElementHandle> = elements(window, label)
+        .into_iter()
+        .filter(|element| element.accessible_role() == Some(AccessibleRole::Button))
+        .collect();
+    assert_eq!(
+        found.len(),
+        1,
+        "expected one pill labelled {label:?}, found {}",
+        found.len()
+    );
+    found.into_iter().next().expect("one pill")
+}
+
 fn click(window: &SettingsWindow, label: &str) {
     element(window, label).invoke_accessible_default_action();
     slint::platform::update_timers_and_animations();
@@ -2625,6 +2641,7 @@ fn about_offers_one_click_and_release_notes_for_a_newer_version() {
         "the plain Download is replaced by the one-click button"
     );
     assert!(exists_text(&window, "Version 1.1.0 is available"));
+    assert!(!window.get_update_error(), "an offer is not an error");
 }
 
 #[test]
@@ -2658,7 +2675,7 @@ fn about_shows_the_download_progress_then_the_check() {
     assert_eq!(window.get_update_progress(), 42);
     assert!(exists_text(&window, "Downloading version 1.1.0"));
     assert_eq!(
-        element(&window, "Check for updates").accessible_enabled(),
+        pill(&window, "Downloading version 1.1.0").accessible_enabled(),
         Some(false),
         "the check is disabled while it downloads"
     );
@@ -2671,9 +2688,28 @@ fn about_shows_the_download_progress_then_the_check() {
     assert_eq!(window.get_update_check_text().as_str(), "Checking…");
     assert!(exists_text(&window, "Checking the download"));
     assert_eq!(
-        element(&window, "Check for updates").accessible_enabled(),
+        pill(&window, "Checking the download").accessible_enabled(),
         Some(false)
     );
+}
+
+#[test]
+fn the_check_pill_label_follows_its_state() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    show_update_status(&window, 0);
+    assert!(exists(&window, "Check for updates"));
+
+    show_update_status(&window, 5);
+    assert!(exists(&window, "Downloading version 1.1.0"));
+    assert!(!exists(&window, "Check for updates"));
+
+    show_update_status(&window, 6);
+    assert!(exists(&window, "Checking the download"));
+    assert!(!exists(&window, "Check for updates"));
+
+    show_update_status(&window, 3);
+    assert!(exists(&window, "Check for updates"));
 }
 
 #[test]
@@ -2707,4 +2743,21 @@ fn about_shows_installing_and_both_failures_without_the_check_button() {
     assert!(exists(&window, "Try again"));
     assert!(exists(&window, "Release notes"));
     assert!(!exists(&window, "Check for updates"));
+}
+
+#[test]
+fn about_reports_a_failed_install_with_only_the_release_notes() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    window.set_update_action(1);
+    show_update_status(&window, 10);
+    assert!(exists(&window, "Release notes"));
+    assert!(!exists(&window, "Check for updates"));
+    assert!(!exists(&window, "Try again"));
+    assert!(!exists(&window, "Download and install version 1.1.0"));
+    assert!(exists_text(
+        &window,
+        "MitiBar couldn't be replaced, so nothing changed. Get it from the release notes."
+    ));
+    assert!(window.get_update_error(), "the text is in sindoor");
 }

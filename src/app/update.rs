@@ -40,6 +40,8 @@ pub enum UpdateStatus {
     SignatureFailed(Version),
     /// The download did not finish, so nothing was installed.
     DownloadFailed(Version),
+    /// The install step failed after a verified download; the old copy is back.
+    InstallFailed(Version),
 }
 
 impl UpdateStatus {
@@ -55,6 +57,7 @@ impl UpdateStatus {
             UpdateStatus::Installing(_) => 7,
             UpdateStatus::SignatureFailed(_) => 8,
             UpdateStatus::DownloadFailed(_) => 9,
+            UpdateStatus::InstallFailed(_) => 10,
         }
     }
 
@@ -66,7 +69,8 @@ impl UpdateStatus {
             | UpdateStatus::Verifying(version)
             | UpdateStatus::Installing(version)
             | UpdateStatus::SignatureFailed(version)
-            | UpdateStatus::DownloadFailed(version) => version.to_string(),
+            | UpdateStatus::DownloadFailed(version)
+            | UpdateStatus::InstallFailed(version) => version.to_string(),
             UpdateStatus::Checking | UpdateStatus::Latest | UpdateStatus::Failed => String::new(),
         }
     }
@@ -334,7 +338,8 @@ mod tests {
         assert_eq!(UpdateStatus::Verifying(version.clone()).code(), 6);
         assert_eq!(UpdateStatus::Installing(version.clone()).code(), 7);
         assert_eq!(UpdateStatus::SignatureFailed(version.clone()).code(), 8);
-        assert_eq!(UpdateStatus::DownloadFailed(version).code(), 9);
+        assert_eq!(UpdateStatus::DownloadFailed(version.clone()).code(), 9);
+        assert_eq!(UpdateStatus::InstallFailed(version).code(), 10);
     }
 
     #[test]
@@ -356,6 +361,7 @@ mod tests {
             UpdateStatus::Installing(v("1.1.0")),
             UpdateStatus::SignatureFailed(v("1.1.0")),
             UpdateStatus::DownloadFailed(v("1.1.0")),
+            UpdateStatus::InstallFailed(v("1.1.0")),
         ] {
             assert_eq!(status.version_text(), "1.1.0", "{status:?}");
         }
