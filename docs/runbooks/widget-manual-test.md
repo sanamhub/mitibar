@@ -95,7 +95,7 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] A second launch opens the first instance's popup and exits 0; one process remains.
 - [ ] Launch at login after a reboot; turning it off removes the entry.
 - [ ] Quit leaves no process.
-- [ ] No network connections while running.
+- [ ] No network connections until Check for updates is pressed; that request goes to GitHub only.
 - [ ] Logs contain no user names or home-folder paths.
 
 ## Accessibility (WR-10)
