@@ -353,6 +353,10 @@ export component SettingsWindow inherits Window {
     /// The shortcut field's note (WR-13): 0 none, 1 Ctrl+Alt, 2 too few modifiers, 3 in use by
     /// another app, 4 no global shortcuts here, 5 a key the field can't record.
     in property <int> shortcut-note: 0;
+    /// Check for updates (ADR-0011): 0 not asked, 1 checking, 2 up to date, 3 a newer version
+    /// (`update-version`) exists, 4 the check failed.
+    in property <int> update-status: 0;
+    in property <string> update-version: "";
     /// After a chip moves or goes, Rust names the one to focus; a timer applies it.
     in-out property <int> focus-line: 0;
     in-out property <int> focus-index: -1;
@@ -402,6 +406,8 @@ export component SettingsWindow inherits Window {
     callback shortcut-key(string, bool, bool, bool, bool) -> bool;
     callback shortcut-cleared();
     callback shortcut-reset();
+    callback update-check();
+    callback update-download();
     callback closed();
 
     /// Scrolls the Bar section to the top ("Customize bar", WR-08 AC6).
@@ -1003,6 +1009,34 @@ export component SettingsWindow inherits Window {
                     Text {
                         text: @tr("{0} {1} · MIT license", AppInfo.app-name, root.data.version);
                         color: Theme.ink-muted;
+                        font-size: 13px;
+                        wrap: word-wrap;
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        update-check-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: root.update-status == 1 ? @tr("Checking…") : @tr("Check for updates");
+                            label: @tr("Check for updates");
+                            enabled: root.update-status != 1;
+                            activated => { root.update-check(); }
+                            focused => { root.focus-on("update check", self.absolute-position.y, self.height); }
+                        }
+                        if root.update-status == 3: update-download-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Download");
+                            label: @tr("Download version {0}", root.update-version);
+                            activated => { root.update-download(); }
+                            focused => { root.focus-on("update download", self.absolute-position.y, self.height); }
+                        }
+                    }
+                    Text {
+                        text: root.update-status == 2 ? @tr("You have the latest version")
+                            : root.update-status == 3 ? @tr("Version {0} is available", root.update-version)
+                            : root.update-status == 4 ? @tr("Couldn't reach GitHub. Check the connection and try again.")
+                            : @tr("Asks GitHub for the latest version number. Nothing else is sent.");
+                        color: root.update-status == 4 ? Theme.sindoor : Theme.ink-muted;
                         font-size: 13px;
                         wrap: word-wrap;
                     }

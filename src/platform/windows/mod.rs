@@ -9,7 +9,9 @@ mod foreground;
 pub(crate) mod frame;
 pub(crate) mod monitors;
 pub mod render;
+mod shell;
 pub(crate) mod theme;
 
 pub use bar::WindowsBar;
 pub use file_version::file_version;
+pub use shell::open_url;

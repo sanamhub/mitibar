@@ -15,6 +15,9 @@ use crate::app::bar::BarField;
 use crate::app::line_editor::{self, At, Line};
 use crate::app::presets;
 use crate::app::shortcut::{self, Combo, Modifiers, Recorded, Refusal};
+use crate::app::update::{self, UpdateStatus};
+use crate::app::version::Version;
+use crate::platform;
 use crate::ui_bridge::{self, SettingsHint};
 use crate::{AppState, SettingsWindow, theme};
 
@@ -436,6 +439,7 @@ fn wire(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
     wire_bar(window, state);
     wire_lines(window, state);
     wire_shortcut(window, state);
+    wire_update(window);
     window.on_closed({
         let state = state.clone();
         move || close(&state)
@@ -672,6 +676,42 @@ fn wire_lines(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
 }
 
 /// The shortcut field, Clear and Reset (WR-13 AC2).
+/// Check for updates and Download (ADR-0011). The check runs on its own thread and writes its
+/// result back through a weak handle, so a window closed meanwhile is simply not updated.
+fn wire_update(window: &SettingsWindow) {
+    window.on_update_check({
+        let weak = window.as_weak();
+        move || {
+            show_update(&weak, &UpdateStatus::Checking);
+            let weak = weak.clone();
+            platform::update_check::spawn(move |status| {
+                let _ = weak.upgrade_in_event_loop(move |window| {
+                    window.set_update_status(status.code());
+                    window.set_update_version(status.version_text().into());
+                });
+            });
+        }
+    });
+    window.on_update_download({
+        let weak = window.as_weak();
+        move || {
+            let Some(window) = weak.upgrade() else {
+                return;
+            };
+            if let Some(version) = Version::parse(window.get_update_version().as_str()) {
+                platform::browser::open(&update::release_page(&version));
+            }
+        }
+    });
+}
+
+fn show_update(weak: &slint::Weak<SettingsWindow>, status: &UpdateStatus) {
+    if let Some(window) = weak.upgrade() {
+        window.set_update_status(status.code());
+        window.set_update_version(status.version_text().into());
+    }
+}
+
 fn wire_shortcut(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
     window.on_shortcut_key({
         let state = state.clone();

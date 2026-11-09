@@ -3,6 +3,7 @@
 
 pub mod autostart;
 pub mod bar;
+pub mod browser;
 pub mod clipboard;
 pub mod frame;
 pub mod hotkey;
@@ -12,5 +13,6 @@ pub mod settings_store;
 pub mod single_instance;
 pub mod taskbar_scheme;
 pub mod tray;
+pub mod update_check;
 #[cfg(windows)]
 mod windows;

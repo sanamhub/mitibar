@@ -6,6 +6,12 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Settings, About has a Check for updates button. Only that button connects to the internet: it
+  asks GitHub for the latest version number and, when a newer one exists, a Download button
+  opens its release page.
+
 ### Fixed
 
 - Starting a newer MitiBar while an older one runs now ends the older one and keeps the newer,

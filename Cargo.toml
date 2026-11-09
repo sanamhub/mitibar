@@ -53,6 +53,15 @@ global-hotkey = "0.9"
 log = "0.4"
 simplelog = "0.12"
 dirs = "7"
+# Check for updates (ADR-0011): one HTTPS GET to GitHub's latest-release API, only when the user
+# presses the button. rustls with ring, certificates checked by the operating system's verifier;
+# no bundled root store, no compression, no cookies.
+ureq = { version = "3.5.0", default-features = false, features = [
+    "rustls-no-provider",
+    "platform-verifier",
+] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+serde_json = "1"
 # PNG encoding for the snapshot flags, behind the `snapshot` feature (ADR-0005).
 image = { version = "0.25", default-features = false, features = ["png"], optional = true }
 

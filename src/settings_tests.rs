@@ -288,6 +288,17 @@ fn scroll_to_end(window: &SettingsWindow) {
     walk(window);
 }
 
+/// Scrolls up from the end, 40 px at a time, until an element labelled `label` is in view.
+fn scroll_into_view(window: &SettingsWindow, label: &str) {
+    scroll_to_end(window);
+    let mut y = window.get_scroll_y();
+    while !exists(window, label) && y < 0.0 {
+        y = (y + 40.0).min(0.0);
+        window.set_scroll_y(y);
+        walk(window);
+    }
+}
+
 /// Lays the tree out, as a frame would: rows and clipped items exist only once something walks it.
 fn walk(window: &SettingsWindow) -> usize {
     ElementHandle::find_by_accessible_label(window, "").count()
@@ -1232,9 +1243,9 @@ fn wr08_ac3_each_line_shows_its_fields_as_chips() {
 #[test]
 fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line() {
     let (f, window) = opened();
-    scroll_to_end(&window);
+    scroll_into_view(&window, "Add field to the top line");
     click(&window, "Add field to the top line");
-    scroll_to_end(&window);
+    scroll_into_view(&window, "Weekday, long");
     for label in [
         "Weekday, long",
         "Day",
@@ -1263,7 +1274,7 @@ fn wr08_ac3_add_field_lists_the_fields_on_neither_line_and_adds_one_to_that_line
     // Once it is on a line, it is no longer offered, on either line.
     tab_to(&window, "add bottom");
     press(&window, Key::Return);
-    scroll_to_end(&window);
+    scroll_into_view(&window, "Holiday");
     assert!(
         !elements(&window, "Tithi")
             .iter()
@@ -1917,6 +1928,7 @@ fn full_order() -> Vec<&'static str> {
         "shortcut",
         "shortcut clear",
         "shortcut reset",
+        "update check",
     ]
 }
 
@@ -2024,6 +2036,7 @@ fn wr10_ac2_the_settings_window_has_no_bar_stops_without_a_bar() {
         "shortcut",
         "shortcut clear",
         "shortcut reset",
+        "update check",
     ];
     for expected in order.into_iter().chain(["language"]) {
         press(&window, Key::Tab);
@@ -2360,7 +2373,7 @@ fn the_add_field_pill_has_the_same_air_on_both_sides_of_the_ink() {
 #[test]
 fn a_chip_centres_its_name_and_its_remove_button() {
     let (_f, window) = opened();
-    scroll_to_end(&window);
+    scroll_into_view(&window, "Remove Weekday");
     let chip = element(&window, "Weekday");
     let name = caption_in(&window, &chip);
     let remove = element(&window, "Remove Weekday");
@@ -2465,7 +2478,7 @@ fn wheel_over(window: &SettingsWindow, element: &ElementHandle, delta_y: f32) {
 #[test]
 fn the_wheel_scrolls_a_chip_line_wider_than_the_window_sideways() {
     let (_f, window) = opened_with_a_long_top_line();
-    scroll_to_end(&window);
+    scroll_into_view(&window, "Remove Weekday");
     // The window's fixed width, in logical px.
     let window_right = 420.0;
     // The testing backend leaves out what a clipping item hides, so the last chip is not there
@@ -2520,9 +2533,7 @@ fn the_wheel_scrolls_a_chip_line_wider_than_the_window_sideways() {
 #[test]
 fn the_wheel_over_a_chip_line_that_fits_scrolls_the_page() {
     let (_f, window) = opened();
-    scroll_to_end(&window);
-    window.set_scroll_y(window.get_scroll_y() + 40.0);
-    walk(&window);
+    scroll_into_view(&window, "Remove Weekday");
     let chip = element(&window, "Weekday");
     let page_before = window.get_scroll_y();
     wheel_over(&window, &chip, 30.0);
@@ -2568,5 +2579,25 @@ fn a_resume_refreshes_now_and_restarts_the_minute_timer() {
         f.tray.re_adds.get(),
         0,
         "a resume alone does not rebuild the icon"
+    );
+}
+
+#[test]
+fn about_offers_the_update_check_and_download_only_for_a_newer_version() {
+    let (_f, window) = opened();
+    scroll_to_end(&window);
+    assert!(exists(&window, "Check for updates"));
+    assert!(!exists(&window, "Download version 1.1.0"));
+
+    window.set_update_status(3);
+    window.set_update_version("1.1.0".into());
+    walk(&window);
+    assert!(exists(&window, "Download version 1.1.0"));
+
+    window.set_update_status(2);
+    walk(&window);
+    assert!(
+        !exists(&window, "Download version 1.1.0"),
+        "no Download when up to date"
     );
 }
