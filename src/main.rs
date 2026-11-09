@@ -685,6 +685,8 @@ fn main() -> anyhow::Result<()> {
             Ok(platform::single_instance::Claim::Primary(listener)) => primary = Some(listener),
             Err(err) => log::warn!("single instance: {err}; running without the guard"),
         }
+        // A finished update leaves its old copy and download folder behind (ADR-0012).
+        platform::update_install::clean_up();
     }
 
     // WR-06: load the per-user file (or write the defaults), then let the snapshot flags
