@@ -1,7 +1,8 @@
-//! The one network request the app makes (ADR-0011): when the user presses Check for updates,
-//! one HTTPS GET to GitHub's latest-release API, on a background thread. Nothing else is sent: no
-//! identifier, no settings, no usage data. The User-Agent names the app and its version, which
-//! GitHub's API requires. Certificates are checked against the operating system's store.
+//! The update requests (ADR-0011, ADR-0012): when the user presses Check for updates, one HTTPS GET
+//! to GitHub's latest-release API on a background thread. Nothing else is sent: no identifier, no
+//! settings, no usage data. The User-Agent names the app and its version, which GitHub's API
+//! requires. Certificates are checked against the operating system's store. The same agent serves
+//! the asset downloads in `platform::update_download`.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -29,19 +30,7 @@ pub fn spawn(done: impl FnOnce(UpdateStatus) + Send + 'static) {
 }
 
 fn latest_tag() -> anyhow::Result<String> {
-    let tls = ureq::tls::TlsConfig::builder()
-        .provider(ureq::tls::TlsProvider::Rustls)
-        .root_certs(ureq::tls::RootCerts::PlatformVerifier)
-        .unversioned_rustls_crypto_provider(Arc::new(rustls::crypto::ring::default_provider()))
-        .build();
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .tls_config(tls)
-        .timeout_global(Some(TIMEOUT))
-        .user_agent(format!("MitiBar/{}", version::current()))
-        .https_only(true)
-        .build()
-        .into();
-    let body = agent
+    let body = agent(TIMEOUT)
         .get(LATEST_RELEASE)
         .header("Accept", "application/vnd.github+json")
         .call()?
@@ -50,6 +39,24 @@ fn latest_tag() -> anyhow::Result<String> {
         .limit(BODY_LIMIT)
         .read_to_string()?;
     tag_name(&body).ok_or_else(|| anyhow::anyhow!("no tag_name in the answer"))
+}
+
+/// The agent every update request uses (ADR-0011, ADR-0012): ureq with rustls (the `ring`
+/// provider) and certificates checked by the operating system's verifier, HTTPS only, redirects
+/// followed, no compression or cookies. `timeout` bounds the whole request.
+pub(crate) fn agent(timeout: Duration) -> ureq::Agent {
+    let tls = ureq::tls::TlsConfig::builder()
+        .provider(ureq::tls::TlsProvider::Rustls)
+        .root_certs(ureq::tls::RootCerts::PlatformVerifier)
+        .unversioned_rustls_crypto_provider(Arc::new(rustls::crypto::ring::default_provider()))
+        .build();
+    ureq::Agent::config_builder()
+        .tls_config(tls)
+        .timeout_global(Some(timeout))
+        .user_agent(format!("MitiBar/{}", version::current()))
+        .https_only(true)
+        .build()
+        .into()
 }
 
 /// The `tag_name` of a GitHub release object.
