@@ -44,6 +44,12 @@ unused-allowed-license = "allow" # the list covers optional dependencies
 
 # Slint is triple-licensed; the widget uses the Royalty-free 2.0 option (ADR-0013), which needs
 # visible attribution (AboutSlint). Allow it for Slint crates only.
+# Mozilla's root certificate list as data. `rustls-platform-verifier` (ADR-0011) depends on it only
+# on wasm32, which MitiBar does not build; the shipped app checks certificates with the OS store.
+[[licenses.exceptions]]
+name = "webpki-root-certs"
+allow = ["CDLA-Permissive-2.0"]
+
 [[licenses.exceptions]]
 name = "slint"
 allow = ["LicenseRef-Slint-Royalty-free-2.0"]

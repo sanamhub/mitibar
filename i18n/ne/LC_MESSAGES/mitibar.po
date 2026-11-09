@@ -345,6 +345,30 @@ msgstr "{0} सेटिङ"
 msgid "{0} {1} · MIT license"
 msgstr "{0} {1} · MIT इजाजतपत्र"
 
+msgid "Check for updates"
+msgstr "अपडेट जाँच्नुहोस्"
+
+msgid "Checking…"
+msgstr "जाँच्दै…"
+
+msgid "Download"
+msgstr "डाउनलोड"
+
+msgid "Download version {0}"
+msgstr "संस्करण {0} डाउनलोड गर्नुहोस्"
+
+msgid "You have the latest version"
+msgstr "तपाईंसँग नयाँ संस्करण नै छ"
+
+msgid "Version {0} is available"
+msgstr "संस्करण {0} उपलब्ध छ"
+
+msgid "Couldn't reach GitHub. Check the connection and try again."
+msgstr "GitHub मा पुग्न सकिएन। इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।"
+
+msgid "Asks GitHub for the latest version number. Nothing else is sent."
+msgstr "GitHub सँग नयाँ संस्करणको नम्बर मात्र सोधिन्छ। अरू केही पठाइँदैन।"
+
 msgid "Third-party notices: Slint, Noto Sans and Noto Sans Devanagari (SIL Open Font License 1.1), NepDate (MIT)"
 msgstr "तेस्रो-पक्षका सूचनाहरू: Slint, Noto Sans र Noto Sans Devanagari (SIL Open Font License 1.1), NepDate (MIT)"
 
