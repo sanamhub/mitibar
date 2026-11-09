@@ -119,9 +119,12 @@ Every signed file is built by the release workflow in this repository from a tag
 each signing request is approved by hand.
 
 Privacy: MitiBar makes no network connections unless you press Check for updates in Settings.
-That button asks GitHub for the latest version number and sends nothing else
-([ADR-0011](docs/adr/0011-check-for-updates-on-request.md)). MitiBar stores only its settings file
-and a log file on your own machine.
+That button asks GitHub for the latest version number and sends nothing else. When a newer
+version exists, Download and install fetches that release's installer and signature, checks the
+signature against the key built into the app, and sends nothing else
+([ADR-0011](docs/adr/0011-check-for-updates-on-request.md),
+[ADR-0012](docs/adr/0012-one-click-update.md)). MitiBar stores only its settings file and a log
+file on your own machine.
 
 ## License
 
