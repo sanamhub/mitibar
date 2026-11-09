@@ -162,14 +162,24 @@ fn the_bs_day_and_the_ad_day_keep_a_clear_gap() {
 
 #[test]
 fn the_numeral_is_centred_and_the_ad_day_ends_at_the_same_inset_in_every_cell() {
+    // Today's tile sits 1 px in from the sides with a 1.5 px border; its numbers keep clear of
+    // it: the numeral half a pixel further right, the AD day 2.5 px inside the border.
     for (month, day) in every_day_of_2083("en") {
+        let (want_centre, want_inset) = if day.is_today {
+            (14.5, 1.0 + 1.5 + 2.5)
+        } else {
+            (14.0, 1.5)
+        };
         let centre = day.numeral.x + day.numeral.w / 2.0 - day.cell.x;
         assert!(
-            (centre - 14.0).abs() < 0.01,
+            (centre - want_centre).abs() < 0.01,
             "{month:?}: numeral centre {centre}"
         );
         let inset = day.cell.right() - day.ad.right();
-        assert!((inset - 1.5).abs() < 0.01, "{month:?}: AD inset {inset}");
+        assert!(
+            (inset - want_inset).abs() < 0.01,
+            "{month:?}: AD inset {inset}"
+        );
     }
 }
 

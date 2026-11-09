@@ -19,29 +19,33 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, Ordering};
 
-use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, POINT, WPARAM};
+use windows::Win32::Foundation::{
+    COLORREF, HANDLE, HINSTANCE, HWND, LPARAM, LRESULT, POINT, WPARAM,
+};
 use windows::Win32::Graphics::Gdi::{
     AC_SRC_ALPHA, AC_SRC_OVER, BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BLENDFUNCTION,
     CreateCompatibleDC, CreateDIBSection, DIB_RGB_COLORS, DeleteDC, DeleteObject, GetDC, HBITMAP,
     HBRUSH, HDC, HGDIOBJ, MONITOR_DEFAULTTONEAREST, MonitorFromWindow, RGBQUAD, ReleaseDC,
     SelectObject,
 };
+use windows::Win32::System::Power::{POWERBROADCAST_SETTING, RegisterPowerSettingNotification};
+use windows::Win32::System::SystemServices::GUID_CONSOLE_DISPLAY_STATE;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     ReleaseCapture, SetCapture, TME_LEAVE, TRACKMOUSEEVENT, TrackMouseEvent,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CS_DBLCLKS, CS_HREDRAW, CS_VREDRAW, CreatePopupMenu, CreateWindowExW,
-    DefWindowProcW, DestroyMenu, DestroyWindow, FindWindowW, GWLP_USERDATA, GetCursorPos,
-    GetForegroundWindow, GetSystemMetrics, GetWindowLongPtrW, HCURSOR, HICON, HWND_TOPMOST,
-    IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE, MENUITEMINFOW, MF_CHECKED, MF_SEPARATOR,
-    MF_STRING, MF_UNCHECKED, MIIM_BITMAP, PostMessageW, RegisterClassW, RegisterWindowMessageW,
-    SM_CXDRAG, SM_CYDRAG, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
-    SWP_NOZORDER, SetForegroundWindow, SetMenuItemInfoW, SetWindowLongPtrW, SetWindowPos,
-    ShowWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON, TPM_WORKAREA, TrackPopupMenuEx, ULW_ALPHA,
-    UpdateLayeredWindow, WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED, WM_DISPLAYCHANGE, WM_DPICHANGED,
-    WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_RBUTTONUP,
-    WM_SETTINGCHANGE, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST,
-    WS_POPUP,
+    DEVICE_NOTIFY_WINDOW_HANDLE, DefWindowProcW, DestroyMenu, DestroyWindow, FindWindowW,
+    GWLP_USERDATA, GetCursorPos, GetForegroundWindow, GetSystemMetrics, GetWindowLongPtrW, HCURSOR,
+    HICON, HWND_TOPMOST, IDC_ARROW, IsWindow, LoadCursorW, MA_NOACTIVATE, MENUITEMINFOW,
+    MF_CHECKED, MF_SEPARATOR, MF_STRING, MF_UNCHECKED, MIIM_BITMAP, PostMessageW, RegisterClassW,
+    RegisterWindowMessageW, SM_CXDRAG, SM_CYDRAG, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE,
+    SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetForegroundWindow, SetMenuItemInfoW, SetWindowLongPtrW,
+    SetWindowPos, ShowWindow, TPM_RETURNCMD, TPM_RIGHTBUTTON, TPM_WORKAREA, TrackPopupMenuEx,
+    ULW_ALPHA, UpdateLayeredWindow, WINDOW_STYLE, WM_APP, WM_CAPTURECHANGED, WM_DISPLAYCHANGE,
+    WM_DPICHANGED, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE,
+    WM_POWERBROADCAST, WM_RBUTTONUP, WM_SETTINGCHANGE, WM_TIMECHANGE, WNDCLASSW, WS_EX_LAYERED,
+    WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::{PCWSTR, w};
 
@@ -71,11 +75,19 @@ const WM_APP_FOREGROUND: u32 = WM_APP + 2;
 /// A `WM_SETTINGCHANGE` that arrived during a borrow, reposted with the setting in `wParam`
 /// (`SETTING_COLOR` or `SETTING_TRAY`) instead of the sender's string pointer.
 const WM_APP_SETTING: u32 = WM_APP + 3;
+/// The clock may have jumped: the PC resumed, the screen came back on, or the time was set.
+/// Posted for a `WM_POWERBROADCAST` or `WM_TIMECHANGE` that arrived during a borrow.
+const WM_APP_CLOCK: u32 = WM_APP + 4;
 const SETTING_COLOR: usize = 1;
 const SETTING_TRAY: usize = 2;
 
 /// `WM_MOUSELEAVE`, which `windows` keeps in a feature this crate does not otherwise use.
 const WM_MOUSELEAVE: u32 = 0x02A3;
+/// `WM_POWERBROADCAST` codes: resumed from sleep or hibernation (automatic, then after user
+/// input), and a registered power setting changed (here only the console display state).
+const PBT_APMRESUMESUSPEND: usize = 0x0007;
+const PBT_APMRESUMEAUTOMATIC: usize = 0x0012;
+const PBT_POWERSETTINGCHANGE: usize = 0x8013;
 
 /// The `TaskbarCreated` registered message id, read by the window procedure without a borrow.
 static TASKBAR_CREATED: AtomicU32 = AtomicU32::new(0);
@@ -281,6 +293,7 @@ impl Controller {
         // window is still created so the failure mode stays "bar hidden, one log line".
         register_classes();
         let hwnd = create_controller();
+        register_display_notice(hwnd);
         CONTROLLER.store(hwnd.0 as isize, Ordering::Relaxed);
         // SAFETY: RegisterWindowMessageW only registers a string-to-id mapping.
         let created = unsafe { RegisterWindowMessageW(w!("TaskbarCreated")) };
@@ -807,7 +820,27 @@ impl Controller {
             {
                 log::info!("bar: Explorer restarted, recreating the bar window");
                 self.recreate_bar_window();
-                handled
+                (
+                    Outcome::Return(LRESULT(0)),
+                    Action::Deliver {
+                        events: vec![BarEvent::TrayLost],
+                        scheme: None,
+                    },
+                )
+            }
+            WM_TIMECHANGE | WM_POWERBROADCAST | WM_APP_CLOCK if hwnd == self.hwnd => {
+                // WM_POWERBROADCAST wants TRUE back; the other two ignore the result.
+                let result = LRESULT(isize::from(msg == WM_POWERBROADCAST));
+                let action = if clock_may_have_jumped(msg, wparam, lparam) {
+                    log::info!("clock: resumed or time changed, refreshing now");
+                    Action::Deliver {
+                        events: vec![BarEvent::ClockChanged],
+                        scheme: None,
+                    }
+                } else {
+                    Action::None
+                };
+                (Outcome::Return(result), action)
             }
             _ => (Outcome::Default, Action::None),
         }
@@ -1116,6 +1149,12 @@ unsafe extern "system" fn wnd_proc(
             WM_APP_FOREGROUND => Some((WM_APP_FOREGROUND, wparam)),
             WM_SETTINGCHANGE => setting_code(lparam).map(|code| (WM_APP_SETTING, WPARAM(code))),
             WM_APP_SETTING => Some((WM_APP_SETTING, wparam)),
+            // The power-setting data behind `lParam` belongs to the sender, so it is read now.
+            WM_TIMECHANGE | WM_POWERBROADCAST | WM_APP_CLOCK
+                if clock_may_have_jumped(msg, wparam, lparam) =>
+            {
+                Some((WM_APP_CLOCK, WPARAM(0)))
+            }
             _ if msg != 0 && msg == TASKBAR_CREATED.load(Ordering::Relaxed) => {
                 Some((msg, WPARAM(0)))
             }
@@ -1172,6 +1211,57 @@ fn register_classes() {
 }
 
 /// Creates the hidden controller window.
+/// Whether a controller message means the wall clock may have moved while the app's timer did
+/// not run: a resume from sleep or hibernation, the display coming back on (Modern Standby), or a
+/// time change. Timer waits do not count time asleep, so the minute tick alone would be late.
+fn clock_may_have_jumped(msg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
+    match msg {
+        WM_TIMECHANGE | WM_APP_CLOCK => true,
+        WM_POWERBROADCAST => match wparam.0 {
+            PBT_APMRESUMEAUTOMATIC | PBT_APMRESUMESUSPEND => true,
+            PBT_POWERSETTINGCHANGE => display_turned_on(lparam),
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+/// Reads a `PBT_POWERSETTINGCHANGE` payload: true when it is the console display state and the
+/// display is on (1) or dimmed (2).
+fn display_turned_on(lparam: LPARAM) -> bool {
+    if lparam.0 == 0 {
+        return false;
+    }
+    // SAFETY: for PBT_POWERSETTINGCHANGE, lParam points at a POWERBROADCAST_SETTING the system
+    // owns for the duration of the message; only the header and the first DWORD of data are read,
+    // and the length is checked before the data.
+    unsafe {
+        let setting = &*(lparam.0 as *const POWERBROADCAST_SETTING);
+        setting.PowerSetting == GUID_CONSOLE_DISPLAY_STATE
+            && setting.DataLength as usize >= std::mem::size_of::<u32>()
+            && std::ptr::read_unaligned(setting.Data.as_ptr().cast::<u32>()) != 0
+    }
+}
+
+/// Asks for `WM_POWERBROADCAST` when the display turns on or off. On Modern Standby PCs there is no
+/// resume broadcast; the display coming back on is the moment the user looks at the date again.
+fn register_display_notice(hwnd: HWND) {
+    if hwnd.0.is_null() {
+        return;
+    }
+    // SAFETY: registers our own window for a documented power setting. The registration lasts
+    // until the window is destroyed, which happens only when the app ends.
+    if let Err(err) = unsafe {
+        RegisterPowerSettingNotification(
+            HANDLE(hwnd.0),
+            &GUID_CONSOLE_DISPLAY_STATE,
+            DEVICE_NOTIFY_WINDOW_HANDLE,
+        )
+    } {
+        log::warn!("clock: no display notifications: {err}");
+    }
+}
+
 fn create_controller() -> HWND {
     // SAFETY: the class name is static; the window is hidden and never shown.
     unsafe {

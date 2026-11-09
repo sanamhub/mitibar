@@ -62,8 +62,15 @@ component DayCell inherits Rectangle {
     // down, and the digits' baseline is 20 px down (cap height 11 px centred on that middle).
     property <length> baseline: root.top + 20px;
     // The numeral's middle, 14 px from the cell's left edge, which leaves the AD month the room it
-    // needs after a two-digit numeral.
-    property <length> numeral-centre: 14px;
+    // needs after a two-digit numeral. Today's numeral moves half a pixel right, off the tile's
+    // border.
+    property <length> numeral-centre: data.is-today ? 14.5px : 14px;
+    // The AD day's right edge: 1.5 px from the cell's edge, or 2.5 px clear of today's border.
+    property <length> ad-edge: data.is-today ? root.tile-inset + 1.5px + 2.5px : 1.5px;
+    // Today's tile stands 1 px in from the cell's sides and 2 px from its top and bottom: the
+    // columns have no gap, so 1 px is enough to keep it off the next day, and the extra pixel goes
+    // to the numbers inside.
+    property <length> tile-inset: 1px;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
@@ -87,13 +94,13 @@ component DayCell inherits Rectangle {
         }
     }
 
-    // Today is a tile inset 2 px on every side (WR-03 AC3): a soft `sindoor` fill and a 1.5 px
-    // `sindoor` border. The numeral is bold `sindoor` on the fill, which reaches 4.5:1 in both
-    // themes (checked by `theme.rs`).
+    // Today is a tile (WR-03 AC3): a soft `sindoor` fill and a 1.5 px `sindoor` border, inset
+    // `tile-inset` at the sides and 2 px at the top and bottom. The numeral is bold `sindoor` on the
+    // fill, which reaches 4.5:1 in both themes (checked by `theme.rs`).
     Rectangle {
-        x: 2px;
+        x: root.tile-inset;
         y: 2px;
-        width: root.width - 4px;
+        width: root.width - 2 * root.tile-inset;
         height: root.height - 4px;
         border-radius: 8px;
         background: data.is-today ? Theme.today-tint : transparent;
@@ -130,12 +137,12 @@ component DayCell inherits Rectangle {
         visible: data.has-events;
     }
 
-    // The AD day, right-aligned 1.5 px in from the edge, on the numeral's baseline. On an AD 1st
+    // The AD day, right-aligned `ad-edge` in from the edge, on the numeral's baseline. On an AD 1st
     // the short AD month replaces the day (WR-03 AC2). It is a little tighter so "May", the widest
     // one, keeps a gap after a two-digit numeral. Today's cell keeps the day: the header already
     // gives today's AD date.
     ad-text := Text {
-        x: parent.width - 1.5px - self.preferred-width;
+        x: parent.width - root.ad-edge - self.preferred-width;
         y: root.baseline - self.font-metrics.ascent;
         width: self.preferred-width;
         height: self.preferred-height;

@@ -231,6 +231,18 @@ fn wake_ui() {
     }
 }
 
+/// Called on the listener thread when a newer copy of the app started: this copy ends so the newer
+/// one runs. Settings are written on every change, so nothing is lost.
+fn give_way(newer: &app::version::Version) {
+    log::info!("single instance: version {newer} started; this older copy ends");
+    if let Err(err) = slint::invoke_from_event_loop(|| {
+        let _ = slint::quit_event_loop();
+    }) {
+        log::warn!("single instance: could not end for the newer copy: {err}");
+        std::process::exit(0);
+    }
+}
+
 /// The idle-wake counter, present only in a `snapshot` build.
 #[cfg(feature = "snapshot")]
 static IDLE_WAKES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -840,7 +852,7 @@ fn main() -> anyhow::Result<()> {
     // thread then runs the same open path as before. No polling timer remains.
     if let Some(listener) = primary {
         install_open_request(&slot, &state);
-        platform::single_instance::start(listener, wake_ui);
+        platform::single_instance::start(listener, wake_ui, give_way);
     }
 
     arm_timer(state.clone());
@@ -1031,6 +1043,17 @@ fn handle_bar_event(event: BarEvent, state: &Rc<RefCell<AppState>>, slot: &Popup
         BarEvent::Moved(saved) => {
             state.borrow_mut().settings.set_bar_position(&saved);
             settings_window::save_later(state);
+        }
+        BarEvent::TrayLost => {
+            let tray = state.borrow().tray.clone();
+            if let Some(tray) = tray {
+                tray.re_add();
+            }
+            update_tick(state);
+        }
+        BarEvent::ClockChanged => {
+            update_tick(state);
+            rearm_timer(state);
         }
         BarEvent::Menu { item, anchor } => match item {
             MenuItem::Open => open_popup_if_hidden(slot, state, anchor),

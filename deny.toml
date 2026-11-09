@@ -18,6 +18,9 @@ ignore = [
     "RUSTSEC-2026-0370", # zvariant unmaintained, no safe upgrade
     "RUSTSEC-2026-0371", # zbus_names unmaintained, no safe upgrade
     "RUSTSEC-2026-0372", # zvariant_derive unmaintained, no safe upgrade
+    # pin-utils is archived upstream; Slint's spin_on uses it to pin one future while compiling
+    # and rendering. It holds no unsafe input path and has no safe upgrade until Slint drops it.
+    "RUSTSEC-2026-0441", # pin-utils unmaintained, via slint (spin_on)
 ]
 
 [licenses]
