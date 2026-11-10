@@ -17,6 +17,8 @@ All notable changes to MitiBar are recorded here. The format follows
 - Settings, About has a Check for updates button. Only that button connects to the internet: it
   asks GitHub for the latest version number and, when a newer one exists, a Download button
   opens its release page.
+- Settings, About has an optional Check for updates automatically switch, off by default. When it
+  is on, MitiBar checks when Settings opens, at most once a day, and stays silent when offline.
 
 ### Fixed
 

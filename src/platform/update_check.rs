@@ -1,10 +1,12 @@
-//! The update requests (ADR-0011, ADR-0012): when the user presses Check for updates, one HTTPS GET
-//! to GitHub's latest-release API on a background thread. Nothing else is sent: no identifier, no
+//! The update requests (ADR-0011, ADR-0012, ADR-0013): one HTTPS GET to GitHub's latest-release
+//! API on a background thread. The manual button starts it on request; with the switch on,
+//! Settings starts it when it opens, at most once a day. Nothing else is sent: no identifier, no
 //! settings, no usage data. The User-Agent names the app and its version, which GitHub's API
 //! requires. Certificates are checked against the operating system's store. The same agent serves
 //! the asset downloads in `platform::update_download`.
 
 use std::sync::Arc;
+use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
 use crate::app::update::{self, UpdateStatus};
@@ -15,18 +17,58 @@ const TIMEOUT: Duration = Duration::from_secs(15);
 /// The latest-release answer is a few kilobytes; anything far larger is not it.
 const BODY_LIMIT: u64 = 256 * 1024;
 
-/// Asks GitHub for the latest release on a new thread and hands the result to `done` there.
-pub fn spawn(done: impl FnOnce(UpdateStatus) + Send + 'static) {
-    std::thread::spawn(move || {
-        let tag = match latest_tag() {
-            Ok(tag) => Some(tag),
-            Err(err) => {
-                log::warn!("update check: {err}");
-                None
+/// What one check got: the result, and whether GitHub answered with a release at all.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Answer {
+    /// GitHub returned a release tag, even if the tag itself was not a version this app reads.
+    pub answered: bool,
+    /// What About shows for this answer, or `Failed` when there was none.
+    pub status: UpdateStatus,
+}
+
+/// Starts one update check. The app's checker runs the request on a background thread and returns
+/// the channel its answer arrives on; a test hands back a filled channel, so no test touches the
+/// network.
+pub trait Checker {
+    /// Starts one check and returns the channel that receives its answer.
+    fn start(&self) -> Receiver<Answer>;
+}
+
+/// The network checker: the request of ADR-0011 point 2, on a background thread.
+pub struct Network;
+
+impl Checker for Network {
+    fn start(&self) -> Receiver<Answer> {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = sender.send(check());
+        });
+        receiver
+    }
+}
+
+/// One check. `answered` is true only when GitHub returned a release tag: a timeout, a refusal
+/// or a body without one is not an answer, so it does not use up the day (ADR-0013).
+fn check() -> Answer {
+    answer(latest_tag())
+}
+
+/// The answer for a release request's result. Split from `check` so a test can feed it a result
+/// without the network.
+fn answer(tag: anyhow::Result<String>) -> Answer {
+    match tag {
+        Ok(tag) => Answer {
+            answered: true,
+            status: update::outcome(&version::current(), Some(&tag)),
+        },
+        Err(err) => {
+            log::warn!("update check: {err}");
+            Answer {
+                answered: false,
+                status: UpdateStatus::Failed,
             }
-        };
-        done(update::outcome(&version::current(), tag.as_deref()));
-    });
+        }
+    }
 }
 
 fn latest_tag() -> anyhow::Result<String> {
@@ -88,5 +130,26 @@ mod tests {
         assert_eq!(tag_name(r#"{"message":"Not Found"}"#), None);
         assert_eq!(tag_name("<html>rate limited</html>"), None);
         assert_eq!(tag_name(r#"{"tag_name":7}"#), None);
+    }
+
+    #[test]
+    fn only_a_release_tag_counts_as_an_answer() {
+        let answered = answer(Ok("v9.9.9".to_owned()));
+        assert!(answered.answered);
+        assert_eq!(
+            answered.status,
+            UpdateStatus::Newer(version::Version::parse("9.9.9").expect("version"))
+        );
+
+        let junk = answer(Ok("nightly".to_owned()));
+        assert!(
+            junk.answered,
+            "GitHub answered, but with a tag this app cannot read"
+        );
+        assert_eq!(junk.status, UpdateStatus::Failed);
+
+        let offline = answer(Err(anyhow::anyhow!("timed out")));
+        assert!(!offline.answered, "no answer means no day is used up");
+        assert_eq!(offline.status, UpdateStatus::Failed);
     }
 }

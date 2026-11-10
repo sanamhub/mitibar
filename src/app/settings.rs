@@ -15,8 +15,8 @@ use crate::app::shortcut::Combo;
 const SCHEMA: u32 = 4;
 
 /// Per-user settings (WR-06). The `language` and `theme` values stay strings so the TOML file
-/// reads and writes them as written. The five bools are the bool keys of WR-06, so the lint
-/// is allowed rather than re-shaping the config file.
+/// reads and writes them as written. The bool keys keep the config file's shape, so the lint is
+/// allowed rather than re-shaping it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 #[allow(clippy::struct_excessive_bools)]
@@ -48,6 +48,12 @@ pub struct Settings {
     pub bar_y: i32,
     /// The global shortcut as text, such as `Win+Shift+N`; empty means none (WR-13).
     pub shortcut: String,
+    /// Whether Settings checks for a newer release when it opens (ADR-0013). Off by default, so
+    /// the internet promise stays true for everyone who changes nothing.
+    pub auto_update_check: bool,
+    /// The Unix time of the last automatic check GitHub answered, or 0 when there is none.
+    /// `should_check` keeps the next one a day away.
+    pub last_auto_update_check: i64,
 }
 
 /// What `Settings::from_toml` read, and whether the file needs writing back.
@@ -252,6 +258,8 @@ impl Default for Settings {
             bar_x: 0,
             bar_y: 0,
             shortcut: Combo::DEFAULT.to_string(),
+            auto_update_check: false,
+            last_auto_update_check: 0,
         }
     }
 }
@@ -288,6 +296,33 @@ mod tests {
             s.shortcut,
             format!("{}+Shift+N", crate::app::shortcut::META)
         );
+        assert!(!s.auto_update_check);
+        assert_eq!(s.last_auto_update_check, 0);
+    }
+
+    #[test]
+    fn an_old_settings_file_without_the_update_fields_loads_with_the_toggle_off() {
+        // What a 1.1.0 settings file held before ADR-0013: no automatic-check keys at all.
+        let text = "schema = 4\nlanguage = \"ne\"\ntheme = \"dark\"\nbar = true\n";
+        let loaded = Settings::from_toml(text).expect("toml");
+        assert!(!loaded.migrated, "the schema did not change");
+        assert!(!loaded.settings.auto_update_check, "off by default");
+        assert_eq!(loaded.settings.last_auto_update_check, 0, "never checked");
+        assert_eq!(loaded.settings.language, "ne");
+        assert_eq!(loaded.settings.theme, "dark");
+        assert!(loaded.warnings.is_empty(), "{:?}", loaded.warnings);
+    }
+
+    #[test]
+    fn the_update_fields_round_trip_through_toml() {
+        let settings = Settings {
+            auto_update_check: true,
+            last_auto_update_check: 1_762_780_800,
+            ..Settings::default()
+        };
+        let text = toml::to_string_pretty(&settings).expect("serialize");
+        let loaded = Settings::from_toml(&text).expect("parse");
+        assert_eq!(loaded.settings, settings);
     }
 
     #[test]

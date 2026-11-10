@@ -18,6 +18,31 @@ pub fn public_key() -> Option<&'static str> {
     option_env!("MITIBAR_UPDATE_KEY").filter(|key| !key.trim().is_empty())
 }
 
+/// How long between automatic checks (ADR-0013 point 2): a day, in seconds.
+pub const AUTO_CHECK_INTERVAL: i64 = 24 * 60 * 60;
+
+/// Whether Settings checks when it opens (ADR-0013). Off means never. A date of 0 means the check
+/// has never run, and a clock that went backwards also checks, because the stored time is then
+/// in the future and waiting for it could mean waiting forever.
+pub fn should_check(enabled: bool, last_check: i64, now: i64) -> bool {
+    enabled && (last_check <= 0 || now < last_check || now - last_check >= AUTO_CHECK_INTERVAL)
+}
+
+/// What an automatic check leaves as the known newer version (ADR-0013 point 4): its own answer
+/// only when that answer is newer, otherwise exactly what was known before, so every other result
+/// leaves the About status as it was.
+pub fn known_after_automatic(known: Option<Version>, result: &UpdateStatus) -> Option<Version> {
+    match result {
+        UpdateStatus::Newer(version) => Some(version.clone()),
+        _ => known,
+    }
+}
+
+/// The current Unix time in whole seconds, for the once-a-day gate (ADR-0013).
+pub fn now_unix() -> i64 {
+    jiff::Timestamp::now().as_second()
+}
+
 /// What the About section shows next to the button. Before the first press the window shows its
 /// default, code 0.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -591,5 +616,60 @@ mod tests {
         );
         // A .deb install has no APPIMAGE to replace.
         assert_eq!(linux_copy(None, true, "x86_64"), Copy::Unsupported);
+    }
+
+    #[test]
+    fn an_automatic_check_needs_the_switch_and_a_day_since_the_last_one() {
+        let now = 1_762_780_800;
+        let day = AUTO_CHECK_INTERVAL;
+        assert!(!should_check(false, 0, now), "off, even when never checked");
+        assert!(!should_check(false, now - 2 * day, now), "off");
+        assert!(should_check(true, 0, now), "never checked");
+        assert!(
+            !should_check(true, now - day + 1, now),
+            "one second under 24 h"
+        );
+        assert!(should_check(true, now - day, now), "exactly 24 h");
+        assert!(should_check(true, now - day - 1, now), "over 24 h");
+        assert!(
+            should_check(true, now + 1, now),
+            "a clock that went backwards checks instead of waiting"
+        );
+    }
+
+    #[test]
+    fn only_a_newer_answer_changes_what_an_automatic_check_knows() {
+        let known = v("1.1.0");
+        assert_eq!(
+            known_after_automatic(Some(known.clone()), &UpdateStatus::Newer(v("1.2.0"))),
+            Some(v("1.2.0")),
+            "a newer answer replaces the known version"
+        );
+        assert_eq!(
+            known_after_automatic(None, &UpdateStatus::Newer(v("1.2.0"))),
+            Some(v("1.2.0"))
+        );
+        for result in [
+            UpdateStatus::Latest,
+            UpdateStatus::Failed,
+            UpdateStatus::Checking,
+            UpdateStatus::Downloading(v("1.2.0"), 10),
+            UpdateStatus::Verifying(v("1.2.0")),
+            UpdateStatus::Installing(v("1.2.0")),
+            UpdateStatus::SignatureFailed(v("1.2.0")),
+            UpdateStatus::DownloadFailed(v("1.2.0")),
+            UpdateStatus::InstallFailed(v("1.2.0")),
+        ] {
+            assert_eq!(
+                known_after_automatic(Some(known.clone()), &result),
+                Some(known.clone()),
+                "{result:?} leaves the known version exactly as it was"
+            );
+            assert_eq!(
+                known_after_automatic(None, &result),
+                None,
+                "{result:?} leaves no known version as none"
+            );
+        }
     }
 }
