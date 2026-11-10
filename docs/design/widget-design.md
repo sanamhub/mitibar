@@ -230,10 +230,17 @@ Shortcut
   Open MitiBar
   [ Win+Shift+N                 ] (Clear) (Reset)
 About
-  MitiBar <version> · MIT license
+  MitiBar <version> · MIT license                    (Update available)
+  Check for updates automatically                  [──○]
+    When Settings opens, at most once a day. Sends only a request for the latest version number.
   Third-party notices: Slint, the fonts, NepDate
 ```
 
+- About also holds the optional **Check for updates automatically** switch (ADR-0013) and its
+  help text, above the manual check. A newer version shows an **Update available** pill on the
+  About heading and next to the version. It is a status, not an action: it takes no focus, its
+  accessible name is "Update available, version x.y.z", and it uses `marigold` at 18 % for its
+  fill with `ink` text, the one non-calendar accent in the window.
 - Section headings are `title`, sentence case, no rules between rows; one `hairline` divider
   under the header only.
 - Section card: a group that has its own heading and controls sits on a `surface-raised` card with
@@ -247,7 +254,8 @@ About
 - Segmented control: a `surface-raised` pill track, the selected segment filled with `ink` and its
   text in `surface`. It is one Tab stop; the arrow keys move the choice.
 - Switch: 36 × 20 px pill. On is an `ink` track with a `surface` knob; off is a `hairline` track
-  with an `ink-muted` knob. No other colour: `sindoor` stays reserved for the calendar.
+  with an `ink-muted` knob. No other colour: `sindoor` stays reserved for the calendar, and the
+  update pill's `marigold` is the one exception (ADR-0013).
 - Chips: full radius, `surface-raised`, `hairline` border, `body` text, a remove button inside. A
   focused chip also shows its two arrow buttons. A line with more chips than fit scrolls sideways:
   the focused chip is kept in view, and the mouse wheel moves the line while it has room to move,
@@ -264,8 +272,9 @@ About
 - Flat surfaces, no decorative shadows or gradients. Borders (`hairline`) do the structural work.
   The only shadow is the one Windows 11 draws for every window.
 - One memorable element: the month grid. Keep the header, the bar and Settings quiet.
-- Controls are monochrome (`ink` on `surface`), so colour in the window always means calendar
-  data.
+- Controls are monochrome (`ink` on `surface`), so colour in the window means calendar data. The
+  one exception is the Update available pill, which uses `marigold` to mark a status rather than
+  an action (ADR-0013).
 
 ## 10. App icon
 

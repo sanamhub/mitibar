@@ -168,6 +168,40 @@ export component Pill inherits Rectangle {
     }
 }
 
+/// A pill-shaped status badge (ADR-0013): the update badge is the one non-calendar colour in the
+/// window, the theme's `marigold` accent at 18 % with `ink` text. A badge is a status, not a
+/// control, so it takes no focus or pointer and its accessible name is its label.
+export component Badge inherits Rectangle {
+    in property <string> text;
+    /// The accessible name, for screen readers and the interaction tests.
+    in property <string> label;
+    in property <length> badge-size: 22px;
+    in property <length> font-size: 12px;
+
+    height: root.badge-size;
+    preferred-width: caption.preferred-width + 20px;
+    border-radius: root.badge-size / 2;
+    background: Theme.marigold.with-alpha(0.18);
+    border-width: 1px;
+    border-color: Theme.marigold;
+
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.label;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: center;
+        caption := Text {
+            text: root.text;
+            color: Theme.ink;
+            font-size: root.font-size;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+}
+
 /// An on/off switch (widget-design §8): a 36 by 20 px pill, `ink` track with a `surface` knob when
 /// on, `hairline` track with an `ink-muted` knob when off. The owner flips `checked` in answer to
 /// `toggled`, so the state lives in one place.

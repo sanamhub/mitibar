@@ -7,6 +7,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::mpsc::TryRecvError;
 use std::time::Duration;
 
 use slint::{CloseRequestResponse, ComponentHandle};
@@ -18,6 +19,7 @@ use crate::app::shortcut::{self, Combo, Modifiers, Recorded, Refusal};
 use crate::app::update::{self, UpdateStatus};
 use crate::app::version::Version;
 use crate::platform;
+use crate::platform::update_check::Answer;
 use crate::ui_bridge::{self, SettingsHint};
 use crate::{AppState, SettingsWindow, theme};
 
@@ -31,6 +33,10 @@ const SAVED_NOTE: Duration = Duration::from_secs(2);
 
 /// How long after the last change the settings are written (WR-06 AC5).
 const SAVE_DELAY: Duration = Duration::from_millis(300);
+
+/// How often a running update check is looked for. The request itself still runs on its own
+/// thread; this timer stops with the answer or when Settings closes (ADR-0013).
+const CHECK_POLL: Duration = Duration::from_millis(100);
 
 /// The note in the Settings header (WR-06 AC5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -121,9 +127,15 @@ pub(crate) fn open(state: &Rc<RefCell<AppState>>, request: Request) {
     }
     if created {
         watch_focus(&window, state);
+        // A newer version a check found earlier stays knowable when the window is opened again
+        // on the same day, when no new check is due (ADR-0013).
+        present_known_update(state);
     }
     if request.section == Section::Bar {
         window.invoke_show_bar_section();
+    }
+    if created {
+        auto_check_on_open(state);
     }
 }
 
@@ -174,6 +186,13 @@ fn watch_focus(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
 /// Closes the window and drops it. The drop waits one turn, because this can run inside one of the
 /// window's own callbacks.
 pub(crate) fn close(state: &Rc<RefCell<AppState>>) {
+    // A check that has not answered yet is dropped with the window: nothing may keep running
+    // while Settings is closed (ADR-0013).
+    {
+        let s = state.borrow();
+        s.manual_check_timer.stop();
+        s.auto_check_timer.stop();
+    }
     let window = state.borrow_mut().settings_window.take();
     state.borrow_mut().settings_active = false;
     let Some(window) = window else {
@@ -439,7 +458,7 @@ fn wire(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
     wire_bar(window, state);
     wire_lines(window, state);
     wire_shortcut(window, state);
-    wire_update(window);
+    wire_update(window, state);
     window.on_closed({
         let state = state.clone();
         move || close(&state)
@@ -500,6 +519,16 @@ fn wire_general(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
             // The tick is armed for the next minute; seconds need one every second.
             crate::rearm_timer(&state);
             applied(&state);
+        }
+    });
+    // The switch only decides what the next Settings open may do (ADR-0013). Turning it on
+    // while the window is already open does not start a check.
+    window.on_auto_update_changed({
+        let state = state.clone();
+        move |value| {
+            state.borrow_mut().settings.auto_update_check = value;
+            refresh(&state);
+            save_later(&state);
         }
     });
 }
@@ -675,20 +704,19 @@ fn wire_lines(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
     });
 }
 
-/// Check for updates, the release page and the one-click install (ADR-0011, ADR-0012). The check
-/// and the install run on their own threads and write their results back through a weak handle, so
-/// a window closed meanwhile is simply not updated.
-fn wire_update(window: &SettingsWindow) {
+/// Check for updates, the release page and the one-click install (ADR-0011, ADR-0012, ADR-0013).
+/// The check runs on its own thread; its answer is polled into the window so a window closed
+/// meanwhile is simply not updated.
+fn wire_update(window: &SettingsWindow, state: &Rc<RefCell<AppState>>) {
     window.on_update_check({
+        let state = state.clone();
         let weak = window.as_weak();
         move || {
-            if let Some(window) = weak.upgrade() {
-                show_update(&window, &UpdateStatus::Checking);
-            }
-            let weak = weak.clone();
-            platform::update_check::spawn(move |status| {
-                let _ = weak.upgrade_in_event_loop(move |window| show_update(&window, &status));
-            });
+            let Some(window) = weak.upgrade() else {
+                return;
+            };
+            show_update(&window, &UpdateStatus::Checking);
+            start_manual_check(&state, &window);
         }
     });
     window.on_update_download({
@@ -730,7 +758,110 @@ fn wire_update(window: &SettingsWindow) {
     });
 }
 
-fn show_update(window: &SettingsWindow, status: &UpdateStatus) {
+/// Starts the check the button asked for (ADR-0011). Its result always reaches About, including a
+/// failure, because a press means the user wants to know.
+fn start_manual_check(state: &Rc<RefCell<AppState>>, window: &SettingsWindow) {
+    let (checker, timer) = {
+        let s = state.borrow();
+        (s.update_check.clone(), s.manual_check_timer.clone())
+    };
+    let receiver = checker.start();
+    let weak_window = window.as_weak();
+    let weak_state = Rc::downgrade(state);
+    timer.start(slint::TimerMode::Repeated, CHECK_POLL, move || {
+        let Some(state) = weak_state.upgrade() else {
+            return;
+        };
+        match receiver.try_recv() {
+            Ok(answer) => {
+                state.borrow().manual_check_timer.stop();
+                if let Some(window) = weak_window.upgrade() {
+                    show_update(&window, &answer.status);
+                    match &answer.status {
+                        UpdateStatus::Newer(version) => {
+                            state.borrow_mut().update_available = Some(version.clone());
+                        }
+                        UpdateStatus::Latest => {
+                            state.borrow_mut().update_available = None;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Disconnected) => state.borrow().manual_check_timer.stop(),
+        }
+    });
+}
+
+/// Checks when Settings opens, when the switch is on and a day has passed (ADR-0013). The answer
+/// is silent: only a newer version changes About; every other result leaves it exactly as it was.
+fn auto_check_on_open(state: &Rc<RefCell<AppState>>) {
+    let (enabled, last_check, checker, timer) = {
+        let s = state.borrow();
+        (
+            s.settings.auto_update_check,
+            s.settings.last_auto_update_check,
+            s.update_check.clone(),
+            s.auto_check_timer.clone(),
+        )
+    };
+    let checked_at = update::now_unix();
+    if !update::should_check(enabled, last_check, checked_at) {
+        return;
+    }
+    let receiver = checker.start();
+    let weak_state = Rc::downgrade(state);
+    timer.start(slint::TimerMode::Repeated, CHECK_POLL, move || {
+        let Some(state) = weak_state.upgrade() else {
+            return;
+        };
+        match receiver.try_recv() {
+            Ok(answer) => {
+                state.borrow().auto_check_timer.stop();
+                apply_auto_answer(&state, &answer, checked_at);
+            }
+            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Disconnected) => state.borrow().auto_check_timer.stop(),
+        }
+    });
+}
+
+/// Does what an automatic answer may do (ADR-0013 point 4): a newer version becomes known and
+/// shows; an answer that is not newer changes nothing. The time is recorded only when GitHub
+/// answered, so being offline does not use up the day.
+fn apply_auto_answer(state: &Rc<RefCell<AppState>>, answer: &Answer, checked_at: i64) {
+    if !answer.answered {
+        return;
+    }
+    {
+        let mut s = state.borrow_mut();
+        s.settings.last_auto_update_check = checked_at;
+        let known = s.update_available.take();
+        s.update_available = update::known_after_automatic(known, &answer.status);
+    }
+    save_later(state);
+    if matches!(answer.status, UpdateStatus::Newer(_)) {
+        present_known_update(state);
+    }
+}
+
+/// Shows the newer version the running app already knows, so reopening Settings on a day when no
+/// new check is due still shows the pill.
+fn present_known_update(state: &Rc<RefCell<AppState>>) {
+    let (window, known) = {
+        let s = state.borrow();
+        (
+            s.settings_window.as_ref().map(SettingsWindow::clone_strong),
+            s.update_available.clone(),
+        )
+    };
+    if let (Some(window), Some(version)) = (window, known) {
+        show_update(&window, &UpdateStatus::Newer(version));
+    }
+}
+
+pub(crate) fn show_update(window: &SettingsWindow, status: &UpdateStatus) {
     if matches!(status, UpdateStatus::Newer(_)) {
         window.set_update_action(platform::update_install::action().code());
     }

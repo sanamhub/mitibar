@@ -5,7 +5,7 @@
 
 import { AppInfo } from "app-info.slint";
 import { FocusFrame } from "focus-frame.slint";
-import { LineIcon, Pill, Segmented, Toggle } from "controls.slint";
+import { Badge, LineIcon, Pill, Segmented, Toggle } from "controls.slint";
 import { Theme } from "theme.slint";
 import { LineEdit, ListView, ScrollView } from "std-widgets.slint";
 
@@ -35,6 +35,8 @@ export struct SettingsData {
     shortcut: string,
     /// False where the OS has no way to grab a global key (Wayland).
     shortcut-available: bool,
+    /// Whether Settings checks when it opens, at most once a day (ADR-0013).
+    auto-update-check: bool,
     version: string,
 }
 
@@ -265,17 +267,24 @@ component ZoneList inherits Rectangle {
     }
 }
 
-/// A section heading (widget-design §8): `title` size, sentence case, with room above it.
+/// A section heading (widget-design §8): `title` size, sentence case, with room above it. A
+/// section may put a status badge after the title, as About does for a newer version.
 component Heading inherits VerticalLayout {
     in property <string> text;
     padding-top: 12px;
-    Text {
-        text: root.text;
-        color: Theme.ink;
-        font-size: 16px;
+    HorizontalLayout {
         height: 24px;
-        vertical-alignment: center;
-        accessible-role: none;
+        spacing: 8px;
+        Text {
+            text: root.text;
+            color: Theme.ink;
+            font-size: 16px;
+            height: 24px;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            accessible-role: none;
+        }
+        @children
     }
 }
 
@@ -401,6 +410,7 @@ export component SettingsWindow inherits Window {
     callback launch-changed(bool);
     callback clock-changed(bool);
     callback seconds-changed(bool);
+    callback auto-update-changed(bool);
     callback zone-opened();
     callback zone-edited(string);
     callback zone-picked(string);
@@ -1023,9 +1033,40 @@ export component SettingsWindow inherits Window {
                     }
 
                     // About
-                    Heading { text: @tr("About"); }
+                    Heading {
+                        text: @tr("About");
+                        if root.update-status == 3: Badge {
+                            text: @tr("Update available");
+                            label: @tr("Update available, version {0}", root.update-version);
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Text {
+                            text: @tr("{0} {1} · MIT license", AppInfo.app-name, root.data.version);
+                            color: Theme.ink-muted;
+                            font-size: 13px;
+                            wrap: word-wrap;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                        }
+                        if root.update-status == 3: Badge {
+                            text: @tr("Update available");
+                            label: @tr("Update available, version {0}", root.update-version);
+                        }
+                    }
+                    Row {
+                        text: @tr("Check for updates automatically");
+                        auto-update-control := Toggle {
+                            label: @tr("Check for updates automatically");
+                            checked: root.data.auto-update-check;
+                            toggled => { root.auto-update-changed(!root.data.auto-update-check); }
+                            focused => { root.focus-on("auto update check", self.absolute-position.y, self.height); }
+                        }
+                    }
                     Text {
-                        text: @tr("{0} {1} · MIT license", AppInfo.app-name, root.data.version);
+                        text: @tr("When Settings opens, at most once a day. Sends only a request for the latest version number.");
                         color: Theme.ink-muted;
                         font-size: 13px;
                         wrap: word-wrap;
@@ -1098,7 +1139,7 @@ export component SettingsWindow inherits Window {
                                 ? @tr("The download didn't finish. Check the connection and try again.")
                             : root.update-status == 10
                                 ? @tr("MitiBar couldn't be replaced, so nothing changed. Get it from the release notes.")
-                            : @tr("Asks GitHub for the latest version number. Nothing else is sent.");
+                            : @tr("MitiBar connects to the internet only when you press Check for updates, or, if you turn on automatic checks, when Settings opens, at most once a day.");
                         color: root.update-error ? Theme.sindoor : Theme.ink-muted;
                         font-size: 13px;
                         wrap: word-wrap;

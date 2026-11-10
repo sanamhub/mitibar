@@ -194,6 +194,54 @@ mod tests {
         }
     }
 
+    /// The update badge's caption (ADR-0013) is `ink` on `marigold` at 18 % over the surface. It
+    /// is body text, so WCAG 2.1 wants 4.5:1 in both themes.
+    #[test]
+    fn the_update_badge_text_has_at_least_4_5_to_1_contrast() {
+        let markup = include_str!("../ui/controls.slint");
+        assert!(
+            markup.contains("Theme.marigold.with-alpha(0.18)"),
+            "controls.slint changed the badge tint; update this test with it"
+        );
+        let design = include_str!("../docs/design/widget-design.md");
+        let mut values = std::collections::HashMap::new();
+        for line in design.lines() {
+            let cells: Vec<&str> = line.split('|').map(str::trim).collect();
+            let [_, token, light, dark, ..] = cells.as_slice() else {
+                continue;
+            };
+            let unquote = |s: &str| {
+                s.strip_prefix('`')
+                    .and_then(|s| s.strip_suffix('`'))
+                    .map(str::to_owned)
+            };
+            if let (Some(token), Some(light), Some(dark)) =
+                (unquote(token), unquote(light), unquote(dark))
+                && light.starts_with('#')
+            {
+                values.insert(token, (light, dark));
+            }
+        }
+        for (side, pick) in [("light", 0), ("dark", 1)] {
+            let colour = |token: &str| {
+                let (light, dark) = values
+                    .get(token)
+                    .unwrap_or_else(|| panic!("design table lacks {token}"));
+                if pick == 0 { light } else { dark }
+            };
+            let tint = composite_over(colour("marigold"), 46, colour("surface"));
+            let ink = luminance(colour("ink"));
+            let fill = luminance(&tint);
+            let (lighter, darker) = if ink > fill { (ink, fill) } else { (fill, ink) };
+            let ratio = (lighter + 0.05) / (darker + 0.05);
+            println!("{side}: update badge text on {tint} is {ratio:.2}:1");
+            assert!(
+                ratio >= 4.5,
+                "{side}: update badge text is {ratio:.2}:1, below 4.5:1"
+            );
+        }
+    }
+
     fn luminance(hex: &str) -> f64 {
         let value = u32::from_str_radix(hex.trim_start_matches('#'), 16).expect("hex colour");
         let channel = |shift: u32| {

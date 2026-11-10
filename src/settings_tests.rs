@@ -13,11 +13,14 @@ use slint::{ComponentHandle, Model};
 
 use crate::app::settings::Settings;
 use crate::app::shortcut::{Combo, META};
+use crate::app::update::UpdateStatus;
+use crate::app::version::Version;
 use crate::interaction_tests::{FakeBar, app, bar_anchor, date, settings_of};
 use crate::platform::bar::{BarEvent, MenuItem};
 use crate::platform::hotkey::{Hotkeys, Refused};
 use crate::platform::settings_store::Store;
 use crate::platform::tray::{Tray, TrayEvent};
+use crate::platform::update_check::{Answer, Checker};
 use crate::{AppState, PopupWindow, SettingsWindow, settings_window};
 
 // The fakes.
@@ -37,6 +40,47 @@ impl Store for FakeStore {
         self.saved.borrow_mut().push(settings.clone());
         Ok(())
     }
+}
+
+/// Answers an update check at once, with no network. `answer` is `None` until a test sets one;
+/// then the channel disconnects, as a checker that never answered would.
+#[derive(Default)]
+struct FakeCheck {
+    answer: RefCell<Option<Answer>>,
+    started: Cell<u32>,
+}
+
+impl Checker for FakeCheck {
+    fn start(&self) -> std::sync::mpsc::Receiver<Answer> {
+        self.started.set(self.started.get() + 1);
+        let (sender, receiver) = std::sync::mpsc::channel();
+        if let Some(answer) = self.answer.borrow().clone() {
+            let _ = sender.send(answer);
+        }
+        receiver
+    }
+}
+
+/// A check GitHub answered with `status`.
+fn answered(status: UpdateStatus) -> Answer {
+    Answer {
+        answered: true,
+        status,
+    }
+}
+
+/// A check that never reached GitHub, as when offline, timed out or rate limited.
+fn unanswered() -> Answer {
+    Answer {
+        answered: false,
+        status: UpdateStatus::Failed,
+    }
+}
+
+fn newer(version: &str) -> Answer {
+    answered(UpdateStatus::Newer(
+        Version::parse(version).expect("a version"),
+    ))
 }
 
 /// Records every shortcut the app registers. `refuse` makes the OS say another app owns it, and
@@ -105,6 +149,7 @@ struct Fixture {
     tray: Rc<FakeTray>,
     bar: Rc<FakeBar>,
     logins: Rc<RefCell<Vec<bool>>>,
+    check: Rc<FakeCheck>,
 }
 
 fn fixture() -> Fixture {
@@ -113,6 +158,7 @@ fn fixture() -> Fixture {
     let hotkeys = Rc::new(FakeHotkeys::default());
     let tray = Rc::new(FakeTray::default());
     let bar = Rc::new(FakeBar::default());
+    let check = Rc::new(FakeCheck::default());
     let logins = Rc::new(RefCell::new(Vec::new()));
     {
         let mut s = state.borrow_mut();
@@ -120,6 +166,7 @@ fn fixture() -> Fixture {
         s.hotkeys = Some(hotkeys.clone());
         s.tray = Some(tray.clone());
         s.bar = Some(bar.clone());
+        s.update_check = check.clone();
         s.has_bar = true;
         s.zones = vec![
             "America/New_York".to_owned(),
@@ -140,6 +187,7 @@ fn fixture() -> Fixture {
         tray,
         bar,
         logins,
+        check,
     }
 }
 
@@ -950,6 +998,36 @@ fn wr06_ac5_the_switches_say_what_they_are_and_whether_they_are_on() {
         assert!(exists(&window, label), "{label}");
     }
     assert_eq!(element(&window, "English").accessible_checked(), Some(true));
+}
+
+#[test]
+fn the_automatic_update_switch_is_off_by_default_and_saves_its_change() {
+    let (f, window) = opened();
+    scroll_to_end(&window);
+    let switch = element(&window, "Check for updates automatically");
+    assert_eq!(switch.accessible_role(), Some(AccessibleRole::Switch));
+    assert_eq!(
+        switch.accessible_checked(),
+        Some(false),
+        "off by default, so the promise holds for everyone who changes nothing"
+    );
+    assert!(!window.get_data().auto_update_check);
+
+    click(&window, "Check for updates automatically");
+    assert!(settings(&f).auto_update_check);
+    assert_eq!(
+        element(&window, "Check for updates automatically").accessible_checked(),
+        Some(true)
+    );
+    let_the_save_happen();
+    assert!(
+        f.store
+            .saved
+            .borrow()
+            .last()
+            .expect("a write")
+            .auto_update_check
+    );
 }
 
 #[test]
@@ -1944,6 +2022,7 @@ fn full_order() -> Vec<&'static str> {
         "shortcut",
         "shortcut clear",
         "shortcut reset",
+        "auto update check",
         "update check",
     ]
 }
@@ -2052,6 +2131,7 @@ fn wr10_ac2_the_settings_window_has_no_bar_stops_without_a_bar() {
         "shortcut",
         "shortcut clear",
         "shortcut reset",
+        "auto update check",
         "update check",
     ];
     for expected in order.into_iter().chain(["language"]) {
@@ -2598,8 +2678,164 @@ fn a_resume_refreshes_now_and_restarts_the_minute_timer() {
     );
 }
 
+/// Opens Settings with the automatic check set as `enabled` and `last` told, with `answer` waiting
+/// on the fake checker. The check's timer is given time to read the answer.
+fn auto_opened(answer: Answer, enabled: bool, last: i64) -> (Fixture, SettingsWindow) {
+    let f = fixture();
+    {
+        let mut s = f.state.borrow_mut();
+        s.settings.auto_update_check = enabled;
+        s.settings.last_auto_update_check = last;
+    }
+    f.check.answer.replace(Some(answer));
+    settings_window::open(&f.state, settings_window::Request::default());
+    let window = settings_of(&f.state);
+    elapse(200);
+    (f, window)
+}
+
 #[test]
-fn about_offers_the_update_check_and_download_only_for_a_newer_version() {
+fn an_automatic_check_does_not_run_while_the_switch_is_off() {
+    let (f, window) = auto_opened(newer("1.9.0"), false, 0);
+    assert_eq!(f.check.started.get(), 0, "off means no request");
+    assert_eq!(window.get_update_status(), 0, "About is unchanged");
+    assert_eq!(settings(&f).last_auto_update_check, 0);
+}
+
+#[test]
+fn an_automatic_check_a_day_early_does_not_use_the_network() {
+    let now = crate::app::update::now_unix();
+    let (f, window) = auto_opened(newer("1.9.0"), true, now);
+    assert_eq!(f.check.started.get(), 0, "the last check was today");
+    assert_eq!(window.get_update_status(), 0);
+}
+
+#[test]
+fn an_automatic_check_shows_a_newer_version_and_records_the_answer() {
+    let (f, window) = auto_opened(newer("1.9.0"), true, 0);
+    assert_eq!(f.check.started.get(), 1);
+    assert_eq!(window.get_update_status(), 3, "a newer version is shown");
+    assert_eq!(window.get_update_version().as_str(), "1.9.0");
+    assert!(
+        settings(&f).last_auto_update_check > 0,
+        "GitHub answered, so the day is used"
+    );
+    scroll_to_end(&window);
+    assert_eq!(
+        elements(&window, "Update available, version 1.9.0").len(),
+        2,
+        "the pill on About and next to the version"
+    );
+    assert!(
+        !window.get_update_error(),
+        "a newer version is not an error"
+    );
+}
+
+#[test]
+fn every_other_automatic_result_leaves_the_status_exactly_as_it_was() {
+    let cases = [
+        ("latest", answered(UpdateStatus::Latest), true),
+        ("a parse error", answered(UpdateStatus::Failed), true),
+        ("offline", unanswered(), false),
+        (
+            "a timeout or rate limit",
+            Answer {
+                answered: false,
+                status: UpdateStatus::Failed,
+            },
+            false,
+        ),
+    ];
+    for (what, answer, used_the_day) in cases {
+        let f = fixture();
+        {
+            let mut s = f.state.borrow_mut();
+            s.settings.auto_update_check = true;
+            s.update_available = Some(Version::parse("1.5.0").expect("a version"));
+        }
+        f.check.answer.replace(Some(answer));
+        settings_window::open(&f.state, settings_window::Request::default());
+        let window = settings_of(&f.state);
+        elapse(200);
+        assert_eq!(
+            window.get_update_status(),
+            3,
+            "{what} must leave the known newer version alone"
+        );
+        assert_eq!(window.get_update_version().as_str(), "1.5.0", "{what}");
+        assert!(!window.get_update_error(), "{what} shows no error");
+        assert_eq!(
+            settings(&f).last_auto_update_check > 0,
+            used_the_day,
+            "{what}: only an answer uses up the day"
+        );
+    }
+}
+
+#[test]
+fn an_automatic_failure_from_no_known_version_shows_nothing() {
+    let (f, window) = auto_opened(unanswered(), true, 0);
+    assert_eq!(f.check.started.get(), 1);
+    assert_eq!(window.get_update_status(), 0, "no changed status");
+    assert!(!window.get_update_error(), "no red text");
+    assert!(
+        !exists_text(
+            &window,
+            "Couldn't reach GitHub. Check the connection and try again."
+        ),
+        "no failure sentence"
+    );
+    assert_eq!(
+        settings(&f).last_auto_update_check,
+        0,
+        "the day is not used"
+    );
+}
+
+#[test]
+fn the_manual_button_still_reports_latest_and_a_failure() {
+    for (answer, code, text) in [
+        (
+            answered(UpdateStatus::Latest),
+            2,
+            "You have the latest version",
+        ),
+        (
+            unanswered(),
+            4,
+            "Couldn't reach GitHub. Check the connection and try again.",
+        ),
+    ] {
+        let (f, window) = opened();
+        f.check.answer.replace(Some(answer));
+        scroll_to_end(&window);
+        click(&window, "Check for updates");
+        elapse(200);
+        assert_eq!(window.get_update_status(), code);
+        assert!(exists_text(&window, text), "{text}");
+    }
+}
+
+#[test]
+fn the_manual_button_still_shows_a_newer_version() {
+    let (f, window) = opened();
+    f.check.answer.replace(Some(newer("1.9.0")));
+    scroll_to_end(&window);
+    click(&window, "Check for updates");
+    elapse(200);
+    assert_eq!(window.get_update_status(), 3);
+    assert_eq!(window.get_update_version().as_str(), "1.9.0");
+    scroll_to_end(&window);
+    assert_eq!(
+        elements(&window, "Update available, version 1.9.0").len(),
+        2,
+        "the pill shows on About and next to the version"
+    );
+}
+
+#[test]
+fn about_shows_the_update_check_and_download_only_for_a_newer_version() {
     let (_f, window) = opened();
     scroll_to_end(&window);
     assert!(exists(&window, "Check for updates"));
@@ -2710,6 +2946,25 @@ fn the_check_pill_label_follows_its_state() {
 
     show_update_status(&window, 3);
     assert!(exists(&window, "Check for updates"));
+}
+
+#[test]
+fn the_update_badge_shows_only_for_a_newer_status() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    for status in [0, 1, 2, 4, 5, 6, 7, 8, 9, 10] {
+        show_update_status(&window, status);
+        assert!(
+            !exists(&window, "Update available, version 1.1.0"),
+            "status {status} must not show the pill"
+        );
+    }
+    show_update_status(&window, 3);
+    assert_eq!(
+        elements(&window, "Update available, version 1.1.0").len(),
+        2,
+        "the About heading and the version line"
+    );
 }
 
 #[test]
