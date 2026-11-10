@@ -1,7 +1,6 @@
-// The single slint_build::compile entry point (build.rs). It imports every window and global so
-// one compile call emits them all for `slint::include_modules!()`.
-import { FontTestWindow } from "font-test.slint";
-export { FontTestWindow }
+// The slint_build::compile entry point of the shipped app (build.rs). It imports every window and
+// global so one compile call emits them all for `slint::include_modules!()`. The developer-only
+// font-test window is in `dev-tools.slint`, which the `snapshot` feature compiles instead.
 import { PopupWindow, PopupClockLine, TipData, UpcomingData, FrameStyle } from "popup.slint";
 export { PopupWindow, PopupClockLine, TipData, UpcomingData, FrameStyle }
 import { CellData, ZoomCellData } from "month-grid.slint";

@@ -21,9 +21,15 @@ fn main() {
         .with_bundled_translations("i18n")
         .with_default_translation_context(slint_build::DefaultTranslationContext::None)
         .with_debug_info(debug_info);
-    // app.slint is the single entry; it imports the other windows, so one compile call emits
-    // every component (a second call would overwrite the first's generated file).
-    slint_build::compile_with_config("ui/app.slint", config).expect("slint compile");
+    // One entry file imports the other windows, so one compile call emits every component (a
+    // second call would overwrite the first's generated file). The `snapshot` feature adds the
+    // developer-only font-test window; the shipped app leaves it out.
+    let entry = if std::env::var_os("CARGO_FEATURE_SNAPSHOT").is_some() {
+        "ui/dev-tools.slint"
+    } else {
+        "ui/app.slint"
+    };
+    slint_build::compile_with_config(entry, config).expect("slint compile");
 
     if std::env::var_os("CARGO_CFG_WINDOWS").is_some() {
         use embed_manifest::manifest::SupportedOS::{Windows8, Windows10};

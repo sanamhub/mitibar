@@ -326,6 +326,8 @@ fn hide_popup(state: &Rc<RefCell<AppState>>) {
 // The flags are independent switches; a state machine would obscure the parser.
 #[allow(clippy::struct_excessive_bools)]
 struct Cli {
+    /// Opens the developer-only font-test window, which only the `snapshot` feature builds.
+    #[cfg(feature = "snapshot")]
     font_test: bool,
     popup: bool,
     #[cfg(feature = "snapshot")]
@@ -402,6 +404,7 @@ impl Cli {
         let mut args = args.peekable();
         while let Some(arg) = args.next() {
             match arg.as_str() {
+                #[cfg(feature = "snapshot")]
                 "--font-test" => cli.font_test = true,
                 "--popup" => cli.popup = true,
                 "--no-bar" => cli.no_bar = true,
@@ -586,9 +589,9 @@ impl Cli {
             if cli.wake_probe.is_some() && (cli.popup || cli.font_test || cli.snapshot.is_some()) {
                 anyhow::bail!("--wake-probe does not combine with a snapshot window");
             }
-        }
-        if cli.font_test && cli.popup {
-            anyhow::bail!("--font-test and --popup are exclusive");
+            if cli.font_test && cli.popup {
+                anyhow::bail!("--font-test and --popup are exclusive");
+            }
         }
         Ok(cli)
     }
@@ -662,11 +665,11 @@ fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse(std::env::args().skip(1))?;
 
-    // The debug font-test window.
+    // The developer-only font-test window.
+    #[cfg(feature = "snapshot")]
     if cli.font_test {
         let ui = FontTestWindow::new()?;
         theme::apply(&ui, cli.theme.unwrap_or(ThemeChoice::System));
-        #[cfg(feature = "snapshot")]
         if let Some(path) = cli.snapshot {
             return snapshot(&ui, &path);
         }
