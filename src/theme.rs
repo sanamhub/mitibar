@@ -194,8 +194,9 @@ mod tests {
         }
     }
 
-    /// The update badge's caption (ADR-0013) is `ink` on `marigold` at 18 % over the surface. It
-    /// is body text, so WCAG 2.1 wants 4.5:1 in both themes.
+    /// The update notice (ADR-0013, ADR-0014) is `ink` on `marigold` at 18 % over the surface, in
+    /// the header pill and the version badge. It is body text, so WCAG 2.1 wants 4.5:1 in both
+    /// themes.
     #[test]
     fn the_update_badge_text_has_at_least_4_5_to_1_contrast() {
         let markup = include_str!("../ui/controls.slint");

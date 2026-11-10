@@ -324,6 +324,14 @@ fn element(window: &SettingsWindow, label: &str) -> ElementHandle {
     found.into_iter().next().expect("one element")
 }
 
+/// Whether a control labelled `label` is a button. The update notice and the version badge share
+/// their accessible name, so the role tells the header pill from the badge in About.
+fn has_button(window: &SettingsWindow, label: &str) -> bool {
+    elements(window, label)
+        .iter()
+        .any(|element| element.accessible_role() == Some(AccessibleRole::Button))
+}
+
 /// The pill labelled `label`. A status can use the same words for the pill and for the text under
 /// it, so the role picks the button.
 fn pill(window: &SettingsWindow, label: &str) -> ElementHandle {
@@ -2724,11 +2732,58 @@ fn an_automatic_check_shows_a_newer_version_and_records_the_answer() {
     assert_eq!(
         elements(&window, "Update available, version 1.9.0").len(),
         2,
-        "the pill on About and next to the version"
+        "the pill in the header and the badge next to the version"
+    );
+    assert!(
+        has_button(&window, "Update available, version 1.9.0"),
+        "the header notice is the interactive one"
     );
     assert!(
         !window.get_update_error(),
         "a newer version is not an error"
+    );
+}
+
+#[test]
+fn the_header_pill_shows_only_for_a_newer_status_and_scrolls_to_about() {
+    let (_f, window) = opened();
+    window.set_update_version("1.1.0".into());
+    for status in [0, 1, 2, 4, 5, 6, 7, 8, 9, 10] {
+        window.set_update_status(status);
+        walk(&window);
+        assert!(
+            !has_button(&window, "Update available, version 1.1.0"),
+            "status {status} must not show the header pill"
+        );
+    }
+
+    window.set_update_status(3);
+    walk(&window);
+    assert!(
+        has_button(&window, "Update available, version 1.1.0"),
+        "a newer version shows the header pill"
+    );
+    assert!(
+        window.get_scroll_y().abs() < f32::EPSILON,
+        "Settings opens at the top, where the pill is"
+    );
+    assert!(
+        !exists(&window, "Check for updates automatically"),
+        "About is below the fold before the pill is pressed"
+    );
+
+    press(&window, Key::Tab);
+    assert_eq!(focused(&window), "update header", "the pill is a Tab stop");
+
+    pill(&window, "Update available, version 1.1.0").invoke_accessible_default_action();
+    walk(&window);
+    assert!(
+        window.get_scroll_y() < -1.0,
+        "pressing the pill scrolls the page down"
+    );
+    assert!(
+        exists(&window, "Check for updates automatically"),
+        "and About is in view"
     );
 }
 
@@ -2830,7 +2885,7 @@ fn the_manual_button_still_shows_a_newer_version() {
     assert_eq!(
         elements(&window, "Update available, version 1.9.0").len(),
         2,
-        "the pill shows on About and next to the version"
+        "the header pill and the badge next to the version"
     );
 }
 
@@ -2960,11 +3015,70 @@ fn the_update_badge_shows_only_for_a_newer_status() {
         );
     }
     show_update_status(&window, 3);
+    let found = elements(&window, "Update available, version 1.1.0");
+    assert_eq!(found.len(), 2, "the header pill and the version line");
     assert_eq!(
-        elements(&window, "Update available, version 1.1.0").len(),
-        2,
-        "the About heading and the version line"
+        found
+            .iter()
+            .filter(|element| element.accessible_role() == Some(AccessibleRole::Button))
+            .count(),
+        1,
+        "only the header pill is a control"
     );
+}
+
+#[test]
+fn the_update_buttons_fit_beside_the_scroll_bar_in_both_languages() {
+    for (language, install_label, check_label, notes_label) in [
+        (
+            "English",
+            "Download and install version 1.1.0",
+            "Check for updates",
+            "Release notes",
+        ),
+        (
+            "Nepali",
+            "संस्करण 1.1.0 डाउनलोड गरी इन्स्टल गर्नुहोस्",
+            "अपडेट जाँच्नुहोस्",
+            "रिलिज नोट",
+        ),
+    ] {
+        let (_f, window) = opened();
+        if language == "Nepali" {
+            window.invoke_language_picked(1);
+        }
+        window.set_update_version("1.1.0".into());
+        window.set_update_action(1);
+        show_update_status(&window, 3);
+
+        let install = pill(&window, install_label);
+        let check = pill(&window, check_label);
+        let notes = pill(&window, notes_label);
+        for (name, button) in [
+            ("Download and install", &install),
+            ("Check for updates", &check),
+            ("Release notes", &notes),
+        ] {
+            assert!(
+                button.absolute_position().x >= 15.5,
+                "{language}: {name} starts inside the content column"
+            );
+            assert!(
+                right_edge(button) <= 390.5,
+                "{language}: {name} ends at {}, past the content column",
+                right_edge(button)
+            );
+        }
+        assert!(
+            install.absolute_position().y + install.size().height + 7.5
+                <= check.absolute_position().y,
+            "{language}: Download and install has its own line above the other two"
+        );
+        assert!(
+            notes.absolute_position().x - right_edge(&check) >= 7.5,
+            "{language}: the two buttons on the lower line keep the 8 px gap"
+        );
+    }
 }
 
 #[test]

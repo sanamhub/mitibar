@@ -197,7 +197,7 @@ Decided after the owner's first run of the beta build, with the numbers each cho
 button), one left-aligned column that scrolls when it needs more room.
 
 ```
-Settings                                  Saved ✓
+Settings  (Update available)                     Saved ✓
 ─────────────────────────────────────────────────
 General
   Language          ( English | नेपाली )
@@ -236,11 +236,16 @@ About
   Third-party notices: Slint, the fonts, NepDate
 ```
 
-- About also holds the optional **Check for updates automatically** switch (ADR-0013) and its
-  help text, above the manual check. A newer version shows an **Update available** pill on the
-  About heading and next to the version. It is a status, not an action: it takes no focus, its
-  accessible name is "Update available, version x.y.z", and it uses `marigold` at 18 % for its
-  fill with `ink` text, the one non-calendar accent in the window.
+- About holds the optional **Check for updates automatically** switch (ADR-0013) and its help
+  text, above the manual check. A newer version shows an **Update available** pill in the header,
+  next to the window title, and a badge next to the version. The header pill is a `Pill`, so it is
+  a Tab stop with the usual focus frame; its accessible name is "Update available, version x.y.z"
+  and pressing it scrolls to About (ADR-0014). The version badge is a status: it takes no focus
+  and has the same accessible name. Both use `marigold` at 18 % for the fill with `ink` text, the
+  one non-calendar accent in the window. The About heading has no badge of its own.
+- With a newer version the update buttons take two rows: **Download and install** on its own row,
+  **Check for updates** and **Release notes** below it, 8 px apart. The three labels keep their
+  normal size in English and Nepali and stay clear of the scroll bar.
 - Section headings are `title`, sentence case, no rules between rows; one `hairline` divider
   under the header only.
 - Section card: a group that has its own heading and controls sits on a `surface-raised` card with
@@ -255,7 +260,7 @@ About
   text in `surface`. It is one Tab stop; the arrow keys move the choice.
 - Switch: 36 × 20 px pill. On is an `ink` track with a `surface` knob; off is a `hairline` track
   with an `ink-muted` knob. No other colour: `sindoor` stays reserved for the calendar, and the
-  update pill's `marigold` is the one exception (ADR-0013).
+  update notice's `marigold` is the one exception (ADR-0013, ADR-0014).
 - Chips: full radius, `surface-raised`, `hairline` border, `body` text, a remove button inside. A
   focused chip also shows its two arrow buttons. A line with more chips than fit scrolls sideways:
   the focused chip is kept in view, and the mouse wheel moves the line while it has room to move,
@@ -273,8 +278,8 @@ About
   The only shadow is the one Windows 11 draws for every window.
 - One memorable element: the month grid. Keep the header, the bar and Settings quiet.
 - Controls are monochrome (`ink` on `surface`), so colour in the window means calendar data. The
-  one exception is the Update available pill, which uses `marigold` to mark a status rather than
-  an action (ADR-0013).
+  one exception is the Update available notice, which uses `marigold` for an update status
+  (ADR-0013, ADR-0014).
 
 ## 10. App icon
 
