@@ -95,7 +95,9 @@ account or a clean VM, and keep a firewall log or a packet capture open for the 
 - [ ] A second launch opens the first instance's popup and exits 0; one process remains.
 - [ ] Launch at login after a reboot; turning it off removes the entry.
 - [ ] Quit leaves no process.
-- [ ] No network connections until Check for updates is pressed; that request goes to GitHub only.
+- [ ] No network connections until Check for updates is pressed, unless automatic checks are on: then
+      one request when Settings opens, at most once a day, and the button's request goes to GitHub
+      only.
 - [ ] Logs contain no user names or home-folder paths.
 
 ## Accessibility (WR-10)

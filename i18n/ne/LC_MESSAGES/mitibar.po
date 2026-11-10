@@ -402,8 +402,20 @@ msgstr "संस्करण {0} उपलब्ध छ"
 msgid "Couldn't reach GitHub. Check the connection and try again."
 msgstr "GitHub मा पुग्न सकिएन। इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।"
 
-msgid "Asks GitHub for the latest version number. Nothing else is sent."
-msgstr "GitHub सँग नयाँ संस्करणको नम्बर मात्र सोधिन्छ। अरू केही पठाइँदैन।"
+msgid "MitiBar connects to the internet only when you press Check for updates, or, if you turn on automatic checks, when Settings opens, at most once a day."
+msgstr "MitiBar ले इन्टरनेटमा तपाईंले अपडेट जाँच्नुहोस् थिच्दा, वा स्वतः जाँच सक्रिय गर्नुभएमा सेटिङ खुल्दा दिनमा बढीमा एक पटक मात्र जडान गर्छ।"
+
+msgid "Check for updates automatically"
+msgstr "स्वतः अपडेट जाँच्नुहोस्"
+
+msgid "When Settings opens, at most once a day. Sends only a request for the latest version number."
+msgstr "सेटिङ खुल्दा, दिनमा बढीमा एक पटक। नयाँ संस्करणको नम्बर मात्र सोधिन्छ।"
+
+msgid "Update available"
+msgstr "अपडेट उपलब्ध"
+
+msgid "Update available, version {0}"
+msgstr "अपडेट उपलब्ध, संस्करण {0}"
 
 msgid "Third-party notices: Slint, Noto Sans and Noto Sans Devanagari (SIL Open Font License 1.1), NepDate (MIT)"
 msgstr "तेस्रो-पक्षका सूचनाहरू: Slint, Noto Sans र Noto Sans Devanagari (SIL Open Font License 1.1), NepDate (MIT)"

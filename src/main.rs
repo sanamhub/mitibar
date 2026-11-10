@@ -40,6 +40,9 @@ use crate::app::bar_place::Saved;
 use crate::app::converter::{self, Direction};
 use crate::app::goto::{self, GotoOutcome};
 use crate::app::settings::Settings;
+#[cfg(feature = "snapshot")]
+use crate::app::update::UpdateStatus;
+use crate::app::version::Version;
 use crate::app::zoom::{Arrow, Zoom, ZoomState};
 use crate::app::{APP_NAME, clock, holidays, month_view};
 use crate::platform::bar::{Anchor, Bar, BarEvent, MenuItem};
@@ -101,6 +104,16 @@ struct AppState {
     timer_generation: u32,
     /// The `--theme` flag, applied when the popup is created. A lazy popup must still honour it.
     theme_override: Option<ThemeChoice>,
+    /// Where the checks ask GitHub (ADR-0011, ADR-0013). A test injects a checker that answers at
+    /// once, so no test touches the network.
+    update_check: Rc<dyn crate::platform::update_check::Checker>,
+    /// Polls a manual check's answer while one runs; stopped with the answer or on close.
+    manual_check_timer: Rc<slint::Timer>,
+    /// Polls an automatic check's answer while one runs; stopped with the answer or on close.
+    auto_check_timer: Rc<slint::Timer>,
+    /// The newer version a check has found, so the pill stays after the window is closed. `None`
+    /// until a check finds one; an automatic answer that is not newer leaves it as it was.
+    update_available: Option<Version>,
 }
 
 /// The strong popup handle. `AppState` keeps only a `Weak`, so the popup's own callbacks (which
@@ -141,6 +154,10 @@ impl AppState {
             login_item: Rc::new(platform::autostart::apply),
             timer_generation: 0,
             theme_override: None,
+            update_check: Rc::new(crate::platform::update_check::Network),
+            manual_check_timer: Rc::new(slint::Timer::default()),
+            auto_check_timer: Rc::new(slint::Timer::default()),
+            update_available: None,
         }
     }
 }
@@ -347,6 +364,18 @@ struct Cli {
     /// Scrolls the Settings snapshot to its Bar section.
     #[cfg(feature = "snapshot")]
     settings_bar: bool,
+    /// Scrolls the Settings snapshot to its About section.
+    #[cfg(feature = "snapshot")]
+    settings_about: bool,
+    /// Shows the automatic-check switch on in a Settings snapshot.
+    #[cfg(feature = "snapshot")]
+    settings_auto_check: bool,
+    /// Shows a newer version, with its pill, in a Settings snapshot.
+    #[cfg(feature = "snapshot")]
+    settings_update: Option<Version>,
+    /// Shows the up-to-date answer in a Settings snapshot.
+    #[cfg(feature = "snapshot")]
+    settings_latest: bool,
     /// Shows the year or decade view in a snapshot.
     #[cfg(feature = "snapshot")]
     zoom: Option<Zoom>,
@@ -431,17 +460,35 @@ impl Cli {
                 "--settings" => cli.settings_panel = true,
                 #[cfg(feature = "snapshot")]
                 "--settings-section" => {
+                    let value = args.next().ok_or_else(|| {
+                        anyhow::anyhow!("--settings-section needs top, bar or about")
+                    })?;
+                    cli.settings_bar = false;
+                    cli.settings_about = false;
+                    match value.as_str() {
+                        "top" => {}
+                        "bar" => cli.settings_bar = true,
+                        "about" => cli.settings_about = true,
+                        other => {
+                            anyhow::bail!(
+                                "--settings-section must be top, bar or about, got {other}"
+                            )
+                        }
+                    }
+                }
+                #[cfg(feature = "snapshot")]
+                "--settings-auto-check" => cli.settings_auto_check = true,
+                #[cfg(feature = "snapshot")]
+                "--settings-update" => {
                     let value = args
                         .next()
-                        .ok_or_else(|| anyhow::anyhow!("--settings-section needs top or bar"))?;
-                    cli.settings_bar = match value.as_str() {
-                        "top" => false,
-                        "bar" => true,
-                        other => {
-                            anyhow::bail!("--settings-section must be top or bar, got {other}")
-                        }
-                    };
+                        .ok_or_else(|| anyhow::anyhow!("--settings-update needs a version"))?;
+                    cli.settings_update = Some(Version::parse(&value).ok_or_else(|| {
+                        anyhow::anyhow!("--settings-update needs a version like 1.2.3, got {value}")
+                    })?);
                 }
+                #[cfg(feature = "snapshot")]
+                "--settings-latest" => cli.settings_latest = true,
                 #[cfg(feature = "snapshot")]
                 "--zoom" => {
                     let value = args
@@ -552,6 +599,21 @@ impl Cli {
             }
             if cli.settings_bar && !cli.settings_panel {
                 anyhow::bail!("--settings-section needs --settings --snapshot");
+            }
+            if cli.settings_about && !cli.settings_panel {
+                anyhow::bail!("--settings-section needs --settings --snapshot");
+            }
+            if cli.settings_auto_check && !cli.settings_panel {
+                anyhow::bail!("--settings-auto-check needs --settings --snapshot");
+            }
+            if cli.settings_update.is_some() && !cli.settings_panel {
+                anyhow::bail!("--settings-update needs --settings --snapshot");
+            }
+            if cli.settings_latest && !cli.settings_panel {
+                anyhow::bail!("--settings-latest needs --settings --snapshot");
+            }
+            if cli.settings_latest && cli.settings_update.is_some() {
+                anyhow::bail!("--settings-latest and --settings-update are exclusive");
             }
             // Both flags are snapshot tools only: the normal app must never pin its date.
             if cli.today.is_some() && !cli.popup {
@@ -708,6 +770,11 @@ fn main() -> anyhow::Result<()> {
     // The `--no-bar` flag hides the bar for this run.
     if cli.no_bar {
         settings.bar = false;
+    }
+    // A Settings snapshot may show the automatic-check switch on (ADR-0013).
+    #[cfg(feature = "snapshot")]
+    if cli.settings_auto_check {
+        settings.auto_update_check = true;
     }
     // WR-09 AC2: match the login item to the setting. A snapshot never touches it.
     if !cli.is_snapshot_tool() {
@@ -940,8 +1007,10 @@ fn snapshot_popup(
     snapshot_after(popup, &path, waits)
 }
 
-/// Renders the Settings window (`--settings`). With `--settings-section bar` it is scrolled to the
-/// Bar section first, once the first layout has run.
+/// Renders the Settings window (`--settings`). With `--settings-section bar` or `about` it is
+/// scrolled there first, once the first layout has run. `--settings-update` shows a newer version
+/// with its header pill, and `--settings-latest` the up-to-date answer, for the images in the pull
+/// request.
 #[cfg(feature = "snapshot")]
 fn snapshot_settings(cli: &Cli, state: &Rc<RefCell<AppState>>, lang: Lang) -> anyhow::Result<()> {
     let path = cli
@@ -963,6 +1032,11 @@ fn snapshot_settings(cli: &Cli, state: &Rc<RefCell<AppState>>, lang: Lang) -> an
         slint::select_bundled_translation("ne")?;
     }
     settings_window::refresh(state);
+    if cli.settings_latest {
+        settings_window::show_update(&window, &UpdateStatus::Latest);
+    } else if let Some(version) = &cli.settings_update {
+        settings_window::show_update(&window, &UpdateStatus::Newer(version.clone()));
+    }
     let mut ticks = 1;
     if cli.settings_bar {
         let weak = window.as_weak();
@@ -973,6 +1047,15 @@ fn snapshot_settings(cli: &Cli, state: &Rc<RefCell<AppState>>, lang: Lang) -> an
         });
         // The scroll lands at 60 ms; the image waits 800 ms, as the tooltip snapshot does, so the
         // layout has settled.
+        ticks = TOOLTIP_SNAPSHOT_TICKS;
+    }
+    if cli.settings_about {
+        let weak = window.as_weak();
+        slint::Timer::single_shot(std::time::Duration::from_millis(60), move || {
+            if let Some(window) = weak.upgrade() {
+                window.set_scroll_y(-window.get_scroll_max());
+            }
+        });
         ticks = TOOLTIP_SNAPSHOT_TICKS;
     }
     snapshot_after(&window, &path, ticks)

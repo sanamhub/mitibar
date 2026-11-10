@@ -197,7 +197,7 @@ Decided after the owner's first run of the beta build, with the numbers each cho
 button), one left-aligned column that scrolls when it needs more room.
 
 ```
-Settings                                  Saved ✓
+Settings  (Update available)                     Saved ✓
 ─────────────────────────────────────────────────
 General
   Language          ( English | नेपाली )
@@ -231,9 +231,25 @@ Shortcut
   [ Win+Shift+N                 ] (Clear) (Reset)
 About
   MitiBar <version> · MIT license
+  Check for updates automatically                  [──○]
+    When Settings opens, at most once a day. Sends only a request for the latest version number.
+  Version <version> is available
+  (Download and install) (Release notes)
   Third-party notices: Slint, the fonts, NepDate
 ```
 
+- About holds the optional **Check for updates automatically** switch (ADR-0013) and its help
+  text. A newer version shows an **Update available** pill in the header, next to the window title.
+  It is a `Pill`, so it hugs its caption, is a Tab stop with the usual focus frame, has the
+  accessible name "Update available, version x.y.z" and scrolls to About when pressed. It uses
+  `marigold` at 18 % for the fill with `ink` text, the one non-calendar accent in the window. The
+  notice appears once; the version line stays plain text.
+- The update block reads status first, then the actions that answer it: version line, switch and
+  help text, status line, button row, third-party notices. While a newer version is known,
+  **Check for updates** is hidden and the row is **Download and install** with **Release notes**
+  (one-click), **Download** (plain download), or **Release notes** (package manager). Every other
+  status keeps its current buttons. The row keeps the 8 px spacing and stays clear of the scroll
+  bar in English and Nepali.
 - Section headings are `title`, sentence case, no rules between rows; one `hairline` divider
   under the header only.
 - Section card: a group that has its own heading and controls sits on a `surface-raised` card with
@@ -247,7 +263,8 @@ About
 - Segmented control: a `surface-raised` pill track, the selected segment filled with `ink` and its
   text in `surface`. It is one Tab stop; the arrow keys move the choice.
 - Switch: 36 × 20 px pill. On is an `ink` track with a `surface` knob; off is a `hairline` track
-  with an `ink-muted` knob. No other colour: `sindoor` stays reserved for the calendar.
+  with an `ink-muted` knob. No other colour: `sindoor` stays reserved for the calendar, and the
+  update pill's `marigold` is the one exception (ADR-0013).
 - Chips: full radius, `surface-raised`, `hairline` border, `body` text, a remove button inside. A
   focused chip also shows its two arrow buttons. A line with more chips than fit scrolls sideways:
   the focused chip is kept in view, and the mouse wheel moves the line while it has room to move,
@@ -264,8 +281,9 @@ About
 - Flat surfaces, no decorative shadows or gradients. Borders (`hairline`) do the structural work.
   The only shadow is the one Windows 11 draws for every window.
 - One memorable element: the month grid. Keep the header, the bar and Settings quiet.
-- Controls are monochrome (`ink` on `surface`), so colour in the window always means calendar
-  data.
+- Controls are monochrome (`ink` on `surface`), so colour in the window means calendar data. The
+  one exception is the Update available pill, which uses `marigold` for an update status
+  (ADR-0013).
 
 ## 10. App icon
 

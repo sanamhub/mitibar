@@ -35,6 +35,8 @@ export struct SettingsData {
     shortcut: string,
     /// False where the OS has no way to grab a global key (Wayland).
     shortcut-available: bool,
+    /// Whether Settings checks when it opens, at most once a day (ADR-0013).
+    auto-update-check: bool,
     version: string,
 }
 
@@ -401,6 +403,7 @@ export component SettingsWindow inherits Window {
     callback launch-changed(bool);
     callback clock-changed(bool);
     callback seconds-changed(bool);
+    callback auto-update-changed(bool);
     callback zone-opened();
     callback zone-edited(string);
     callback zone-picked(string);
@@ -431,6 +434,12 @@ export component SettingsWindow inherits Window {
     /// Scrolls the Bar section to the top ("Customize bar", WR-08 AC6).
     public function show-bar-section() {
         scroll.content-y = -min(clock-section.y + clock-section.height + content.spacing, root.scroll-max);
+    }
+
+    /// Scrolls to About, where the update row is (ADR-0013). The header's Update available pill
+    /// calls it, so a check that found a newer version is one press from the buttons that use it.
+    public function show-about-section() {
+        scroll.content-y = -min(about-heading.y, root.scroll-max);
     }
 
     /// Keeps the focused control inside the scroll view, with a little margin.
@@ -478,7 +487,9 @@ export component SettingsWindow inherits Window {
             padding: 16px;
             spacing: 8px;
 
-            // The header: the title on the left, the save note on the right.
+            // The header: the title on the left, the update notice next to it and the save note
+            // on the right. About is at the bottom of the scroll view, so the notice lives here,
+            // where it is on screen when a check at open finds a newer version (ADR-0013).
             HorizontalLayout {
                 height: 28px;
                 spacing: 8px;
@@ -487,12 +498,30 @@ export component SettingsWindow inherits Window {
                     color: Theme.ink;
                     font-size: 20px;
                     vertical-alignment: center;
-                    horizontal-stretch: 1;
+                    horizontal-stretch: 0;
+                    min-width: 0;
+                    overflow: elide;
                     accessible-role: none;
                 }
+                if root.update-status == 3: VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 0;
+                    header-update-pill := Pill {
+                        horizontal-stretch: 0;
+                        accent: true;
+                        pill-size: 22px;
+                        font-size: 12px;
+                        text: @tr("Update available");
+                        label: @tr("Update available, version {0}", root.update-version);
+                        activated => { root.show-about-section(); }
+                        focused => { root.focused-control = "update header"; }
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
                 if root.save-status == 1: HorizontalLayout {
                     spacing: 4px;
                     alignment: end;
+                    min-width: 0;
                     LineIcon {
                         y: (parent.height - self.height) / 2;
                         commands: "M 3 8 L 7 12 L 13 4";
@@ -503,6 +532,8 @@ export component SettingsWindow inherits Window {
                         color: Theme.ink-muted;
                         font-size: 13px;
                         vertical-alignment: center;
+                        min-width: 0;
+                        overflow: elide;
                     }
                 }
                 if root.save-status == 2: Text {
@@ -511,6 +542,8 @@ export component SettingsWindow inherits Window {
                     font-size: 13px;
                     vertical-alignment: center;
                     horizontal-alignment: right;
+                    min-width: 0;
+                    overflow: elide;
                 }
             }
             Rectangle { height: 1px; background: Theme.hairline; }
@@ -1023,18 +1056,61 @@ export component SettingsWindow inherits Window {
                     }
 
                     // About
-                    Heading { text: @tr("About"); }
+                    about-heading := Heading { text: @tr("About"); }
                     Text {
                         text: @tr("{0} {1} · MIT license", AppInfo.app-name, root.data.version);
                         color: Theme.ink-muted;
                         font-size: 13px;
                         wrap: word-wrap;
                     }
+                    Row {
+                        text: @tr("Check for updates automatically");
+                        auto-update-control := Toggle {
+                            label: @tr("Check for updates automatically");
+                            checked: root.data.auto-update-check;
+                            toggled => { root.auto-update-changed(!root.data.auto-update-check); }
+                            focused => { root.focus-on("auto update check", self.absolute-position.y, self.height); }
+                        }
+                    }
+                    Text {
+                        text: @tr("When Settings opens, at most once a day. Sends only a request for the latest version number.");
+                        color: Theme.ink-muted;
+                        font-size: 13px;
+                        wrap: word-wrap;
+                    }
+                    // The status first, then the actions that answer it. A newer version hides
+                    // Check for updates, because its answer is already known.
+                    Text {
+                        text: root.update-status == 2 ? @tr("You have the latest version")
+                            : root.update-status == 3 && root.update-action == 2
+                                ? @tr("Version {0} is available. Update it with your package manager.", root.update-version)
+                            : root.update-status == 3
+                                ? @tr("Version {0} is available", root.update-version)
+                            : root.update-status == 4
+                                ? @tr("Couldn't reach GitHub. Check the connection and try again.")
+                            : root.update-status == 5
+                                ? @tr("Downloading version {0}", root.update-version)
+                            : root.update-status == 6
+                                ? @tr("Checking the download")
+                            : root.update-status == 7
+                                ? @tr("Installing. MitiBar starts again by itself.")
+                            : root.update-status == 8
+                                ? @tr("The download couldn't be verified, so nothing was installed.")
+                            : root.update-status == 9
+                                ? @tr("The download didn't finish. Check the connection and try again.")
+                            : root.update-status == 10
+                                ? @tr("MitiBar couldn't be replaced, so nothing changed. Get it from the release notes.")
+                            : @tr("MitiBar connects to the internet only when you press Check for updates, or, if you turn on automatic checks, when Settings opens, at most once a day.");
+                        color: root.update-error ? Theme.sindoor : Theme.ink-muted;
+                        font-size: 13px;
+                        wrap: word-wrap;
+                    }
                     HorizontalLayout {
                         spacing: 8px;
                         alignment: start;
-                        if root.update-status != 7 && root.update-status != 8
-                            && root.update-status != 9 && root.update-status != 10: update-check-pill := Pill {
+                        if root.update-status != 3 && root.update-status != 7
+                            && root.update-status != 8 && root.update-status != 9
+                            && root.update-status != 10: update-check-pill := Pill {
                             horizontal-stretch: 0;
                             text: root.update-check-text;
                             label: root.update-status == 5
@@ -1077,31 +1153,6 @@ export component SettingsWindow inherits Window {
                             activated => { root.update-download(); }
                             focused => { root.focus-on("update notes", self.absolute-position.y, self.height); }
                         }
-                    }
-                    Text {
-                        text: root.update-status == 2 ? @tr("You have the latest version")
-                            : root.update-status == 3 && root.update-action == 2
-                                ? @tr("Version {0} is available. Update it with your package manager.", root.update-version)
-                            : root.update-status == 3
-                                ? @tr("Version {0} is available", root.update-version)
-                            : root.update-status == 4
-                                ? @tr("Couldn't reach GitHub. Check the connection and try again.")
-                            : root.update-status == 5
-                                ? @tr("Downloading version {0}", root.update-version)
-                            : root.update-status == 6
-                                ? @tr("Checking the download")
-                            : root.update-status == 7
-                                ? @tr("Installing. MitiBar starts again by itself.")
-                            : root.update-status == 8
-                                ? @tr("The download couldn't be verified, so nothing was installed.")
-                            : root.update-status == 9
-                                ? @tr("The download didn't finish. Check the connection and try again.")
-                            : root.update-status == 10
-                                ? @tr("MitiBar couldn't be replaced, so nothing changed. Get it from the release notes.")
-                            : @tr("Asks GitHub for the latest version number. Nothing else is sent.");
-                        color: root.update-error ? Theme.sindoor : Theme.ink-muted;
-                        font-size: 13px;
-                        wrap: word-wrap;
                     }
                     Text {
                         text: @tr("Third-party notices: Slint, Noto Sans and Noto Sans Devanagari (SIL Open Font License 1.1), NepDate (MIT)");

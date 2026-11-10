@@ -299,10 +299,12 @@ Linux has the tray icon only.
 ## WR-11 Privacy
 
 - AC1: The app opens no network connections (verify with the OS firewall, `lsof` or
-  Resource Monitor) except the one request below. No telemetry, no crash upload, no automatic
-  update check.
+  Resource Monitor) except the requests below. No telemetry, no crash upload, and no update check
+  unless the user asked for one.
 - AC3: Pressing Check for updates in Settings, About makes one HTTPS GET to GitHub's
-  latest-release API and nothing else (ADR-0011). No other control and no timer makes a request.
+  latest-release API and nothing else (ADR-0011). With Check for updates automatically on, opening
+  Settings makes that same request, at most once a day (ADR-0013). No other control, no start and
+  no timer makes a request.
 - AC2: Logs contain no personal data (no user names, paths inside the home folder are
   shown as `~`).
 

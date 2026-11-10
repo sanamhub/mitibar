@@ -136,11 +136,13 @@ Do this on each OS on a clean user account, with the network disconnected or a f
    signature and replaces the running copy with this build. This applies once a later release
    exists; for 1.1.0 it is N/A, because 1.0.0 has no one-click and 1.1.0 is the first build that
    can install one.
-7. No network until Check for updates is pressed: on Windows, Resource Monitor or
-   `Get-NetTCPConnection -OwningProcess <pid>` shows no connections; on macOS/Linux,
-   `lsof -i -p <pid>` is empty. The app has no telemetry. Check for updates is the only
-   connection, it starts only when that button is pressed, and it goes to GitHub only
-   (ADR-0011).
+7. No network while automatic checks are off and Settings is closed: on Windows, Resource Monitor
+   or `Get-NetTCPConnection -OwningProcess <pid>` shows no connections; on macOS/Linux,
+   `lsof -i -p <pid>` is empty. The app has no telemetry. The only connections are Check for
+   updates when that button is pressed, and, with the automatic switch on, one when Settings opens,
+   at most once a day; both go to GitHub only (ADR-0011, ADR-0013). With the switch on and the
+   network disconnected, opening Settings shows no error and the next open after the network is
+   back still checks.
 8. Uninstall and repeat the cleanup check in the OS section above.
 
 ## Known gaps after 1.0.0

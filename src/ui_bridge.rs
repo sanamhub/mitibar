@@ -479,6 +479,7 @@ pub fn set_settings(
             .unwrap_or_default()
             .into(),
         shortcut_available,
+        auto_update_check: settings.auto_update_check,
         version: env!("CARGO_PKG_VERSION").into(),
     });
 }

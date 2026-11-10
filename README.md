@@ -17,7 +17,8 @@
 MitiBar keeps today's Bikram Sambat date in sight: in a small bar above the Windows taskbar, and
 on the tray or menu bar icon on every system. One click opens the month, with the tithi under each
 day, public holidays in red and the next holiday named. A converter turns BS dates into AD and back.
-MitiBar makes no network connections unless you press Check for updates.
+MitiBar connects to the internet only when you press Check for updates, or, if you turn on
+automatic checks, when Settings opens, at most once a day.
 
 It is for people who read the Nepali date every day and do not want to open a calendar for it.
 More about it, with downloads for each system: **[nepdate.com/mitibar](https://nepdate.com/mitibar/)**.
@@ -118,13 +119,14 @@ the SHA-256 sum of every file.
 Every signed file is built by the release workflow in this repository from a tagged commit, and
 each signing request is approved by hand.
 
-Privacy: MitiBar makes no network connections unless you press Check for updates in Settings.
-That button asks GitHub for the latest version number and sends nothing else. When a newer
-version exists, Download and install fetches that release's installer and signature, checks the
-signature against the key built into the app, and sends nothing else
-([ADR-0011](docs/adr/0011-check-for-updates-on-request.md),
-[ADR-0012](docs/adr/0012-one-click-update.md)). MitiBar stores only its settings file and a log
-file on your own machine.
+Privacy: MitiBar connects to the internet only when you press Check for updates, or, if you turn
+on automatic checks, when Settings opens, at most once a day. The check asks GitHub for the latest
+version number and sends nothing else. When a newer version exists, Download and install fetches
+that release's installer and signature, checks the signature against the key built into the app,
+and sends nothing else ([ADR-0011](docs/adr/0011-check-for-updates-on-request.md),
+[ADR-0012](docs/adr/0012-one-click-update.md),
+[ADR-0013](docs/adr/0013-optional-automatic-update-check.md)). MitiBar stores only its settings
+file and a log file on your own machine.
 
 ## License
 
