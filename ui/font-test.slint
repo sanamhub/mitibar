@@ -1,5 +1,6 @@
-// Debug-only window: every line of docs/design/devanagari-test-strings.md at 14 px and
-// 24 px, for the Devanagari font test. Run with `cargo run -p mitibar -- --font-test`.
+// Developer-only window: every line of docs/design/devanagari-test-strings.md at 14 px and
+// 24 px, for the Devanagari font test. It is built only with the `snapshot` feature, so the
+// shipped app does not carry it. Run with `cargo run --features snapshot -- --font-test`.
 // Snapshot mode: `--font-test --snapshot <path.png> [--theme light|dark|system]`.
 import "fonts/NotoSans-Variable.ttf";
 import "fonts/NotoSansDevanagari-Variable.ttf";

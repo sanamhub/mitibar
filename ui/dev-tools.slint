@@ -1,0 +1,6 @@
+// The slint_build::compile entry point with the `snapshot` feature (build.rs): everything the app
+// ships, plus the developer-only font-test window. Release builds compile `app.slint` and leave
+// the font-test window out of the binary.
+export * from "app.slint";
+import { FontTestWindow } from "font-test.slint";
+export { FontTestWindow }
