@@ -131,10 +131,17 @@ Do this on each OS on a clean user account, with the network disconnected or a f
    theme, close and reopen the popup. The app must still be responsive.
 5. Quit from the tray. Launch again: one tray icon, not two, and the second launch opens the
    first instance's popup. On Windows, confirm no second process remains.
-6. No network requests: on Windows, Resource Monitor or `Get-NetTCPConnection -OwningProcess
-   <pid>` shows no connections; on macOS/Linux, `lsof -i -p <pid>` is empty. The app has no
-   telemetry and no update check (ADR-0001 B.8).
-7. Uninstall and repeat the cleanup check in the OS section above.
+6. One-click update from the installed previous build. Install the previous published build,
+   press Check for updates, then Download and install, and confirm the app checks the minisign
+   signature and replaces the running copy with this build. This applies once a later release
+   exists; for 1.1.0 it is N/A, because 1.0.0 has no one-click and 1.1.0 is the first build that
+   can install one.
+7. No network until Check for updates is pressed: on Windows, Resource Monitor or
+   `Get-NetTCPConnection -OwningProcess <pid>` shows no connections; on macOS/Linux,
+   `lsof -i -p <pid>` is empty. The app has no telemetry. Check for updates is the only
+   connection, it starts only when that button is pressed, and it goes to GitHub only
+   (ADR-0011).
+8. Uninstall and repeat the cleanup check in the OS section above.
 
 ## Known gaps after 1.0.0
 
@@ -142,10 +149,10 @@ These remain open after 1.0.0 and are the first work for a patch or 1.1.
 
 | Gap | Today | Needed next |
 |---|---|---|
-| Signing credentials | The Windows and macOS signing steps exist and are gated on `WINDOWS_SIGNING_ENABLED` / `MACOS_SIGNING_ENABLED`, but no certificate, Developer ID or notarization secrets are configured here. Until then releases ship unsigned and say so. | Provision Azure Artifact Signing and the Apple Developer ID plus notarization secrets, set both variables, and verify a signed asset. |
+| Signing credentials | The Windows and macOS signing steps exist and are gated on `WINDOWS_SIGNING_ENABLED` / `MACOS_SIGNING_ENABLED`, but no certificate, Developer ID or notarization secrets are configured here. Until then releases ship unsigned and say so. | Apply to SignPath Foundation for the free Windows certificate, and provision an Apple Developer ID plus notarization secrets, then verify a signed asset. SignPath Foundation is the planned provider, not Azure Artifact Signing. ADR-0003 stays as written; a new ADR records the provider once SignPath approves. |
 | Signing not exercised | The release workflow runs the signing steps only when the repository variable is true, but no workflow run has exercised the tools. | A `workflow_dispatch` dry run with both variables on, on all 3 OSes. |
 | Windows ARM64 package | The 1.0.0 release built the arm64 installer and portable zip; neither has been installed on ARM64 hardware. | Install the 1.0.0 arm64 package on a real ARM64 machine. |
-| Quiet performance | The current software build: the 5-minute row is 34.35 MB private, 73.59 MB working set and 1.217 % of one core, but LOADED (47.9 % before, 31.2 % during). Cold starts are 62.4 to 80.4 ms, also LOADED (19.4 to 32.4 % during startup). The last quiet software row was 34.68 MB and 0.335 %. | A quiet 5-minute row that passes private bytes and CPU on the shipped build, and quiet cold starts. |
+| Quiet performance | The 1.1.0 five-minute row is 32.34 MB private, 63.40 MB working set and 0.123 % of one core, but LOADED (22.5 % before, 27.8 % during). The last quiet software row was 34.68 MB and 0.335 %. | A quiet 5-minute row that passes private bytes and CPU on the shipped build, and quiet cold starts. |
 | Text quality at 100 % and 200 % | Windows x64 was checked with 55 software/femtovg sheets: every conjunct, reph and matra is the same, none is wrong. macOS and Linux were not checked. | Check text quality on macOS and Linux and tick the checklist line. |
 | Keyboard and focus rings | Interaction tests and eight focus snapshots cover Windows x64. The settings zone rows stay pointer-only, and macOS and Linux were not run. | Tick the keyboard line on all 3 OSes and decide whether the zone list needs keyboard navigation. |
 | macOS and Linux packages | Built in the 1.0.0 release; not installed locally on this Windows machine. | Install both on a clean VM and complete the 3-OS manual checklist. |

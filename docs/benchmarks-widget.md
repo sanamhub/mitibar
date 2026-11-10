@@ -130,4 +130,24 @@ asks for. The 1.0.0 release went out before that row was taken.
 
 Cold start was not measured again.
 
+## 1.1.0 idle row (2026-11-09)
+
+Same machine, same temporary settings and the same method, on the `release-widget` build of
+1.1.0 (`cargo xtask widget-idle --minutes 5`). The row was taken while other work was finishing
+on the machine, so it is LOADED and gets no verdict.
+
+| Metric | Target | Measured | Verdict |
+|---|---|---|---|
+| Idle private bytes, popup closed, 5 min | ≤ 40 MB | 32.34 MB (33,914,880 bytes) | LOADED, no verdict |
+| Idle working set, popup closed, 5 min | recorded only | 63.40 MB (66,478,080 bytes) | not judged |
+| Idle CPU, popup closed, 5 min | about 0 %, edge 0.5 % of one core | 0.123 % (0.375 CPU s in 303.9 s) | LOADED, no verdict |
+| Threads | recorded only | 4 | not judged |
+
+The row is LOADED: the mean all-CPU load before was 22.5 %, during it 27.8 % (4.8 % to 90.9 %).
+The private figure is below 40 MB and the CPU figure is below the 0.5 % edge, but a loaded row
+is reported without a verdict. A quiet row is still needed before the runbook's quiet-row gate
+is met.
+
+The binary size was not measured again; the 1.0.0 figure is in the table above.
+
 
