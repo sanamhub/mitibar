@@ -30,11 +30,11 @@ is opt-in and off by default, so the promise stays exactly true for everyone who
    `User-Agent` (`MitiBar/<version>`) and the `Accept` header. Nothing else is sent: no identifier,
    no settings and no usage data. The client, the operating system's certificate check, the 15
    second timeout and the 256 KB answer limit are unchanged.
-4. The result is silent unless there is something to show. Only a newer version changes About: it
-   sets the newer-version status and shows a highlighted **Update available** pill in the Settings
-   header, next to the title. Latest, offline, timeout, rate limit, a parse error and every other
-   result leave the status exactly as it was: no error text, no "Failed" state, no dialog. The
-   manual button keeps its current behaviour, including the failure text.
+4. The result is silent unless there is something to show. Only a newer version changes what
+   Settings shows: it sets the newer-version status and shows a highlighted **Update available**
+   pill in the Settings header, next to the title. Latest, offline, timeout, rate limit, a parse
+   error and every other result leave the status exactly as it was: no error text, no "Failed"
+   state, no dialog. The manual button keeps its current behaviour, including the failure text.
 5. The time is recorded only when GitHub answered with a release tag. A failed attempt does not
    use up the day, so the next open tries again. A request started when Settings opens may still
    finish after it closes; its answer is discarded and the time is not recorded.
