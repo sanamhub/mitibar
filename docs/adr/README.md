@@ -35,4 +35,3 @@ body names an ADR that is not in this repository.
 | [0011](0011-check-for-updates-on-request.md) | Check for updates on request | Accepted |
 | [0012](0012-one-click-update.md) | One-click update | Accepted |
 | [0013](0013-optional-automatic-update-check.md) | Optional automatic update check | Accepted |
-| [0014](0014-update-notice-in-the-settings-header.md) | Update notice in the Settings header | Accepted |

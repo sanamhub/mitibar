@@ -31,17 +31,25 @@ is opt-in and off by default, so the promise stays exactly true for everyone who
    no settings and no usage data. The client, the operating system's certificate check, the 15
    second timeout and the 256 KB answer limit are unchanged.
 4. The result is silent unless there is something to show. Only a newer version changes About: it
-   sets the newer-version status and shows a highlighted **Update available** pill next to the
-   version and on the About heading. Latest, offline, timeout, rate limit, a parse error and every
-   other result leave the status exactly as it was: no error text, no "Failed" state, no dialog.
-   The manual button keeps its current behaviour, including the failure text.
+   sets the newer-version status and shows a highlighted **Update available** pill in the Settings
+   header, next to the title. Latest, offline, timeout, rate limit, a parse error and every other
+   result leave the status exactly as it was: no error text, no "Failed" state, no dialog. The
+   manual button keeps its current behaviour, including the failure text.
 5. The time is recorded only when GitHub answered with a release tag. A failed attempt does not
    use up the day, so the next open tries again. A request started when Settings opens may still
    finish after it closes; its answer is discarded and the time is not recorded.
-6. The pill is a pill-shaped `Badge` built from the same geometry as the existing pill control,
-   with the theme's `marigold` accent and `ink` text. Its accessible name is "Update available,
-   version x.y.z", and the theme's contrast test covers the text on the tint. The Download and
-   one-click flow of ADR-0012 takes it from there.
+6. The notice is the existing `Pill` control, with the theme's `marigold` accent and `ink` text. It
+   sits in the window header, hugs its caption and is a button: its accessible name is "Update
+   available, version x.y.z", it is a Tab stop with the usual focus frame, and pressing it scrolls
+   to About. The theme's contrast test covers the caption on the tint. The Download and one-click
+   flow of ADR-0012 takes it from there.
+7. About reads top to bottom: the version line; the automatic-check switch and its help text; the
+   status line; the actions; the third-party notices. The actions sit under the status they answer.
+   While a newer version is known, **Check for updates** is hidden, because the answer is already
+   known, and the row is **Download and install** with **Release notes** (one-click), **Download**
+   (plain download), or **Release notes** (package manager). Every other status keeps its current
+   buttons. The row keeps the 8 px spacing and fits the content column in English and Nepali at the
+   default window width.
 
 ## Why the check is opt-in
 
@@ -54,11 +62,13 @@ turning one switch on. The switch says what it sends and when.
 - ADR-0011 points 1 and 5 are amended. ADR-0011 stays accepted and is not edited.
 - The README, the package description, the About privacy sentence and the runbooks name both
   triggers: the button, and the switch when Settings opens.
+- The notice appears once, in the header, so it is visible when Settings opens; the version line in
+  About is plain text. About's update block reads status first, then the actions that answer it.
 - No new dependency is added and the request code already exists for the button. On Windows x64
-  with the `release-widget` profile the binary grows from 12,834,304 to 12,900,352 bytes, 64.5 KiB
-  (0.51 %), from the generated UI for the switch and the badge and from the check plumbing. Idle
-  memory does not change: while the switch is off or Settings is closed, no check starts and no
-  timer is armed. A check that is running uses the same background request as the button; its
+  with the `release-widget` profile the binary grows from 12,834,304 to 12,897,280 bytes, 61.5 KiB
+  (0.49 %), from the generated UI for the switch and the header pill and from the check plumbing.
+  Idle memory does not change: while the switch is off or Settings is closed, no check starts and
+  no timer is armed. A check that is running uses the same background request as the button; its
   short poll stops with the answer or when the window closes.
 - The idle benchmark row stays valid. Its run has Settings closed and the switch off, so the
   automatic path does no work and adds no wake.

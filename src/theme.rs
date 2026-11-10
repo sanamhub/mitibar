@@ -194,15 +194,14 @@ mod tests {
         }
     }
 
-    /// The update notice (ADR-0013, ADR-0014) is `ink` on `marigold` at 18 % over the surface, in
-    /// the header pill and the version badge. It is body text, so WCAG 2.1 wants 4.5:1 in both
-    /// themes.
+    /// The header update pill (ADR-0013) is `ink` on `marigold` at 18 % over the surface. It is
+    /// body text, so WCAG 2.1 wants 4.5:1 in both themes.
     #[test]
-    fn the_update_badge_text_has_at_least_4_5_to_1_contrast() {
+    fn the_update_pill_text_has_at_least_4_5_to_1_contrast() {
         let markup = include_str!("../ui/controls.slint");
         assert!(
             markup.contains("Theme.marigold.with-alpha(0.18)"),
-            "controls.slint changed the badge tint; update this test with it"
+            "controls.slint changed the pill tint; update this test with it"
         );
         let design = include_str!("../docs/design/widget-design.md");
         let mut values = std::collections::HashMap::new();
@@ -235,10 +234,10 @@ mod tests {
             let fill = luminance(&tint);
             let (lighter, darker) = if ink > fill { (ink, fill) } else { (fill, ink) };
             let ratio = (lighter + 0.05) / (darker + 0.05);
-            println!("{side}: update badge text on {tint} is {ratio:.2}:1");
+            println!("{side}: update pill text on {tint} is {ratio:.2}:1");
             assert!(
                 ratio >= 4.5,
-                "{side}: update badge text is {ratio:.2}:1, below 4.5:1"
+                "{side}: update pill text is {ratio:.2}:1, below 4.5:1"
             );
         }
     }

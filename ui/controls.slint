@@ -76,7 +76,7 @@ export component Pill inherits Rectangle {
         : caption.preferred-width + 20px + (root.has-icon ? 20px : 0px);
     border-radius: root.pill-size / 2;
     background: root.accent
-        ? Theme.marigold.with-alpha(touch.has-hover && root.enabled ? 0.28 : 0.18)
+        ? Theme.marigold.with-alpha(0.18)
         : root.filled
             ? Theme.ink
             : root.bordered
@@ -84,7 +84,7 @@ export component Pill inherits Rectangle {
                 : touch.has-hover && root.enabled ? Theme.surface-raised : transparent;
     border-width: root.bordered ? 1px : 0px;
     border-color: root.accent
-        ? Theme.marigold
+        ? touch.has-hover && root.enabled ? Theme.ink-muted : Theme.marigold
         : touch.has-hover && root.enabled ? Theme.ink-muted : Theme.hairline;
     opacity: root.enabled || !root.fade-when-disabled ? 1.0 : 0.4;
 
@@ -171,40 +171,6 @@ export component Pill inherits Rectangle {
             focused: scope.has-focus;
             thickness: 2px;
             radius: root.pill-size / 2;
-        }
-    }
-}
-
-/// A pill-shaped status badge (ADR-0013): the version line's update badge is the one non-calendar
-/// colour in About, the theme's `marigold` accent at 18 % with `ink` text. A badge is a status,
-/// not a control, so it takes no focus or pointer and its accessible name is its label.
-export component Badge inherits Rectangle {
-    in property <string> text;
-    /// The accessible name, for screen readers and the interaction tests.
-    in property <string> label;
-    in property <length> badge-size: 22px;
-    in property <length> font-size: 12px;
-
-    height: root.badge-size;
-    preferred-width: caption.preferred-width + 20px;
-    border-radius: root.badge-size / 2;
-    background: Theme.marigold.with-alpha(0.18);
-    border-width: 1px;
-    border-color: Theme.marigold;
-
-    accessible-role: AccessibleRole.text;
-    accessible-label: root.label;
-
-    HorizontalLayout {
-        padding-left: 10px;
-        padding-right: 10px;
-        alignment: center;
-        caption := Text {
-            text: root.text;
-            color: Theme.ink;
-            font-size: root.font-size;
-            vertical-alignment: center;
-            accessible-role: none;
         }
     }
 }

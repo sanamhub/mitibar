@@ -371,6 +371,9 @@ struct Cli {
     /// Shows a newer version, with its pill, in a Settings snapshot.
     #[cfg(feature = "snapshot")]
     settings_update: Option<Version>,
+    /// Shows the up-to-date answer in a Settings snapshot.
+    #[cfg(feature = "snapshot")]
+    settings_latest: bool,
     /// Shows the year or decade view in a snapshot.
     #[cfg(feature = "snapshot")]
     zoom: Option<Zoom>,
@@ -481,6 +484,8 @@ impl Cli {
                         anyhow::anyhow!("--settings-update needs a version like 1.2.3, got {value}")
                     })?);
                 }
+                #[cfg(feature = "snapshot")]
+                "--settings-latest" => cli.settings_latest = true,
                 #[cfg(feature = "snapshot")]
                 "--zoom" => {
                     let value = args
@@ -600,6 +605,12 @@ impl Cli {
             }
             if cli.settings_update.is_some() && !cli.settings_panel {
                 anyhow::bail!("--settings-update needs --settings --snapshot");
+            }
+            if cli.settings_latest && !cli.settings_panel {
+                anyhow::bail!("--settings-latest needs --settings --snapshot");
+            }
+            if cli.settings_latest && cli.settings_update.is_some() {
+                anyhow::bail!("--settings-latest and --settings-update are exclusive");
             }
             // Both flags are snapshot tools only: the normal app must never pin its date.
             if cli.today.is_some() && !cli.popup {
@@ -995,7 +1006,8 @@ fn snapshot_popup(
 
 /// Renders the Settings window (`--settings`). With `--settings-section bar` or `about` it is
 /// scrolled there first, once the first layout has run. `--settings-update` shows a newer version
-/// with its pill, for the images in the pull request.
+/// with its header pill, and `--settings-latest` the up-to-date answer, for the images in the pull
+/// request.
 #[cfg(feature = "snapshot")]
 fn snapshot_settings(cli: &Cli, state: &Rc<RefCell<AppState>>, lang: Lang) -> anyhow::Result<()> {
     let path = cli
@@ -1017,7 +1029,9 @@ fn snapshot_settings(cli: &Cli, state: &Rc<RefCell<AppState>>, lang: Lang) -> an
         slint::select_bundled_translation("ne")?;
     }
     settings_window::refresh(state);
-    if let Some(version) = &cli.settings_update {
+    if cli.settings_latest {
+        settings_window::show_update(&window, &UpdateStatus::Latest);
+    } else if let Some(version) = &cli.settings_update {
         settings_window::show_update(&window, &UpdateStatus::Newer(version.clone()));
     }
     let mut ticks = 1;

@@ -5,7 +5,7 @@
 
 import { AppInfo } from "app-info.slint";
 import { FocusFrame } from "focus-frame.slint";
-import { Badge, LineIcon, Pill, Segmented, Toggle } from "controls.slint";
+import { LineIcon, Pill, Segmented, Toggle } from "controls.slint";
 import { Theme } from "theme.slint";
 import { LineEdit, ListView, ScrollView } from "std-widgets.slint";
 
@@ -505,7 +505,9 @@ export component SettingsWindow inherits Window {
                 }
                 if root.update-status == 3: VerticalLayout {
                     alignment: center;
+                    horizontal-stretch: 0;
                     header-update-pill := Pill {
+                        horizontal-stretch: 0;
                         accent: true;
                         pill-size: 22px;
                         font-size: 12px;
@@ -1055,21 +1057,11 @@ export component SettingsWindow inherits Window {
 
                     // About
                     about-heading := Heading { text: @tr("About"); }
-                    HorizontalLayout {
-                        spacing: 8px;
-                        alignment: start;
-                        Text {
-                            text: @tr("{0} {1} · MIT license", AppInfo.app-name, root.data.version);
-                            color: Theme.ink-muted;
-                            font-size: 13px;
-                            wrap: word-wrap;
-                            vertical-alignment: center;
-                            horizontal-stretch: 1;
-                        }
-                        if root.update-status == 3: Badge {
-                            text: @tr("Update available");
-                            label: @tr("Update available, version {0}", root.update-version);
-                        }
+                    Text {
+                        text: @tr("{0} {1} · MIT license", AppInfo.app-name, root.data.version);
+                        color: Theme.ink-muted;
+                        font-size: 13px;
+                        wrap: word-wrap;
                     }
                     Row {
                         text: @tr("Check for updates automatically");
@@ -1086,63 +1078,8 @@ export component SettingsWindow inherits Window {
                         font-size: 13px;
                         wrap: word-wrap;
                     }
-                    VerticalLayout {
-                        spacing: 8px;
-                        // With a newer version the row is three buttons wide. A one-click update
-                        // puts Download and install on its own line, above Check for updates and
-                        // Release notes, so no button is squeezed under the scroll bar.
-                        if root.update-status == 3 && root.update-action == 1: HorizontalLayout {
-                            alignment: start;
-                            update-install-pill := Pill {
-                                horizontal-stretch: 0;
-                                text: @tr("Download and install");
-                                label: @tr("Download and install version {0}", root.update-version);
-                                activated => { root.update-install(); }
-                                focused => { root.focus-on("update install", self.absolute-position.y, self.height); }
-                            }
-                        }
-                        HorizontalLayout {
-                            spacing: 8px;
-                            alignment: start;
-                            if root.update-status != 7 && root.update-status != 8
-                                && root.update-status != 9 && root.update-status != 10: update-check-pill := Pill {
-                                horizontal-stretch: 0;
-                                text: root.update-check-text;
-                                label: root.update-status == 5
-                                    ? @tr("Downloading version {0}", root.update-version)
-                                    : root.update-status == 6
-                                        ? @tr("Checking the download")
-                                        : @tr("Check for updates");
-                                enabled: root.update-status != 1 && root.update-status != 5
-                                    && root.update-status != 6;
-                                activated => { root.update-check(); }
-                                focused => { root.focus-on("update check", self.absolute-position.y, self.height); }
-                            }
-                            if root.update-status == 9: try-again-pill := Pill {
-                                horizontal-stretch: 0;
-                                text: @tr("Try again");
-                                label: @tr("Try again");
-                                activated => { root.update-install(); }
-                                focused => { root.focus-on("update retry", self.absolute-position.y, self.height); }
-                            }
-                            if root.update-status == 3 && root.update-action == 0: download-pill := Pill {
-                                horizontal-stretch: 0;
-                                text: @tr("Download");
-                                label: @tr("Download version {0}", root.update-version);
-                                activated => { root.update-download(); }
-                                focused => { root.focus-on("update download", self.absolute-position.y, self.height); }
-                            }
-                            if (root.update-status == 3 && root.update-action != 0)
-                                || root.update-status == 8 || root.update-status == 9
-                                || root.update-status == 10: release-notes-pill := Pill {
-                                horizontal-stretch: 0;
-                                text: @tr("Release notes");
-                                label: @tr("Release notes");
-                                activated => { root.update-download(); }
-                                focused => { root.focus-on("update notes", self.absolute-position.y, self.height); }
-                            }
-                        }
-                    }
+                    // The status first, then the actions that answer it. A newer version hides
+                    // Check for updates, because its answer is already known.
                     Text {
                         text: root.update-status == 2 ? @tr("You have the latest version")
                             : root.update-status == 3 && root.update-action == 2
@@ -1167,6 +1104,55 @@ export component SettingsWindow inherits Window {
                         color: root.update-error ? Theme.sindoor : Theme.ink-muted;
                         font-size: 13px;
                         wrap: word-wrap;
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        if root.update-status != 3 && root.update-status != 7
+                            && root.update-status != 8 && root.update-status != 9
+                            && root.update-status != 10: update-check-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: root.update-check-text;
+                            label: root.update-status == 5
+                                ? @tr("Downloading version {0}", root.update-version)
+                                : root.update-status == 6
+                                    ? @tr("Checking the download")
+                                    : @tr("Check for updates");
+                            enabled: root.update-status != 1 && root.update-status != 5
+                                && root.update-status != 6;
+                            activated => { root.update-check(); }
+                            focused => { root.focus-on("update check", self.absolute-position.y, self.height); }
+                        }
+                        if root.update-status == 3 && root.update-action == 1: update-install-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Download and install");
+                            label: @tr("Download and install version {0}", root.update-version);
+                            activated => { root.update-install(); }
+                            focused => { root.focus-on("update install", self.absolute-position.y, self.height); }
+                        }
+                        if root.update-status == 9: try-again-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Try again");
+                            label: @tr("Try again");
+                            activated => { root.update-install(); }
+                            focused => { root.focus-on("update retry", self.absolute-position.y, self.height); }
+                        }
+                        if root.update-status == 3 && root.update-action == 0: download-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Download");
+                            label: @tr("Download version {0}", root.update-version);
+                            activated => { root.update-download(); }
+                            focused => { root.focus-on("update download", self.absolute-position.y, self.height); }
+                        }
+                        if (root.update-status == 3 && root.update-action != 0)
+                            || root.update-status == 8 || root.update-status == 9
+                            || root.update-status == 10: release-notes-pill := Pill {
+                            horizontal-stretch: 0;
+                            text: @tr("Release notes");
+                            label: @tr("Release notes");
+                            activated => { root.update-download(); }
+                            focused => { root.focus-on("update notes", self.absolute-position.y, self.height); }
+                        }
                     }
                     Text {
                         text: @tr("Third-party notices: Slint, Noto Sans and Noto Sans Devanagari (SIL Open Font License 1.1), NepDate (MIT)");
