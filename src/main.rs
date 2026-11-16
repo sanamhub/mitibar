@@ -681,7 +681,9 @@ impl Cli {
 impl Cli {
     /// Whether this run registers the global shortcut: the snapshot and probe tools never do, so a
     /// test render can't take the shortcut from a running `MitiBar`.
+    // On non-Windows snapshot builds the second guard is compiled out, which reads as needless_bool.
     #[cfg_attr(not(feature = "snapshot"), allow(clippy::unused_self))]
+    #[cfg_attr(not(windows), allow(clippy::needless_bool))]
     fn registers_shortcut(&self) -> bool {
         #[cfg(feature = "snapshot")]
         if self.popup || self.settings_panel || self.wake_probe.is_some() {
