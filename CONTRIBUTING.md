@@ -16,7 +16,7 @@ crates. A wrong date, holiday or tithi is a hub issue, not a fix here.
 
 ## Setup
 
-Rust 1.98 is pinned in [`rust-toolchain.toml`](rust-toolchain.toml); rustup installs it and the
+Rust 1.100 is pinned in [`rust-toolchain.toml`](rust-toolchain.toml); rustup installs it and the
 needed components on first use. On Linux, building MitiBar needs `libxkbcommon-dev`,
 `libwayland-dev`, `libfontconfig1-dev` and `libdbus-1-dev`.
 

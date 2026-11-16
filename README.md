@@ -71,7 +71,7 @@ uses a software renderer, so no OpenGL driver is needed.
 
 ## Build
 
-Rust 1.98 is pinned in `rust-toolchain.toml`.
+Rust 1.100 is pinned in `rust-toolchain.toml`.
 
 ```bash
 cargo run --release
