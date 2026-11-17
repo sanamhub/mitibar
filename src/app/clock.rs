@@ -1,12 +1,13 @@
 //! Clock text for the local and extra time zone (WR-05), plus the popup header (WR-02 AC3).
-//! Pure: takes a fixed `jiff::Zoned` so every function is testable without a clock (ADR-0015).
+//! Pure: takes a fixed `jiff::ZonedDateTime` so every function is testable without a clock
+//! (ADR-0015).
 
 use std::fmt::Write as _;
 
-use nepdate::{Lang, LongDate, NepaliDate};
+use nepdate::{Lang, LongDate};
 
-use crate::app::format;
 use crate::app::settings::Settings;
+use crate::app::{bs_date, format};
 
 /// One clock line for the popup. `zone_city` is `None` for the local line; the UI shows the
 /// `@tr("Local")` label there. For the extra zone it is the city part of the IANA id, shown as
@@ -28,7 +29,7 @@ pub struct Header {
 
 /// One or two clock lines (WR-05 AC1): local always, the extra zone only when its UTC offset
 /// differs from the local offset at this instant.
-pub fn clock_lines(now: &jiff::Zoned, s: &Settings) -> Vec<ClockLine> {
+pub fn clock_lines(now: &jiff::ZonedDateTime, s: &Settings) -> Vec<ClockLine> {
     let lang = s.lang();
     let mut lines = vec![ClockLine {
         zone_city: None,
@@ -55,13 +56,13 @@ pub fn clock_lines(now: &jiff::Zoned, s: &Settings) -> Vec<ClockLine> {
 
 /// The local time string for `now`, per WR-05 AC2. The bar (WR-08 AC2) reuses this so the two
 /// surfaces never format the time differently.
-pub fn local_time(now: &jiff::Zoned, s: &Settings) -> String {
+pub fn local_time(now: &jiff::ZonedDateTime, s: &Settings) -> String {
     format_time(now.time(), s.clock_24h, s.show_seconds, s.lang())
 }
 
 /// The extra-zone field of the bar (WR-08 AC2): the zone's abbreviation and time, or its city and
 /// time when `bar_zone_long` is set. Empty when the extra zone is unset or has the local offset.
-pub fn zone_time(now: &jiff::Zoned, s: &Settings) -> String {
+pub fn zone_time(now: &jiff::ZonedDateTime, s: &Settings) -> String {
     if s.extra_time_zone.is_empty() {
         return String::new();
     }
@@ -86,7 +87,7 @@ pub fn zone_time(now: &jiff::Zoned, s: &Settings) -> String {
 /// The time until the next wake-up: the next second boundary when seconds are shown, the next
 /// minute boundary otherwise, both plus 50 ms (WR-05 AC5). The 50 ms makes the wake land just
 /// after the boundary so the clock reads the new minute or second.
-pub fn next_wakeup(now: &jiff::Zoned, show_seconds: bool) -> std::time::Duration {
+pub fn next_wakeup(now: &jiff::ZonedDateTime, show_seconds: bool) -> std::time::Duration {
     let sec = now.time().second(); // 0..=59
     let nanos = now.timestamp().subsec_nanosecond(); // 0..1_000_000_000
     if show_seconds {
@@ -104,8 +105,8 @@ pub fn next_wakeup(now: &jiff::Zoned, show_seconds: bool) -> std::time::Duration
 /// The header for the local date in `now` (WR-02 AC3, WR-05 AC4). The BS date and the weekday
 /// both come from `now.date()`. Empty when the local date is outside the supported BS range
 /// (1901..=2199), which only happens with a wildly wrong system clock.
-pub fn header(now: &jiff::Zoned, lang: Lang) -> Header {
-    let Ok(bs) = NepaliDate::try_from(now.date()) else {
+pub fn header(now: &jiff::ZonedDateTime, lang: Lang) -> Header {
+    let Ok(bs) = bs_date::from_civil(now.date()) else {
         return Header::default();
     };
     Header {
@@ -145,7 +146,7 @@ const COMMON_ZONE_NAMES: &[(&str, &str)] = &[
 
 /// The zone's short name: a common name for the zones above, else the tz database's abbreviation,
 /// else the UTC offset.
-fn short_zone_name(zoned: &jiff::Zoned) -> String {
+fn short_zone_name(zoned: &jiff::ZonedDateTime) -> String {
     let zone = zoned.time_zone();
     if let Some((_, name)) = zone
         .iana_name()
@@ -235,8 +236,8 @@ mod tests {
         assert_eq!(at("Asia/Tashkent"), "+05");
     }
 
-    fn kathmandu(ts: &str) -> jiff::Zoned {
-        ts.parse().expect("valid fixed Zoned")
+    fn kathmandu(ts: &str) -> jiff::ZonedDateTime {
+        ts.parse().expect("valid fixed ZonedDateTime")
     }
 
     #[test]
@@ -346,7 +347,7 @@ mod tests {
         // The weekday string is the weekday of the BS date, not of a shifted zone.
         assert_eq!(
             h.weekday,
-            NepaliDate::try_from(now.date())
+            bs_date::from_civil(now.date())
                 .unwrap()
                 .weekday()
                 .name(Lang::En)

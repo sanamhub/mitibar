@@ -44,7 +44,7 @@ use crate::app::settings::Settings;
 use crate::app::update::UpdateStatus;
 use crate::app::version::Version;
 use crate::app::zoom::{Arrow, Zoom, ZoomState};
-use crate::app::{APP_NAME, clock, holidays, month_view};
+use crate::app::{APP_NAME, bs_date, clock, holidays, month_view};
 use crate::platform::bar::{Anchor, Bar, BarEvent, MenuItem};
 use crate::platform::clipboard::{Clipboard, SystemClipboard};
 use crate::platform::hotkey::{Hotkeys, SystemHotkeys};
@@ -893,7 +893,7 @@ fn main() -> anyhow::Result<()> {
         bar.set_locked(s.settings.bar_locked);
         bar.set_hide_fullscreen(s.settings.bar_hide_fullscreen);
         bar.set_position(&s.settings.bar_position());
-        bar.set_lines(&bar_lines(&jiff::Zoned::now(), &s.settings));
+        bar.set_lines(&bar_lines(&jiff::ZonedDateTime::now(), &s.settings));
         bar.set_shown(s.settings.bar);
         tray.set_bar_supported(cfg!(windows));
         tray.set_bar_shown(s.settings.bar);
@@ -1237,7 +1237,7 @@ fn reset_bar_position(state: &Rc<RefCell<AppState>>) {
 fn update_bar(state: &Rc<RefCell<AppState>>) {
     let bar = state.borrow().bar.clone();
     if let Some(bar) = bar {
-        let lines = bar_lines(&jiff::Zoned::now(), &state.borrow().settings);
+        let lines = bar_lines(&jiff::ZonedDateTime::now(), &state.borrow().settings);
         bar.set_lines(&lines);
     }
 }
@@ -1279,7 +1279,7 @@ fn update_popup(state: &Rc<RefCell<AppState>>) {
     ui_bridge::set_header(&popup, &header);
     ui_bridge::set_clocks(&popup, &lines);
 
-    let today = NepaliDate::try_from(now.date()).unwrap_or(NepaliDate::MIN);
+    let today = bs_date::from_civil(now.date()).unwrap_or(NepaliDate::MIN);
     let zoom = s.zoom;
     let started = std::time::Instant::now();
     // The day cells are built only for the month view; the other two levels are 12 labels.
@@ -1304,19 +1304,20 @@ fn today_of(s: &AppState) -> NepaliDate {
 
 /// The local BS date, or `MIN` if the system clock is outside 1901..=2199.
 fn today_local() -> NepaliDate {
-    let now = jiff::Zoned::now();
-    NepaliDate::try_from(now.date()).unwrap_or(NepaliDate::MIN)
+    let now = jiff::ZonedDateTime::now();
+    bs_date::from_civil(now.date()).unwrap_or(NepaliDate::MIN)
 }
 
 /// The local time the popup renders. A snapshot can pin the date with `--today` and the clock to
 /// noon, so re-rendering the same image does not change it.
-fn popup_now(s: &AppState) -> jiff::Zoned {
-    let now = jiff::Zoned::now();
+fn popup_now(s: &AppState) -> jiff::ZonedDateTime {
+    let now = jiff::ZonedDateTime::now();
     let Some(today) = s.today_override else {
         return now;
     };
-    let ad: jiff::civil::Date = today.into();
-    // Noon is a valid local time in nearly every zone, so a pinned date still builds a Zoned.
+    let ad = bs_date::to_civil(today);
+    // Noon is a valid local time in nearly every zone, so a pinned date still builds a
+    // ZonedDateTime.
     let noon = jiff::civil::Time::new(12, 0, 0, 0).unwrap_or(now.time());
     now.with().date(ad).time(noon).build().unwrap_or(now)
 }
@@ -1714,9 +1715,9 @@ fn update_tray_now(state: &Rc<RefCell<AppState>>) {
 /// Refreshes the tray title (macOS), day icon (Windows/Linux) and tooltip.
 fn update_tray(state: &Rc<RefCell<AppState>>, tray: &Rc<dyn Tray>) {
     let s = state.borrow();
-    let now = jiff::Zoned::now();
+    let now = jiff::ZonedDateTime::now();
     let lang = s.settings.lang();
-    let Ok(bs) = NepaliDate::try_from(now.date()) else {
+    let Ok(bs) = bs_date::from_civil(now.date()) else {
         return;
     };
     // macOS shows the bar's top line (WR-08 intro). With both lines empty it falls back to the
@@ -1767,7 +1768,7 @@ fn update_tick(state: &Rc<RefCell<AppState>>) {
 /// 60 s between wakes when seconds are hidden (WR-05 AC5). A tick armed before `rearm_timer` ran
 /// sees a newer generation and ends the chain.
 fn arm_timer(state: Rc<RefCell<AppState>>) {
-    let now = jiff::Zoned::now();
+    let now = jiff::ZonedDateTime::now();
     let (show_seconds, generation) = {
         let s = state.borrow();
         (s.settings.show_seconds, s.timer_generation)
@@ -1861,7 +1862,7 @@ fn snapshot_after<C: ComponentHandle + 'static>(
 /// clock and shows the defaults. `--lang` picks the language through `settings`.
 #[cfg(all(windows, feature = "snapshot"))]
 fn snapshot_bar_lines(settings: &Settings) -> crate::app::bar::BarLines {
-    let now: jiff::Zoned = "2026-10-22T18:31:00+05:45[Asia/Kathmandu]"
+    let now: jiff::ZonedDateTime = "2026-10-22T18:31:00+05:45[Asia/Kathmandu]"
         .parse()
         .expect("a fixed valid timestamp");
     let settings = Settings {

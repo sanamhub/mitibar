@@ -1,10 +1,10 @@
-//! The mini bar's text (WR-08 AC2, ADR-0019 point 9). Pure: the settings and a `Zoned` go in, two
-//! line strings come out. The Win32 module only draws what this returns.
+//! The mini bar's text (WR-08 AC2, ADR-0019 point 9). Pure: the settings and a `ZonedDateTime` go
+//! in, two line strings come out. The Win32 module only draws what this returns.
 
 use nepdate::{Lang, LongDate, NepaliDate};
 
 use crate::app::settings::Settings;
-use crate::app::{clock, format, holidays};
+use crate::app::{bs_date, clock, format, holidays};
 
 /// Between two fields on a line. The renderer draws it in `ink-muted` (widget-design §5).
 pub const SEPARATOR: &str = " · ";
@@ -133,7 +133,7 @@ impl BarLines {
 /// What a field needs: the clock, the settings and the local BS date. The weekday, the BS date and
 /// the AD date all come from the same local date (WR-05 AC4).
 struct Day<'a> {
-    now: &'a jiff::Zoned,
+    now: &'a jiff::ZonedDateTime,
     settings: &'a Settings,
     lang: Lang,
     /// `None` when the local date is outside 1901..=2199, which only happens with a wildly wrong
@@ -143,12 +143,12 @@ struct Day<'a> {
 
 /// The bar's two lines for `now` (WR-08 AC2): each line is its fields in order, joined with
 /// ` · `, with an empty field left out together with its separator.
-pub fn bar_lines(now: &jiff::Zoned, s: &Settings) -> BarLines {
+pub fn bar_lines(now: &jiff::ZonedDateTime, s: &Settings) -> BarLines {
     let day = Day {
         now,
         settings: s,
         lang: s.lang(),
-        bs: NepaliDate::try_from(now.date()).ok(),
+        bs: bs_date::from_civil(now.date()).ok(),
     };
     BarLines {
         top: line(&s.bar_top, &day),
@@ -220,10 +220,10 @@ mod tests {
     use super::*;
 
     /// 2083 Kartik 5 is 2026-10-22, a Thursday (the WR-08 AC2 table). Local time is Kathmandu.
-    fn thursday() -> jiff::Zoned {
+    fn thursday() -> jiff::ZonedDateTime {
         "2026-10-22T18:31:00+05:45[Asia/Kathmandu]"
             .parse()
-            .expect("fixed Zoned")
+            .expect("fixed ZonedDateTime")
     }
 
     fn settings(language: &str, top: &[BarField], bottom: &[BarField]) -> Settings {
@@ -271,12 +271,12 @@ mod tests {
     #[test]
     fn wr08_ac2_the_holiday_field_names_todays_public_holiday() {
         // 2081 Baishakh 1 is the New Year, a public holiday; the day after is not one.
-        let holiday: jiff::Zoned = "2024-04-13T09:00:00+05:45[Asia/Kathmandu]"
+        let holiday: jiff::ZonedDateTime = "2024-04-13T09:00:00+05:45[Asia/Kathmandu]"
             .parse()
-            .expect("fixed Zoned");
-        let ordinary: jiff::Zoned = "2024-04-14T09:00:00+05:45[Asia/Kathmandu]"
+            .expect("fixed ZonedDateTime");
+        let ordinary: jiff::ZonedDateTime = "2024-04-14T09:00:00+05:45[Asia/Kathmandu]"
             .parse()
-            .expect("fixed Zoned");
+            .expect("fixed ZonedDateTime");
         let en = settings("en", &[BarField::Holiday], &[]);
         let ne = settings("ne", &[BarField::Holiday], &[]);
         assert_eq!(bar_lines(&holiday, &en).top, "New Year");
@@ -320,9 +320,9 @@ mod tests {
         assert_eq!(bar_lines(&thursday(), &s).top, "Thu · 6:31 PM");
 
         // An empty field in the middle and at the start.
-        let outside: jiff::Zoned = "2070-01-01T09:00:00+05:45[Asia/Kathmandu]"
+        let outside: jiff::ZonedDateTime = "2070-01-01T09:00:00+05:45[Asia/Kathmandu]"
             .parse()
-            .expect("fixed Zoned");
+            .expect("fixed ZonedDateTime");
         let s = settings(
             "en",
             &[BarField::Tithi, BarField::Weekday, BarField::Holiday],
@@ -343,9 +343,9 @@ mod tests {
             &[BarField::Holiday, BarField::Tithi],
             &[BarField::Holiday],
         );
-        let outside: jiff::Zoned = "2070-01-01T09:00:00+05:45[Asia/Kathmandu]"
+        let outside: jiff::ZonedDateTime = "2070-01-01T09:00:00+05:45[Asia/Kathmandu]"
             .parse()
-            .expect("fixed Zoned");
+            .expect("fixed ZonedDateTime");
         let lines = bar_lines(&outside, &s);
         assert_eq!(lines, BarLines::default());
         assert!(lines.is_empty());
@@ -391,12 +391,12 @@ mod tests {
     fn wr05_ac4_the_weekday_follows_the_bs_date_shown_next_to_it() {
         // At 23:59 it is still Thursday Kartik 5; a minute later it is Friday Kartik 6.
         let s = settings("en", &[BarField::Weekday], &[BarField::BsShort]);
-        let before: jiff::Zoned = "2026-10-22T23:59:30+05:45[Asia/Kathmandu]"
+        let before: jiff::ZonedDateTime = "2026-10-22T23:59:30+05:45[Asia/Kathmandu]"
             .parse()
-            .expect("fixed Zoned");
-        let after: jiff::Zoned = "2026-10-23T00:00:30+05:45[Asia/Kathmandu]"
+            .expect("fixed ZonedDateTime");
+        let after: jiff::ZonedDateTime = "2026-10-23T00:00:30+05:45[Asia/Kathmandu]"
             .parse()
-            .expect("fixed Zoned");
+            .expect("fixed ZonedDateTime");
         let b = bar_lines(&before, &s);
         let a = bar_lines(&after, &s);
         assert_eq!((b.top.as_str(), b.bottom.as_str()), ("Thu", "Kartik 5"));
@@ -436,9 +436,9 @@ mod tests {
 
     #[test]
     fn a_date_outside_the_range_leaves_the_date_fields_empty_and_keeps_the_time() {
-        let far: jiff::Zoned = "1800-01-01T09:00:00+00:00[UTC]"
+        let far: jiff::ZonedDateTime = "1800-01-01T09:00:00+00:00[UTC]"
             .parse()
-            .expect("fixed Zoned");
+            .expect("fixed ZonedDateTime");
         let s = settings(
             "en",
             &[BarField::Weekday, BarField::Time],
