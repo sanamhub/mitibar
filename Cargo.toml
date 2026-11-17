@@ -33,10 +33,12 @@ slint = { version = "1.18", default-features = false, features = [
     "system-tray",
     "unstable-winit-030",
 ] }
-nepdate = { version = "=0.1.0-beta.1", features = ["jiff"] }
+# Without the `jiff` feature: the published nepdate still builds it on jiff 0.2, and MitiBar is on
+# jiff 1. `app::bs_date` converts a jiff date instead (ADR-0014).
+nepdate = { version = "=0.1.0-beta.1" }
 # Tithi, holidays and events for the month grid and day detail (ADR-0004).
 nepdate-patro = { version = "=0.1.0-beta.1" }
-jiff = "0.2"
+jiff = "1"
 anyhow = "1"
 # Settings file (ADR-0004): serde derive + TOML.
 serde = { version = "1", features = ["derive"] }

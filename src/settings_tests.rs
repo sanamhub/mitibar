@@ -1510,7 +1510,7 @@ fn wr08_ac3_a_focused_chip_moves_left_and_right_with_its_buttons_and_with_alt_ar
     assert_eq!(focused(&window), "chip top 1");
     let last = f.bar.lines.borrow().last().cloned().expect("lines");
     // The bar reads the real clock, so the expected weekday is today's.
-    let today = jiff::Zoned::now().strftime("%a").to_string();
+    let today = jiff::ZonedDateTime::now().strftime("%a").to_string();
     assert!(
         last.top.starts_with(&today),
         "the bar follows: {}",

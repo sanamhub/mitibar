@@ -6,6 +6,10 @@ All notable changes to MitiBar are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- MitiBar now uses jiff 1.0 for the clock and time zones. Nothing changes on screen (ADR-0014).
+
 ## [1.1.0] - 2026-11-10
 
 ### Added

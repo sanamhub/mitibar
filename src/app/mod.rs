@@ -8,6 +8,7 @@ pub const APP_NAME: &str = "MitiBar";
 pub mod bar;
 pub mod bar_place;
 pub mod bar_pointer;
+pub mod bs_date;
 pub mod clock;
 pub mod converter;
 pub mod format;
