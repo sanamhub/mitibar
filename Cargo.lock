@@ -2781,7 +2781,7 @@ dependencies = [
  "jiff",
  "log",
  "minisign-verify",
- "nepdate",
+ "nepdate 0.1.0-beta.1",
  "nepdate-patro",
  "rustls",
  "serde",
@@ -2908,12 +2908,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c924e5d80267d829083ff29bfe08308bdd671677e89ecd22bc76634b5154b34e"
 
 [[package]]
-name = "nepdate-patro"
-version = "0.1.0-beta.1"
+name = "nepdate"
+version = "1.0.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26d38355806d83347606c42033023f572d35f9bffb9928431b74990f0e0c597e"
+checksum = "fa490330b7f250a9c58ffbd5bee28e8eabe3565225e192f5dc568dc623eb59bd"
+
+[[package]]
+name = "nepdate-patro"
+version = "1.0.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "366b0354a81680bae4931d5980b8e082962a28ae05b73653b5f30b99f229b7b2"
 dependencies = [
- "nepdate",
+ "nepdate 1.0.0-rc.1",
 ]
 
 [[package]]
