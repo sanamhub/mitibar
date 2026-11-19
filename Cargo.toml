@@ -35,7 +35,7 @@ slint = { version = "1.18", default-features = false, features = [
 ] }
 # Without the `jiff` feature: the published nepdate still builds it on jiff 0.2, and MitiBar is on
 # jiff 1. `app::bs_date` converts a jiff date instead (ADR-0014).
-nepdate = { version = "=0.1.0-beta.1" }
+nepdate = { version = "=1.0.0-rc.1" }
 # Tithi, holidays and events for the month grid and day detail (ADR-0004).
 nepdate-patro = { version = "=0.1.0-beta.1" }
 jiff = "1"
